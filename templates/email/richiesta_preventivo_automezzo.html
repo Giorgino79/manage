@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Richiesta Preventivo - {{ richiesta.titolo }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #007bff; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f8f9fa; }
+        .automezzo-info { background-color: #e9ecef; padding: 15px; margin: 20px 0; border-left: 4px solid #007bff; }
+        .footer { background-color: #343a40; color: white; padding: 15px; text-align: center; }
+        .btn { background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+        .importante { color: #dc3545; font-weight: bold; }
+        .allegati { background-color: #fff3cd; padding: 10px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Richiesta Preventivo</h1>
+            <p>{{ richiesta.titolo }}</p>
+        </div>
+        
+        <div class="content">
+            <p>Gentile <strong>{{ fornitore.nome }}</strong>,</p>
+            
+            <p>Vi richiediamo un preventivo per il seguente servizio/prodotto:</p>
+            
+            <div class="automezzo-info">
+                <h3>🚗 Automezzo Interessato</h3>
+                <p><strong>Targa:</strong> {{ automezzo.targa }}</p>
+                <p><strong>Marca e Modello:</strong> {{ automezzo.marca }} {{ automezzo.modello }}</p>
+                <p><strong>Anno:</strong> {{ automezzo.anno_immatricolazione }}</p>
+                <p><strong>Carburante:</strong> {{ automezzo.tipo_carburante }}</p>
+                {% if automezzo.chilometri_attuali %}
+                <p><strong>Chilometraggio:</strong> {{ automezzo.chilometri_attuali|floatformat:0 }} km</p>
+                {% endif %}
+            </div>
+            
+            <h3>Descrizione della Richiesta</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 5px;">
+                {{ richiesta.descrizione|linebreaks }}
+            </div>
+            
+            {% if richiesta.budget_massimo %}
+            <p><strong>Budget Disponibile:</strong> €{{ richiesta.budget_massimo|floatformat:2 }}</p>
+            {% endif %}
+            
+            <div class="allegati">
+                <h4>📎 Documenti Allegati</h4>
+                <p>Insieme a questa email, trovate in allegato:</p>
+                <ul>
+                    {% if automezzo.libretto_fronte %}
+                    <li>Libretto di circolazione (fronte)</li>
+                    {% endif %}
+                    {% if automezzo.libretto_retro %}
+                    <li>Libretto di circolazione (retro)</li>
+                    {% endif %}
+                </ul>
+                <p><em>Questi documenti sono forniti per facilitare la preparazione del preventivo.</em></p>
+            </div>
+            
+            <div class="importante">
+                <h3>⏰ Scadenza Importante</h3>
+                <p>Vi preghiamo di inviarci il preventivo entro il <strong>{{ scadenza|date:"d/m/Y" }}</strong>.</p>
+            </div>
+            
+            <h3>Cosa deve includere il preventivo:</h3>
+            <ul>
+                <li>Descrizione dettagliata del servizio/prodotto</li>
+                <li>Prezzo comprensivo di IVA</li>
+                <li>Tempi di consegna/esecuzione</li>
+                <li>Condizioni di pagamento</li>
+                <li>Validità dell'offerta</li>
+                <li>Eventuali garanzie offerte</li>
+            </ul>
+            
+            <p>Per qualsiasi chiarimento, non esitate a contattarci.</p>
+            
+            <p>Cordiali saluti,<br>
+            <strong>{{ richiesta.richiedente.get_full_name|default:richiesta.richiedente.username }}</strong><br>
+            {% if richiesta.richiedente.email %}
+            <a href="mailto:{{ richiesta.richiedente.email }}">{{ richiesta.richiedente.email }}</a>
+            {% endif %}
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>Questa è una comunicazione automatica del sistema di gestione aziendale.</p>
+            <p>Data invio: {{ data_invio|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+</body>
+</html>

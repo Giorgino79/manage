@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dettaglio Messaggio - {{ message.subject|truncatechars:30 }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="mail" class="feather me-2"></i>Dettaglio Messaggio</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:message_list' %}">Messaggi</a></li>
+                            <li class="breadcrumb-item active">{{ message.subject|truncatechars:25 }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'mail:message_list' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna alla Lista
+                    </a>
+                    {% if message.status == 'failed' %}
+                    <button class="btn btn-outline-warning" onclick="resendMessage('{{ message.id }}')">
+                        <i data-feather="refresh-cw" class="feather me-1"></i>Reinvia
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Message Content -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i data-feather="message-square" class="feather me-2"></i>Contenuto Messaggio
+                                </h5>
+                                {% if message.status == 'sent' %}
+                                    <span class="badge bg-success">
+                                        <i data-feather="check" class="feather me-1" style="height: 12px; width: 12px;"></i>
+                                        Inviato
+                                    </span>
+                                {% elif message.status == 'failed' %}
+                                    <span class="badge bg-danger">
+                                        <i data-feather="x" class="feather me-1" style="height: 12px; width: 12px;"></i>
+                                        Fallito
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning">
+                                        <i data-feather="clock" class="feather me-1" style="height: 12px; width: 12px;"></i>
+                                        In Attesa
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Subject -->
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Oggetto:</strong></label>
+                                <div class="form-control-plaintext border p-2 bg-light">
+                                    {{ message.subject }}
+                                </div>
+                            </div>
+
+                            <!-- Recipients -->
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Destinatari:</strong></label>
+                                <div class="form-control-plaintext border p-2 bg-light">
+                                    {% if message.to_addresses %}
+                                        {% for email in message.to_addresses %}
+                                            <span class="badge bg-primary me-1 mb-1">{{ email }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- CC/BCC if present -->
+                            {% if message.cc_addresses %}
+                            <div class="mb-3">
+                                <label class="form-label"><strong>CC:</strong></label>
+                                <div class="form-control-plaintext border p-2 bg-light">
+                                    {% for email in message.cc_addresses %}
+                                        <span class="badge bg-secondary me-1 mb-1">{{ email }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% if message.bcc_addresses %}
+                            <div class="mb-3">
+                                <label class="form-label"><strong>BCC:</strong></label>
+                                <div class="form-control-plaintext border p-2 bg-light">
+                                    {% for email in message.bcc_addresses %}
+                                        <span class="badge bg-secondary me-1 mb-1">{{ email }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Content Tabs -->
+                            <div class="mb-3">
+                                <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="html-tab" data-bs-toggle="tab" 
+                                                data-bs-target="#html-content" type="button" role="tab">
+                                            <i data-feather="code" class="feather me-1"></i>HTML
+                                        </button>
+                                    </li>
+                                    {% if message.text_content %}
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="text-tab" data-bs-toggle="tab" 
+                                                data-bs-target="#text-content" type="button" role="tab">
+                                            <i data-feather="file-text" class="feather me-1"></i>Testo
+                                        </button>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                                
+                                <div class="tab-content border border-top-0" id="contentTabsContent">
+                                    <div class="tab-pane fade show active p-3" id="html-content" role="tabpanel">
+                                        <div style="max-height: 400px; overflow-y: auto;">
+                                            {{ message.html_content|safe }}
+                                        </div>
+                                    </div>
+                                    {% if message.text_content %}
+                                    <div class="tab-pane fade p-3" id="text-content" role="tabpanel">
+                                        <pre style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">{{ message.text_content }}</pre>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Attachments -->
+                            {% if attachments %}
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Allegati:</strong></label>
+                                <div class="list-group">
+                                    {% for attachment in attachments %}
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <i data-feather="paperclip" class="feather me-2"></i>
+                                            <strong>{{ attachment.filename }}</strong>
+                                            <small class="text-muted">({{ attachment.content_type }})</small>
+                                        </div>
+                                        <div>
+                                            {% if attachment.file %}
+                                            <a href="{{ attachment.file.url }}" class="btn btn-sm btn-outline-primary" download>
+                                                <i data-feather="download" class="feather me-1"></i>Scarica
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Error Message -->
+                            {% if message.error_message %}
+                            <div class="alert alert-danger">
+                                <h6><i data-feather="alert-triangle" class="feather me-2"></i>Errore di Invio</h6>
+                                <p class="mb-0">{{ message.error_message }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Message Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="info" class="feather me-1"></i>Informazioni Messaggio</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>ID:</strong></div>
+                                <div class="col-6"><small class="text-muted">{{ message.id }}</small></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Stato:</strong></div>
+                                <div class="col-6">
+                                    {% if message.status == 'sent' %}
+                                        <span class="badge bg-success">Inviato</span>
+                                    {% elif message.status == 'failed' %}
+                                        <span class="badge bg-danger">Fallito</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">In Attesa</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Priorità:</strong></div>
+                                <div class="col-6">
+                                    <span class="badge bg-info">{{ message.priority|capfirst }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Creato:</strong></div>
+                                <div class="col-6"><small>{{ message.created_at|date:"d/m/Y H:i" }}</small></div>
+                            </div>
+                            {% if message.sent_at %}
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Inviato:</strong></div>
+                                <div class="col-6"><small>{{ message.sent_at|date:"d/m/Y H:i" }}</small></div>
+                            </div>
+                            {% endif %}
+                            {% if message.created_by %}
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Utente:</strong></div>
+                                <div class="col-6"><small>{{ message.created_by.username }}</small></div>
+                            </div>
+                            {% endif %}
+                            {% if message.template %}
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Template:</strong></div>
+                                <div class="col-6">
+                                    <a href="{% url 'mail:template_edit' message.template.pk %}" class="text-decoration-none">
+                                        <small>{{ message.template.name }}</small>
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Template Context -->
+                    {% if message.context %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="database" class="feather me-1"></i>Variabili Template</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    {% for key, value in message.context.items %}
+                                    <tr>
+                                        <td><code>{{ key }}</code></td>
+                                        <td><small>{{ value|truncatechars:30 }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Email Statistics -->
+                    {% if message.status == 'sent' %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="activity" class="feather me-1"></i>Statistiche Email</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <i data-feather="check-circle" class="feather text-success mb-2" style="height: 3rem; width: 3rem;"></i>
+                                <h6>Email Consegnata</h6>
+                                <small class="text-muted">
+                                    Inviata il {{ message.sent_at|date:"d/m/Y" }} alle {{ message.sent_at|time:"H:i" }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Resend message function
+    function resendMessage(messageId) {
+        if (!confirm('Sei sicuro di voler reinviare questo messaggio?')) {
+            return;
+        }
+
+        fetch(`{% url 'mail:api_resend' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', messageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Messaggio reinviato con successo!');
+                location.reload();
+            } else {
+                alert('Errore reinvio messaggio: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Errore di rete: ' + error.message);
+        });
+    }
+</script>
+{% endblock %}

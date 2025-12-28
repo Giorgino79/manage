@@ -1,0 +1,552 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="modifica-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="h3 mb-1">
+                    <i class="fas fa-edit me-2"></i>Modifica Utenza
+                </h2>
+                <p class="mb-0">{{ utenza.numero_pratica }} - {{ stabilimento.nome }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div><i class="fas fa-plug me-2"></i>{{ utenza.get_causale_display }}</div>
+                <div class="small opacity-75">Creata il {{ utenza.data_creazione|date:"d/m/Y" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informazioni Attuali Utenza -->
+    <div class="info-utenza">
+        <h6><i class="fas fa-info-circle me-2"></i>Informazioni Attuali</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Fornitore:</strong> {{ utenza.fornitore.nome }}<br>
+                <strong>Stato:</strong> {{ utenza.get_stato_display }}<br>
+                <strong>Importo:</strong> € {{ utenza.calcola_totale_con_iva|floatformat:2 }}
+            </div>
+            <div class="col-md-4">
+                {% if utenza.periodo_fatturazione_da %}
+                    <strong>Periodo:</strong> {{ utenza.periodo_fatturazione_da|date:"d/m/Y" }} - {{ utenza.periodo_fatturazione_a|date:"d/m/Y" }}<br>
+                {% endif %}
+                {% if utenza.data_fattura %}
+                    <strong>Data Fattura:</strong> {{ utenza.data_fattura|date:"d/m/Y" }}<br>
+                {% endif %}
+                {% if utenza.data_scadenza_servizio %}
+                    <strong>Prossima Scadenza:</strong> {{ utenza.data_scadenza_servizio|date:"d/m/Y" }}
+                {% endif %}
+            </div>
+            <div class="col-md-4">
+                {% if utenza.consumo_kwh %}
+                    <strong>Consumo Energia:</strong> {{ utenza.consumo_kwh }} kWh<br>
+                {% endif %}
+                {% if utenza.consumo_mc %}
+                    <strong>Consumo Gas/Acqua:</strong> {{ utenza.consumo_mc }} mc<br>
+                {% endif %}
+                {% if utenza.codice_pdr_pod %}
+                    <strong>Codice:</strong> {{ utenza.codice_pdr_pod }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning per modifiche -->
+    {% if not utenza.can_be_modified %}
+        <div class="warning-box">
+            <h6><i class="fas fa-exclamation-triangle me-2"></i>Attenzione</h6>
+            <p class="mb-0">Questa utenza non può essere modificata perché è già stata pagata o è in uno stato che non consente modifiche.</p>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Form di Modifica -->
+            <form method="post" enctype="multipart/form-data" id="modifica-form">
+                {% csrf_token %}
+                
+                <!-- Informazioni Base -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Informazioni Generali
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.stabilimento.label_tag }}
+                            {{ form.stabilimento }}
+                            {% if form.stabilimento.errors %}
+                                <div class="text-danger small">{{ form.stabilimento.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.fornitore.label_tag }}
+                            {{ form.fornitore }}
+                            {% if form.fornitore.errors %}
+                                <div class="text-danger small">{{ form.fornitore.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.causale.label_tag }}
+                            {{ form.causale }}
+                            {% if form.causale.errors %}
+                                <div class="text-danger small">{{ form.causale.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.stato.label_tag }}
+                            {{ form.stato }}
+                            {% if form.stato.errors %}
+                                <div class="text-danger small">{{ form.stato.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.titolo.label_tag }}
+                        {{ form.titolo }}
+                        {% if form.titolo.errors %}
+                            <div class="text-danger small">{{ form.titolo.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.descrizione.label_tag }}
+                        {{ form.descrizione }}
+                        {% if form.descrizione.errors %}
+                            <div class="text-danger small">{{ form.descrizione.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Aspetti Economici -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-euro-sign me-2"></i>Aspetti Economici
+                    </h5>
+                    
+                    <div class="current-info">
+                        <strong>Importi Attuali:</strong>
+                        Imponibile: € {{ utenza.importo|floatformat:2 }} | 
+                        IVA: € {{ utenza.calcola_iva|floatformat:2 }} | 
+                        Totale: € {{ utenza.calcola_totale_con_iva|floatformat:2 }}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.importo.label_tag }}
+                            {{ form.importo }}
+                            {% if form.importo.errors %}
+                                <div class="text-danger small">{{ form.importo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.iva_percentuale.label_tag }}
+                            {{ form.iva_percentuale }}
+                            {% if form.iva_percentuale.errors %}
+                                <div class="text-danger small">{{ form.iva_percentuale.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <strong>Nuovi Importi:</strong>
+                        <div class="row">
+                            <div class="col-4">Imponibile: <span id="preview-imponibile">€ {{ utenza.importo|floatformat:2 }}</span></div>
+                            <div class="col-4">IVA: <span id="preview-iva">€ {{ utenza.calcola_iva|floatformat:2 }}</span></div>
+                            <div class="col-4">Totale: <span id="preview-totale" class="fw-bold">€ {{ utenza.calcola_totale_con_iva|floatformat:2 }}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-calendar me-2"></i>Date e Periodi
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.data_fattura.label_tag }}
+                            {{ form.data_fattura }}
+                            {% if form.data_fattura.errors %}
+                                <div class="text-danger small">{{ form.data_fattura.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.data_scadenza_servizio.label_tag }}
+                            {{ form.data_scadenza_servizio }}
+                            {% if form.data_scadenza_servizio.errors %}
+                                <div class="text-danger small">{{ form.data_scadenza_servizio.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.periodo_fatturazione_da.label_tag }}
+                            {{ form.periodo_fatturazione_da }}
+                            {% if form.periodo_fatturazione_da.errors %}
+                                <div class="text-danger small">{{ form.periodo_fatturazione_da.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.periodo_fatturazione_a.label_tag }}
+                            {{ form.periodo_fatturazione_a }}
+                            {% if form.periodo_fatturazione_a.errors %}
+                                <div class="text-danger small">{{ form.periodo_fatturazione_a.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Consumi e Codici -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tachometer-alt me-2"></i>Consumi e Identificativi
+                    </h5>
+                    
+                    <div class="consumo-preview">
+                        <h6><i class="fas fa-chart-line me-2"></i>Dati di Consumo</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.consumo_kwh.label_tag }}
+                                {{ form.consumo_kwh }}
+                                {% if form.consumo_kwh.errors %}
+                                    <div class="text-danger small">{{ form.consumo_kwh.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Attuale: {{ utenza.consumo_kwh|default:"Non specificato" }} kWh</small>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.consumo_mc.label_tag }}
+                                {{ form.consumo_mc }}
+                                {% if form.consumo_mc.errors %}
+                                    <div class="text-danger small">{{ form.consumo_mc.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Attuale: {{ utenza.consumo_mc|default:"Non specificato" }} mc</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            {{ form.codice_pdr_pod.label_tag }}
+                            {{ form.codice_pdr_pod }}
+                            {% if form.codice_pdr_pod.errors %}
+                                <div class="text-danger small">{{ form.codice_pdr_pod.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Attuale: {{ utenza.codice_pdr_pod|default:"Non specificato" }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documenti -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-file-upload me-2"></i>Documenti
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            {{ form.fattura.label_tag }}
+                            {{ form.fattura }}
+                            {% if form.fattura.errors %}
+                                <div class="text-danger small">{{ form.fattura.errors }}</div>
+                            {% endif %}
+                            {% if utenza.fattura %}
+                                <div class="file-info">
+                                    <i class="fas fa-file me-1"></i>
+                                    <strong>File attuale:</strong> {{ utenza.fattura.name|cut:"fatture_stabilimenti/" }}
+                                    <br><small class="text-muted">Carica un nuovo file per sostituirlo</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.preventivo.label_tag }}
+                            {{ form.preventivo }}
+                            {% if form.preventivo.errors %}
+                                <div class="text-danger small">{{ form.preventivo.errors }}</div>
+                            {% endif %}
+                            {% if utenza.preventivo %}
+                                <div class="file-info">
+                                    <i class="fas fa-file me-1"></i>
+                                    <strong>File attuale:</strong> {{ utenza.preventivo.name|cut:"preventivi_stabilimenti/" }}
+                                    <br><small class="text-muted">Carica un nuovo file per sostituirlo</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.certificato.label_tag }}
+                            {{ form.certificato }}
+                            {% if form.certificato.errors %}
+                                <div class="text-danger small">{{ form.certificato.errors }}</div>
+                            {% endif %}
+                            {% if utenza.certificato %}
+                                <div class="file-info">
+                                    <i class="fas fa-file me-1"></i>
+                                    <strong>File attuale:</strong> {{ utenza.certificato.name|cut:"certificati_stabilimenti/" }}
+                                    <br><small class="text-muted">Carica un nuovo file per sostituirlo</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-sticky-note me-2"></i>Note
+                    </h5>
+                    
+                    {{ form.note_interne.label_tag }}
+                    {{ form.note_interne }}
+                    {% if form.note_interne.errors %}
+                        <div class="text-danger small">{{ form.note_interne.errors }}</div>
+                    {% endif %}
+                    
+                    {% if utenza.note_interne %}
+                        <div class="file-info mt-2">
+                            <strong>Note attuali:</strong><br>
+                            {{ utenza.note_interne|truncatechars:150 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Pulsanti Azione -->
+                <div class="d-flex gap-2 mb-4">
+                    <button type="submit" class="btn btn-warning btn-azione" id="submit-btn">
+                        <i class="fas fa-save me-2"></i>Salva Modifiche
+                    </button>
+                    <a href="{% url 'stabilimenti:utenze_stabilimento' stabilimento_pk=stabilimento.pk %}" 
+                       class="btn btn-secondary btn-azione">
+                        <i class="fas fa-arrow-left me-2"></i>Annulla
+                    </a>
+                    <a href="{% url 'stabilimenti:dettaglio_costo' utenza.pk %}" 
+                       class="btn btn-outline-info btn-azione">
+                        <i class="fas fa-eye me-2"></i>Visualizza Dettaglio
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Riepilogo Modifiche -->
+            <div class="riepilogo-modifiche">
+                <h6><i class="fas fa-list-alt me-2"></i>Riepilogo Utenza</h6>
+                
+                <div class="progress-box mb-3">
+                    <div class="h4 mb-1" id="totale-preview">€ {{ utenza.calcola_totale_con_iva|floatformat:2 }}</div>
+                    <div>Totale Utenza</div>
+                </div>
+                
+                <div class="small">
+                    <div class="mb-2">
+                        <strong>Numero Pratica:</strong> {{ utenza.numero_pratica }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Stabilimento:</strong> {{ stabilimento.nome }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Tipo Utenza:</strong> {{ utenza.get_causale_display }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Creata il:</strong> {{ utenza.data_creazione|date:"d/m/Y H:i" }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Creata da:</strong> {{ utenza.incaricato.get_full_name|default:utenza.incaricato.username }}
+                    </div>
+                    {% if utenza.data_modifica != utenza.data_creazione %}
+                        <div class="mb-2">
+                            <strong>Ultima modifica:</strong> {{ utenza.data_modifica|date:"d/m/Y H:i" }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cronologia Modifiche -->
+            <div class="riepilogo-modifiche">
+                <h6><i class="fas fa-history me-2"></i>Stato Utenza</h6>
+                
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <strong>Utenza Creata</strong>
+                            <br><small class="text-muted">{{ utenza.data_creazione|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if utenza.data_modifica != utenza.data_creazione %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-warning"></div>
+                            <div class="timeline-content">
+                                <strong>Ultima Modifica</strong>
+                                <br><small class="text-muted">{{ utenza.data_modifica|date:"d/m/Y H:i" }}</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <strong>Stato Attuale</strong>
+                            <br><span class="badge bg-{{ utenza.stato|yesno:'success,warning,secondary' }}">{{ utenza.get_stato_display }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Azioni Rapide -->
+            <div class="riepilogo-modifiche">
+                <h6><i class="fas fa-tools me-2"></i>Azioni Rapide</h6>
+                
+                <div class="d-grid gap-2">
+                    <a href="{% url 'stabilimenti:dettaglio_costo' utenza.pk %}" 
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-2"></i>Visualizza Dettaglio Completo
+                    </a>
+                    
+                    {% if utenza.fattura %}
+                        <a href="{{ utenza.fattura.url }}" target="_blank" 
+                           class="btn btn-outline-success btn-sm">
+                            <i class="fas fa-download me-2"></i>Scarica Fattura
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'stabilimenti:utenze_stabilimento' stabilimento_pk=stabilimento.pk %}" 
+                       class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-list me-2"></i>Tutte le Utenze del Stabilimento
+                    </a><a href="{% url 'stabilimenti:nuova_utenza' stabilimento_pk=stabilimento.pk %}" 
+                       class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus me-2"></i>Nuova Utenza
+                    </a>
+                </div>
+            </div>
+
+            <!-- Suggerimenti -->
+            <div class="alert alert-info">
+                <h6><i class="fas fa-lightbulb me-2"></i>Suggerimenti</h6>
+                <ul class="mb-0 small">
+                    <li>Modifica solo i campi necessari per evitare errori</li>
+                    <li>Verifica sempre i totali dopo le modifiche economiche</li>
+                    <li>Aggiorna la data di scadenza se cambi fornitore</li>
+                    <li>Carica nuovi documenti solo se necessario</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stili CSS aggiuntivi per timeline -->
+
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('modifica-form');
+    const importoField = document.getElementById('{{ form.importo.id_for_label }}');
+    const ivaField = document.getElementById('{{ form.iva_percentuale.id_for_label }}');
+    
+    // Aggiorna preview importi in tempo reale
+    function aggiornaPreview() {
+        const importo = parseFloat(importoField.value) || 0;
+        const iva = parseFloat(ivaField.value) || 0;
+        
+        const imponibile = importo;
+        const ivaImporto = imponibile * (iva / 100);
+        const totale = imponibile + ivaImporto;
+        
+        document.getElementById('preview-imponibile').textContent = `€ ${imponibile.toFixed(2)}`;
+        document.getElementById('preview-iva').textContent = `€ ${ivaImporto.toFixed(2)}`;
+        document.getElementById('preview-totale').textContent = `€ ${totale.toFixed(2)}`;
+        document.getElementById('totale-preview').textContent = `€ ${totale.toFixed(2)}`;
+    }
+    
+    importoField.addEventListener('input', aggiornaPreview);
+    ivaField.addEventListener('input', aggiornaPreview);
+    
+    // Conferma modifiche prima del submit
+    form.addEventListener('submit', function(e) {
+        if (!confirm('Sei sicuro di voler salvare le modifiche a questa utenza?')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvataggio in corso...';
+    });
+    
+    // Evidenzia campi modificati
+    const originalValues = {};
+    const formFields = form.querySelectorAll('input, select, textarea');
+    
+    formFields.forEach(field => {
+        originalValues[field.name] = field.value;
+        
+        field.addEventListener('change', function() {
+            if (this.value !== originalValues[this.name]) {
+                this.style.borderColor = '#ffc107';
+                this.style.backgroundColor = '#fff3cd';
+            } else {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            }
+        });
+    });
+    
+    // Validazione file
+    const fileInputs = form.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                    alert('Il file non può superare i 10MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Formato file non supportato. Usa PDF, JPG o PNG');
+                    this.value = '';
+                    return;
+                }
+            }
+        });
+    });
+    
+    // Inizializza preview
+    aggiornaPreview();
+    
+    // Auto-save draft (opzionale)
+    let autoSaveTimeout;
+    formFields.forEach(field => {
+        field.addEventListener('input', function() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                console.log('Auto-saving draft...'); // Implementa il salvataggio bozza se necessario
+            }, 5000);
+        });
+    });
+});
+</script>
+{% endblock %}

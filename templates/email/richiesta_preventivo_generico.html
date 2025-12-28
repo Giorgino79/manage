@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Richiesta Preventivo - {{ richiesta.titolo }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #6c757d; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f8f9fa; }
+        .footer { background-color: #343a40; color: white; padding: 15px; text-align: center; }
+        .importante { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Richiesta Preventivo</h1>
+            <p>{{ richiesta.titolo }}</p>
+        </div>
+        
+        <div class="content">
+            <p>Gentile <strong>{{ fornitore.nome }}</strong>,</p>
+            
+            <p>Vi richiediamo un preventivo per il seguente servizio/prodotto:</p>
+            
+            <h3>Descrizione della Richiesta</h3>
+            <div style="background-color: white; padding: 15px; border-radius: 5px;">
+                {{ richiesta.descrizione|linebreaks }}
+            </div>
+            
+            {% if richiesta.budget_massimo %}
+            <p><strong>Budget Disponibile:</strong> €{{ richiesta.budget_massimo|floatformat:2 }}</p>
+            {% endif %}
+            
+            <div class="importante">
+                <h3>⏰ Scadenza Importante</h3>
+                <p>Vi preghiamo di inviarci il preventivo entro il <strong>{{ scadenza|date:"d/m/Y" }}</strong>.</p>
+            </div>
+            
+            <h3>Cosa deve includere il preventivo:</h3>
+            <ul>
+                <li>Descrizione dettagliata del servizio/prodotto</li>
+                <li>Prezzo comprensivo di IVA</li>
+                <li>Tempi di consegna/esecuzione</li>
+                <li>Condizioni di pagamento</li>
+                <li>Validità dell'offerta</li>
+                <li>Eventuali garanzie offerte</li>
+            </ul>
+            
+            <p>Per qualsiasi chiarimento, non esitate a contattarci.</p>
+            
+            <p>Cordiali saluti,<br>
+            <strong>{{ richiesta.richiedente.get_full_name|default:richiesta.richiedente.username }}</strong><br>
+            {% if richiesta.richiedente.email %}
+            <a href="mailto:{{ richiesta.richiedente.email }}">{{ richiesta.richiedente.email }}</a>
+            {% endif %}
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>Questa è una comunicazione automatica del sistema di gestione aziendale.</p>
+            <p>Data invio: {{ data_invio|date:"d/m/Y H:i" }}</p>
+        </div>
+    </div>
+</body>
+</html>

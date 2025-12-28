@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 py-md-4">
+    <!-- Header -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-user me-2"></i>{{ cliente.nome }}
+                        {% if not cliente.attivo %}
+                            <span class="badge bg-secondary ms-2">Inattivo</span>
+                        {% endif %}
+                        {% if cliente.is_nuovo_cliente %}
+                            <span class="badge bg-success ms-2">Nuovo Cliente</span>
+                        {% endif %}
+                    </h6>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    <a href="{% url 'anagrafica:modifica_cliente' pk=cliente.pk %}" class="btn btn-warning me-2">
+                        <i class="fas fa-edit me-1"></i>Modifica
+                    </a>
+                    <a href="{% url 'anagrafica:elenco_clienti' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna all'Elenco
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stato credito prominente -->
+        <div class="card-footer">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    {% with stato=stato_credito %}
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <span class="h5 mb-0 {{ stato.classe_css }}">
+                                <i class="fas fa-credit-card me-1"></i>
+                                {{ stato.messaggio }}
+                            </span>
+                        </div>
+                        {% if cliente.limite_credito > 0 %}
+                        <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                            <div class="progress-bar {% if stato.stato == 'critico' %}bg-danger{% elif stato.stato == 'attenzione' %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ stato.percentuale_uso }}%"
+                                 aria-valuenow="{{ stato.percentuale_uso }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ stato.percentuale_uso|floatformat:1 }}%</small>
+                        {% endif %}
+                    </div>
+                    {% endwith %}
+                </div>
+                <div class="col-md-4 text-md-end">
+                    {% if cliente.limite_credito > 0 %}
+                        <div class="text-end">
+                            <div><strong>Limite:</strong> €{{ cliente.limite_credito|floatformat:0 }}</div>
+                            <div><strong>Utilizzato:</strong> €{{ credito_utilizzato|floatformat:0 }}</div>
+                            <div class="text-success"><strong>Disponibile:</strong> €{{ credito_disponibile|floatformat:0 }}</div>
+                        </div>
+                    {% else %}
+                        <span class="text-muted">Nessun limite credito impostato</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Dati anagrafici -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-address-card me-1"></i>Dati Anagrafici
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold text-muted">Nome/Ragione Sociale:</td>
+                                    <td>{{ cliente.nome }}</td>
+                                </tr>
+                                {% if cliente.indirizzo %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Indirizzo:</td>
+                                    <td>{{ cliente.indirizzo }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Città:</td>
+                                    <td>
+                                        {% if cliente.citta %}
+                                            {{ cliente.citta }}
+                                            {% if cliente.cap %} ({{ cliente.cap }}){% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Non specificata</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if cliente.zona %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Zona:</td>
+                                    <td>{{ cliente.zona }}</td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Cliente dal:</td>
+                                    <td>{{ cliente.created_at|date:"d/m/Y" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contatti -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-address-book me-1"></i>Contatti
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold text-muted">Telefono:</td>
+                                    <td>
+                                        <a href="tel:{{ cliente.telefono }}" class="text-decoration-none">
+                                            <i class="fas fa-phone text-success me-1"></i>{{ cliente.telefono }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Email:</td>
+                                    <td>
+                                        <a href="mailto:{{ cliente.email }}" class="text-decoration-none">
+                                            <i class="fas fa-envelope text-primary me-1"></i>{{ cliente.email }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% if cliente.pec %}
+                                <tr>
+                                    <td class="fw-bold text-muted">PEC:</td>
+                                    <td>
+                                        <a href="mailto:{{ cliente.pec }}" class="text-decoration-none">
+                                            <i class="fas fa-certificate text-warning me-1"></i>{{ cliente.pec }}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if cliente.orario_consegna %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Orari consegna:</td>
+                                    <td>{{ cliente.orario_consegna }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if cliente.giorno_chiusura %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Giorno chiusura:</td>
+                                    <td>{{ cliente.get_giorno_chiusura_display }}</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Dati fiscali -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-file-invoice me-1"></i>Dati Fiscali
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                {% if cliente.partita_iva %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Partita IVA:</td>
+                                    <td>
+                                        <code class="bg-light p-1 rounded">{{ cliente.partita_iva }}</code>
+                                        <i class="fas fa-check-circle text-success ms-1" title="Validata"></i>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if cliente.codice_fiscale %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Codice Fiscale:</td>
+                                    <td>
+                                        <code class="bg-light p-1 rounded">{{ cliente.codice_fiscale }}</code>
+                                        <i class="fas fa-check-circle text-success ms-1" title="Validato"></i>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if cliente.codice_univoco %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Codice Univoco:</td>
+                                    <td>
+                                        <code class="bg-light p-1 rounded">{{ cliente.codice_univoco }}</code>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% if not cliente.partita_iva and not cliente.codice_fiscale %}
+                                <tr>
+                                    <td colspan="2" class="text-center text-muted">
+                                        <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                        Nessun dato fiscale inserito
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dati commerciali -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-handshake me-1"></i>Dati Commerciali
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-borderless">
+                            <tbody>
+                                <tr>
+                                    <td class="fw-bold text-muted">Tipo Pagamento:</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ cliente.get_tipo_pagamento_display }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Limite Credito:</td>
+                                    <td>
+                                        {% if cliente.limite_credito > 0 %}
+                                            <strong class="text-success">€{{ cliente.limite_credito|floatformat:0 }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Nessun limite</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if cliente.limite_credito > 0 %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Credito Utilizzato:</td>
+                                    <td>€{{ credito_utilizzato|floatformat:0 }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">Credito Disponibile:</td>
+                                    <td>
+                                        <strong class="{{ stato_credito.classe_css }}">
+                                            €{{ credito_disponibile|floatformat:0 }}
+                                        </strong>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                <tr>
+                                    <td class="fw-bold text-muted">Stato:</td>
+                                    <td>
+                                        {% if cliente.attivo %}
+                                            <span class="badge bg-success">Attivo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inattivo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note e azioni -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-secondary">
+                        <i class="fas fa-sticky-note me-1"></i>Note e Azioni
+                    </h6>
+                    <div class="btn-group">
+                        <a href="{% url 'anagrafica:modifica_cliente' pk=cliente.pk %}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-edit me-1"></i>Modifica Cliente
+                        </a>
+                        {% if user.is_staff %}
+                        <a href="{% url 'anagrafica:toggle_attivo' 'cliente' cliente.pk %}" 
+                           class="btn btn-sm btn-{% if cliente.attivo %}outline-secondary{% else %}outline-success{% endif %}"
+                           onclick="return confirm('Sei sicuro di voler {% if cliente.attivo %}disattivare{% else %}attivare{% endif %} questo cliente?')">
+                            <i class="fas fa-{% if cliente.attivo %}ban{% else %}check{% endif %} me-1"></i>
+                            {% if cliente.attivo %}Disattiva{% else %}Attiva{% endif %}
+                        </a>
+                        <a href="{% url 'anagrafica:elimina_cliente' pk=cliente.pk %}" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-trash me-1"></i>Elimina
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if cliente.note %}
+                        <div class="alert alert-light border-left-secondary">
+                            <h6><i class="fas fa-info-circle me-1"></i>Note:</h6>
+                            <p class="mb-0">{{ cliente.note|linebreaks }}</p>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i>
+                            <p class="mb-0">Nessuna nota inserita per questo cliente</p>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Informazioni aggiuntive -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar-plus me-1"></i>
+                                Cliente creato il <strong>{{ cliente.created_at|date:"d/m/Y H:i" }}</strong>
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>
+                                Ultima modifica il <strong>{{ cliente.updated_at|date:"d/m/Y H:i" }}</strong>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Bordi colorati per cards */
+.border-left-secondary { border-left: 4px solid #6c757d !important; }
+
+/* Progress bar credito */
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+/* Badge e stato */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.5em 0.75em;
+}
+
+/* Links styled */
+a[href^="tel:"], a[href^="mailto:"] {
+    color: inherit !important;
+}
+
+a[href^="tel:"]:hover, a[href^="mailto:"]:hover {
+    text-decoration: underline !important;
+}
+
+/* Code highlighting */
+code {
+    font-size: 0.9rem;
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+/* Table styling */
+.table td {
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.75rem 0.5rem;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .table-responsive table {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .progress {
+        height: 6px;
+        margin: 0.5rem 0;
+    }
+}
+
+/* Stato credito highlighting */
+.text-success { color: #28a745 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-danger { color: #dc3545 !important; }
+
+/* Alert personalizzato */
+.alert.border-left-secondary {
+    border-left: 4px solid #6c757d;
+    background-color: #f8f9fc;
+}
+
+/* Hover effects */
+.card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease-in-out;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Tooltip per informazioni aggiuntive
+    $('[title]').tooltip();
+    
+    // Copia negli appunti per dati fiscali
+    $('code').on('click', function() {
+        const text = $(this).text();
+        navigator.clipboard.writeText(text).then(() => {
+            $(this).tooltip('dispose').tooltip({
+                title: 'Copiato negli appunti!',
+                trigger: 'manual'
+            }).tooltip('show');
+            
+            setTimeout(() => {
+                $(this).tooltip('dispose');
+            }, 2000);
+        });
+    });
+    
+    // Auto refresh stato credito ogni 30 secondi
+    setInterval(function() {
+        // Qui potresti aggiungere una chiamata AJAX per aggiornare lo stato credito
+        // se necessario in tempo reale
+    }, 30000);
+});
+</script>
+{% endblock %}

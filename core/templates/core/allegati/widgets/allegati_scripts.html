@@ -1,0 +1,284 @@
+<!-- 
+ALLEGATI SCRIPTS - JavaScript per gestione allegati
+=====================================================
+
+Include script JavaScript per funzionalità allegati:
+- Gestione modali CRUD
+- AJAX per operazioni async
+- Drag & drop file upload
+- Validazioni client-side
+
+Context variables:
+- object: Oggetto principale
+- content_type_id: ID Content Type
+- object_id: ID Oggetto
+- request: Request context per CSRF
+
+Usage:
+    {% allegati_scripts dipendente %}
+-->
+
+{% load allegati_tags %}
+
+<!-- Configurazione JavaScript -->
+<script>
+// Configurazione globale allegati per oggetto {{ object.id }}
+window.allegatiConfig = {
+    objectId: {{ object_id }},
+    contentTypeId: {{ content_type_id }},
+    csrfToken: '{{ csrf_token }}',
+    urls: {
+        create: '{% url "core:allegato_create" %}',
+        list: '{% url "core:allegati_list_api" %}',
+        widget: '{% url "core:allegati_widget_content" %}',
+        // Altri URL saranno aggiunti quando disponibili
+    },
+    permissions: {
+        canAdd: true,
+        canEdit: true, 
+        canDelete: true
+    },
+    settings: {
+        maxFileSize: 20971520, // 20MB
+        allowedTypes: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'gif', 'zip'],
+        confirmDelete: true
+    }
+};
+
+// Utility functions per allegati
+window.allegatiUtils = {
+    formatFileSize: function(bytes) {
+        if (!bytes) return 'N/A';
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+    },
+    
+    getFileIcon: function(filename) {
+        if (!filename) return 'fas fa-file';
+        const ext = filename.split('.').pop().toLowerCase();
+        const iconMap = {
+            'pdf': 'fas fa-file-pdf',
+            'doc': 'fas fa-file-word',
+            'docx': 'fas fa-file-word',
+            'xls': 'fas fa-file-excel',
+            'xlsx': 'fas fa-file-excel',
+            'jpg': 'fas fa-file-image',
+            'jpeg': 'fas fa-file-image',
+            'png': 'fas fa-file-image',
+            'gif': 'fas fa-file-image',
+            'zip': 'fas fa-file-archive',
+            'rar': 'fas fa-file-archive'
+        };
+        return iconMap[ext] || 'fas fa-file';
+    },
+    
+    validateFile: function(file) {
+        const errors = [];
+        
+        // Controlla dimensione
+        if (file.size > window.allegatiConfig.settings.maxFileSize) {
+            errors.push('Il file è troppo grande (max 20MB)');
+        }
+        
+        // Controlla tipo
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!window.allegatiConfig.settings.allowedTypes.includes(ext)) {
+            errors.push('Tipo di file non supportato');
+        }
+        
+        return errors;
+    }
+};
+</script>
+
+<!-- Script per gestione modali e AJAX -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Gestione pulsanti aggiungi allegato
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.allegato-add-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.allegato-add-btn');
+            const objectId = btn.dataset.objectId || window.allegatiConfig.objectId;
+            const contentTypeId = btn.dataset.contentTypeId || window.allegatiConfig.contentTypeId;
+            
+            // Prepara modal per creazione
+            const modal = document.getElementById('allegatoModal');
+            if (modal) {
+                // Aggiorna titolo modal
+                const modalTitle = modal.querySelector('.modal-title');
+                if (modalTitle) modalTitle.textContent = 'Nuovo Allegato';
+                
+                // Reset form se presente
+                const form = modal.querySelector('form');
+                if (form) {
+                    form.reset();
+                    // Aggiungi campi nascosti
+                    let contentTypeInput = form.querySelector('input[name="content_type"]');
+                    let objectIdInput = form.querySelector('input[name="object_id"]');
+                    
+                    if (!contentTypeInput) {
+                        contentTypeInput = document.createElement('input');
+                        contentTypeInput.type = 'hidden';
+                        contentTypeInput.name = 'content_type';
+                        form.appendChild(contentTypeInput);
+                    }
+                    contentTypeInput.value = contentTypeId;
+                    
+                    if (!objectIdInput) {
+                        objectIdInput = document.createElement('input');
+                        objectIdInput.type = 'hidden';
+                        objectIdInput.name = 'object_id';
+                        form.appendChild(objectIdInput);
+                    }
+                    objectIdInput.value = objectId;
+                }
+            }
+        }
+    });
+    
+    // Gestione pulsanti modifica allegato
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.allegato-edit-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.allegato-edit-btn');
+            const allegatoId = btn.dataset.allegatoId;
+            
+            // Carica dati allegato via AJAX e popola modal
+            console.log('Modifica allegato:', allegatoId);
+            // TODO: Implementare caricamento dati via AJAX
+        }
+    });
+    
+    // Gestione pulsanti elimina allegato
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.allegato-delete-btn')) {
+            e.preventDefault();
+            const btn = e.target.closest('.allegato-delete-btn');
+            const allegatoId = btn.dataset.allegatoId;
+            const allegatoTitle = btn.dataset.allegatoTitle || 'questo allegato';
+            
+            if (window.allegatiConfig.settings.confirmDelete) {
+                if (confirm(`Sei sicuro di voler eliminare "${allegatoTitle}"?`)) {
+                    // TODO: Implementare eliminazione via AJAX
+                    console.log('Elimina allegato:', allegatoId);
+                }
+            }
+        }
+    });
+    
+    // Gestione drag & drop per upload file
+    const dropZones = document.querySelectorAll('.file-drop-zone, [data-file-drop="true"]');
+    dropZones.forEach(zone => {
+        zone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('drag-over');
+        });
+        
+        zone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('drag-over');
+        });
+        
+        zone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+    });
+    
+    // Funzione per gestire upload file
+    function handleFileUpload(file) {
+        const errors = window.allegatiUtils.validateFile(file);
+        if (errors.length > 0) {
+            alert('Errore nel file:\n' + errors.join('\n'));
+            return;
+        }
+        
+        console.log('Upload file:', file.name);
+        // TODO: Implementare upload via AJAX
+    }
+    
+    // Auto-refresh widget allegati dopo operazioni
+    window.refreshAllegatiWidget = function() {
+        const widgets = document.querySelectorAll('.allegati-widget');
+        widgets.forEach(widget => {
+            const objectId = widget.dataset.objectId;
+            const contentType = widget.dataset.contentType;
+            
+            // TODO: Ricarica contenuto widget via AJAX
+            console.log('Refresh widget allegati per oggetto:', objectId);
+        });
+    };
+});
+</script>
+
+<!-- CSS per drag & drop e stati -->
+<style>
+.file-drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone.drag-over {
+    border-color: #007bff;
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.allegato-item:hover {
+    background-color: rgba(0,123,255,.05);
+    cursor: pointer;
+}
+
+.allegati-widget .btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.allegato-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,.1);
+    transform: translateY(-1px);
+}
+
+.allegato-card {
+    transition: all 0.2s ease;
+}
+
+/* Loading states */
+.allegati-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.allegati-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: allegati-spin 1s linear infinite;
+}
+
+@keyframes allegati-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>

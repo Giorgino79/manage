@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Configurazione Email{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="settings" class="feather me-2"></i>Configurazione Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item active">Configurazione</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'mail:dashboard' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna al Dashboard
+                    </a>
+                    {% if config %}
+                    <a href="{% url 'mail:test_config' %}" class="btn btn-success">
+                        <i data-feather="send" class="feather me-1"></i>Test Email
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Configuration Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="mail" class="feather me-2"></i>
+                                {% if config %}Modifica Configurazione{% else %}Nuova Configurazione{% endif %}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="display_name" class="form-label">Nome Visualizzato</label>
+                                        <input type="text" class="form-control" id="display_name" name="display_name" 
+                                               value="{% if config %}{{ config.display_name }}{% endif %}" required>
+                                        <div class="form-text">Il nome che apparirà come mittente nelle email</div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email_address" class="form-label">Indirizzo Email</label>
+                                        <input type="email" class="form-control" id="email_address" name="email_address" 
+                                               value="{% if config %}{{ config.email_address }}{% endif %}" required>
+                                        <div class="form-text">Il tuo indirizzo email</div>
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <h6 class="mb-3"><i data-feather="server" class="feather me-1"></i>Configurazione SMTP</h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-8 mb-3">
+                                        <label for="smtp_server" class="form-label">Server SMTP</label>
+                                        <input type="text" class="form-control" id="smtp_server" name="smtp_server" 
+                                               value="{% if config %}{{ config.smtp_server }}{% else %}smtp.gmail.com{% endif %}" required>
+                                        <div class="form-text">Indirizzo del server SMTP (es: smtp.gmail.com)</div>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="smtp_port" class="form-label">Porta</label>
+                                        <input type="number" class="form-control" id="smtp_port" name="smtp_port" 
+                                               value="{% if config %}{{ config.smtp_port }}{% else %}587{% endif %}" required>
+                                        <div class="form-text">Solitamente 587 o 465</div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="smtp_username" class="form-label">Username SMTP</label>
+                                        <input type="text" class="form-control" id="smtp_username" name="smtp_username" 
+                                               value="{% if config %}{{ config.smtp_username }}{% endif %}" required>
+                                        <div class="form-text">Username per autenticazione SMTP</div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="smtp_password" class="form-label">Password SMTP</label>
+                                        <input type="password" class="form-control" id="smtp_password" name="smtp_password" 
+                                               {% if not config %}required{% endif %}>
+                                        <div class="form-text">
+                                            {% if config %}Lascia vuoto per mantenere quella attuale{% else %}Password per autenticazione SMTP{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="use_tls" name="use_tls"
+                                                   {% if not config or config.use_tls %}checked{% endif %}>
+                                            <label class="form-check-label" for="use_tls">
+                                                Usa TLS (Consigliato)
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="use_ssl" name="use_ssl"
+                                                   {% if config and config.use_ssl %}checked{% endif %}>
+                                            <label class="form-check-label" for="use_ssl">
+                                                Usa SSL
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{% url 'mail:dashboard' %}" class="btn btn-secondary me-md-2">Annulla</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i data-feather="save" class="feather me-1"></i>
+                                        Salva Configurazione
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Configuration Status -->
+                    {% if config %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="info" class="feather me-1"></i>Stato Configurazione</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Configurazione Completa:</span>
+                                {% if config.is_configured %}
+                                    <span class="badge bg-success">Sì</span>
+                                {% else %}
+                                    <span class="badge bg-warning">No</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Email Verificata:</span>
+                                {% if config.is_verified %}
+                                    <span class="badge bg-success">Sì</span>
+                                {% else %}
+                                    <span class="badge bg-warning">No</span>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Configurazione Attiva:</span>
+                                {% if config.is_active %}
+                                    <span class="badge bg-success">Sì</span>
+                                {% else %}
+                                    <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if config.last_test_at %}
+                            <hr>
+                            <small class="text-muted">
+                                <i data-feather="clock" class="feather me-1"></i>
+                                Ultimo test: {{ config.last_test_at|date:"d/m/Y H:i" }}
+                            </small>
+                            {% endif %}
+                            
+                            {% if config.last_error %}
+                            <hr>
+                            <div class="alert alert-danger alert-sm">
+                                <small><strong>Ultimo errore:</strong><br>{{ config.last_error }}</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Help Card -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="help-circle" class="feather me-1"></i>Aiuto</h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>Configurazioni Comuni:</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Gmail:</strong><br>
+                                    Server: smtp.gmail.com<br>
+                                    Porta: 587<br>
+                                    TLS: Attivo
+                                </li>
+                                <li class="mt-2"><strong>Outlook:</strong><br>
+                                    Server: smtp-mail.outlook.com<br>
+                                    Porta: 587<br>
+                                    TLS: Attivo
+                                </li>
+                            </ul>
+                            
+                            <hr>
+                            
+                            <h6>Note Importanti:</h6>
+                            <ul class="list-unstyled small">
+                                <li>• Per Gmail, usa una password specifica per app</li>
+                                <li>• Assicurati che l'autenticazione a 2 fattori sia configurata</li>
+                                <li>• La password viene salvata in modo crittografato</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+    
+    // Form validation
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const useTls = document.getElementById('use_tls').checked;
+        const useSsl = document.getElementById('use_ssl').checked;
+        
+        if (useTls && useSsl) {
+            e.preventDefault();
+            alert('Non puoi attivare contemporaneamente TLS e SSL. Scegli uno dei due.');
+            return false;
+        }
+        
+        return true;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Report Presenze</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #007bff;
+            margin: 0 0 10px 0;
+            font-size: 24pt;
+        }
+
+        .header .info {
+            font-size: 11pt;
+            color: #666;
+        }
+
+        .stats-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+            border-spacing: 10px 0;
+        }
+
+        .stat-box {
+            display: table-cell;
+            width: 25%;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9fa;
+            border-left: 4px solid;
+        }
+
+        .stat-box.primary { border-left-color: #007bff; }
+        .stat-box.success { border-left-color: #28a745; }
+        .stat-box.danger { border-left-color: #dc3545; }
+        .stat-box.warning { border-left-color: #ffc107; }
+
+        .stat-box .label {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-box .value {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-box .unit {
+            font-size: 8pt;
+            color: #999;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 9pt;
+        }
+
+        table thead {
+            background: #007bff;
+            color: white;
+        }
+
+        table thead th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+
+        table tbody td {
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        table tbody tr.overtime-row {
+            background: #ffe6e6 !important;
+        }
+
+        table tfoot {
+            background: #e9ecef;
+            font-weight: bold;
+        }
+
+        table tfoot td {
+            padding: 10px 8px;
+            border-top: 2px solid #007bff;
+        }
+
+        .overtime-value {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 8pt;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .badge-light {
+            background: #f8f9fa;
+            color: #333;
+            border: 1px solid #dee2e6;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+            font-size: 8pt;
+            color: #999;
+            text-align: center;
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .legend h4 {
+            margin: 0 0 10px 0;
+            font-size: 11pt;
+            color: #17a2b8;
+        }
+
+        .legend ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .legend li {
+            margin-bottom: 5px;
+            font-size: 9pt;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>REPORT PRESENZE</h1>
+        <div class="info">
+            <strong>Dipendente:</strong> {{ dipendente.nome_completo }} ({{ dipendente.username }})<br>
+            <strong>Periodo:</strong> {{ data_inizio|date:"d/m/Y" }} - {{ data_fine|date:"d/m/Y" }}<br>
+            <strong>Data Stampa:</strong> {% now "d/m/Y H:i" %}
+        </div>
+    </div>
+
+    <!-- Statistiche -->
+    <div class="stats-grid">
+        <div class="stat-box primary">
+            <div class="label">Giorni Lavorati</div>
+            <div class="value">{{ giorni_lavorati }}</div>
+            <div class="unit">giorni</div>
+        </div>
+
+        <div class="stat-box success">
+            <div class="label">Ore Totali</div>
+            <div class="value">{{ totale_ore }}</div>
+            <div class="unit">ore</div>
+        </div>
+
+        <div class="stat-box danger">
+            <div class="label">Straordinari</div>
+            <div class="value">{{ totale_straordinari }}</div>
+            <div class="unit">ore extra</div>
+        </div>
+
+        <div class="stat-box warning">
+            <div class="label">Media Ore/Giorno</div>
+            <div class="value">{{ media_ore_giorno }}</div>
+            <div class="unit">ore</div>
+        </div>
+    </div>
+
+    <!-- Tabella -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 12%;">Data</th>
+                <th style="width: 12%;">Giorno</th>
+                <th style="width: 22%;">Entrate</th>
+                <th style="width: 22%;">Uscite</th>
+                <th style="width: 12%; text-align: right;">Ore Lavorate</th>
+                <th style="width: 12%; text-align: right;">Straordinari</th>
+                <th style="width: 8%;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for giorno in report_giorni %}
+            <tr {% if giorno.straordinari > 0 %}class="overtime-row"{% endif %}>
+                <td><strong>{{ giorno.data|date:"d/m/Y" }}</strong></td>
+                <td>{{ giorno.data|date:"l" }}</td>
+                <td>
+                    {% for entrata in giorno.entrate %}
+                        {{ entrata.orario|time:"H:i" }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        -
+                    {% endfor %}
+                </td>
+                <td>
+                    {% for uscita in giorno.uscite %}
+                        {{ uscita.orario|time:"H:i" }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        -
+                    {% endfor %}
+                </td>
+                <td style="text-align: right;">
+                    <strong>{{ giorno.ore_lavorate }} h</strong>
+                </td>
+                <td style="text-align: right;">
+                    {% if giorno.straordinari > 0 %}
+                        <span class="overtime-value">{{ giorno.straordinari }} h</span>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if giorno.straordinari > 0 %}🔥{% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 20px;">
+                    Nessuna timbratura registrata nel periodo selezionato.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if report_giorni %}
+        <tfoot>
+            <tr>
+                <td colspan="4" style="text-align: right;">TOTALI:</td>
+                <td style="text-align: right;"><strong>{{ totale_ore }} h</strong></td>
+                <td style="text-align: right;"><span class="overtime-value">{{ totale_straordinari }} h</span></td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+
+    <!-- Legenda -->
+    <div class="legend">
+        <h4>Legenda e Note</h4>
+        <ul>
+            <li><strong>Ore Standard:</strong> {{ ore_standard }} ore/giorno</li>
+            <li><strong>Straordinari:</strong> Le ore oltre lo standard sono evidenziate in rosso con il simbolo 🔥</li>
+            <li><strong>Calcolo Ore:</strong> Le ore vengono calcolate accoppiando ogni entrata con la corrispondente uscita</li>
+            <li><strong>Periodo:</strong> Questo report include tutte le timbrature dal {{ data_inizio|date:"d/m/Y" }} al {{ data_fine|date:"d/m/Y" }}</li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Report generato automaticamente dal Sistema di Gestione Presenze<br>
+        Documento non firmato digitalmente - Solo per uso interno
+    </div>
+
+</body>
+</html>

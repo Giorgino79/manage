@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Report Presenze{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .card {
+            page-break-inside: avoid;
+        }
+    }
+
+    .overtime-row {
+        background-color: #ffe6e6 !important;
+    }
+
+    .overtime-value {
+        color: #dc3545;
+        font-weight: 700;
+    }
+
+    .stats-card {
+        border-left: 4px solid;
+        transition: transform 0.2s ease;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .stats-card.primary {
+        border-left-color: #007bff;
+    }
+
+    .stats-card.success {
+        border-left-color: #28a745;
+    }
+
+    .stats-card.danger {
+        border-left-color: #dc3545;
+    }
+
+    .stats-card.warning {
+        border-left-color: #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>
+                        <i class="fas fa-chart-line text-primary me-2"></i>
+                        Report Presenze
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Periodo: {{ data_inizio|date:"d/m/Y" }} - {{ data_fine|date:"d/m/Y" }}
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'dipendenti:timbratura' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Torna alla Timbratura
+                    </a>
+                    <a href="?data_inizio={{ data_inizio|date:'Y-m-d' }}&data_fine={{ data_fine|date:'Y-m-d' }}&formato=pdf"
+                       class="btn btn-danger">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        Esporta PDF
+                    </a>
+                    <a href="?data_inizio={{ data_inizio|date:'Y-m-d' }}&data_fine={{ data_fine|date:'Y-m-d' }}&formato=excel"
+                       class="btn btn-success">
+                        <i class="fas fa-file-excel me-2"></i>
+                        Esporta Excel
+                    </a>
+                    <button onclick="window.print()" class="btn btn-primary">
+                        <i class="fas fa-print me-2"></i>
+                        Stampa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche Riepilogative -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Giorni Lavorati</h6>
+                            <h2 class="mb-0">{{ giorni_lavorati }}</h2>
+                        </div>
+                        <div class="text-primary">
+                            <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Ore Totali</h6>
+                            <h2 class="mb-0">{{ totale_ore }}</h2>
+                            <small class="text-muted">ore</small>
+                        </div>
+                        <div class="text-success">
+                            <i class="fas fa-clock fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card danger h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Straordinari</h6>
+                            <h2 class="mb-0 text-danger">{{ totale_straordinari }}</h2>
+                            <small class="text-muted">ore extra</small>
+                        </div>
+                        <div class="text-danger">
+                            <i class="fas fa-fire-alt fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stats-card warning h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Media Ore/Giorno</h6>
+                            <h2 class="mb-0">{{ media_ore_giorno }}</h2>
+                            <small class="text-muted">ore</small>
+                        </div>
+                        <div class="text-warning">
+                            <i class="fas fa-chart-bar fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabella Dettagliata -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Dettaglio Giornaliero
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 10%;">Data</th>
+                                    <th style="width: 10%;">Giorno</th>
+                                    <th style="width: 20%;">Entrate</th>
+                                    <th style="width: 20%;">Uscite</th>
+                                    <th class="text-end" style="width: 12%;">Ore Lavorate</th>
+                                    <th class="text-end" style="width: 12%;">Straordinari</th>
+                                    <th style="width: 16%;">Note</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for giorno in report_giorni %}
+                                <tr {% if giorno.straordinari > 0 %}class="overtime-row"{% endif %}>
+                                    <td>
+                                        <strong>{{ giorno.data|date:"d/m/Y" }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ giorno.data|date:"l" }}</span>
+                                    </td>
+                                    <td>
+                                        {% for entrata in giorno.entrate %}
+                                            <span class="badge bg-success me-1">
+                                                <i class="fas fa-arrow-right me-1"></i>
+                                                {{ entrata.orario|time:"H:i" }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-muted">-</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td>
+                                        {% for uscita in giorno.uscite %}
+                                            <span class="badge bg-danger me-1">
+                                                <i class="fas fa-arrow-left me-1"></i>
+                                                {{ uscita.orario|time:"H:i" }}
+                                            </span>
+                                        {% empty %}
+                                            <span class="text-muted">-</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>{{ giorno.ore_lavorate }} h</strong>
+                                        {% if giorno.ore_lavorate < ore_standard %}
+                                            <i class="fas fa-exclamation-triangle text-warning ms-2"
+                                               data-bs-toggle="tooltip"
+                                               title="Ore sotto lo standard"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if giorno.straordinari > 0 %}
+                                            <span class="overtime-value">
+                                                {{ giorno.straordinari }} h
+                                                <i class="fas fa-fire text-danger ms-1"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ giorno.note|default:"-"|truncatewords:10 }}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-info-circle text-muted me-2"></i>
+                                        Nessuna timbratura registrata nel periodo selezionato.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            {% if report_giorni %}
+                            <tfoot class="table-secondary">
+                                <tr>
+                                    <th colspan="4" class="text-end">TOTALI:</th>
+                                    <th class="text-end">{{ totale_ore }} h</th>
+                                    <th class="text-end">
+                                        <span class="overtime-value">{{ totale_straordinari }} h</span>
+                                    </th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note a piè di pagina -->
+    <div class="row mt-4 no-print">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Legenda
+                </h6>
+                <ul class="mb-0">
+                    <li><strong>Ore Standard:</strong> {{ ore_standard }} ore/giorno</li>
+                    <li><strong>Straordinari:</strong> Le ore oltre lo standard sono evidenziate in rosso</li>
+                    <li><strong>Export:</strong> Usa i pulsanti in alto per esportare in PDF o Excel</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Abilita tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
+{% endblock %}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Ordini di Acquisto - {{ data_da|date:"d/m/Y" }} - {{ data_a|date:"d/m/Y" }}</title>
+    <style>
+        @page {
+            margin: 20mm;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 18pt;
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .header .period {
+            font-size: 12pt;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .header .summary {
+            font-size: 10pt;
+            color: #34495e;
+        }
+        
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 20px 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 8pt;
+        }
+        
+        table.main-table {
+            font-size: 7pt;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            padding: 8px 4px;
+            text-align: left;
+            font-weight: bold;
+            border: 1px solid #2980b9;
+        }
+        
+        td {
+            padding: 6px 4px;
+            border: 1px solid #bdc3c7;
+            vertical-align: top;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e8f4fd;
+        }
+        
+        .fornitore-header {
+            background-color: #e74c3c !important;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            font-size: 9pt;
+        }
+        
+        .subtotal-row {
+            background-color: #f39c12 !important;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .total-row {
+            background-color: #27ae60 !important;
+            color: white;
+            font-weight: bold;
+            font-size: 9pt;
+        }
+        
+        .number-cell {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .center-cell {
+            text-align: center;
+        }
+        
+        .badge {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: bold;
+        }
+        
+        .badge-creato {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .badge-ricevuto {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .badge-pagato {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .notes-cell {
+            max-width: 100px;
+            word-wrap: break-word;
+            font-size: 7pt;
+        }
+        
+        .page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Report Ordini di Acquisto</h1>
+        <div class="period">
+            Periodo: {{ data_da|date:"d/m/Y" }} - {{ data_a|date:"d/m/Y" }}
+        </div>
+        <div class="summary">
+            {{ numero_ordini }} ordini trovati
+            {% if includi_iva %}
+            | Aliquota IVA: {{ aliquota_iva }}%
+            {% endif %}
+            {% if raggruppa_per_fornitore %}
+            | Raggruppati per fornitore
+            {% endif %}
+        </div>
+        <div class="summary">
+            Generato il {{ "now"|date:"d/m/Y H:i" }}
+        </div>
+    </div>
+
+    <!-- Tabella principale -->
+    {% if ordini_list %}
+    <table class="main-table">
+        <thead>
+            <tr>
+                <th style="width: 12%;">Numero Ordine</th>
+                {% if not raggruppa_per_fornitore %}
+                <th style="width: 15%;">Fornitore</th>
+                {% endif %}
+                <th style="width: 8%;">Data Ordine</th>
+                <th style="width: 8%;">Consegna</th>
+                <th style="width: 10%;">Importo Netto</th>
+                {% if includi_iva %}
+                <th style="width: 8%;">IVA {{ aliquota_iva }}%</th>
+                <th style="width: 10%;">Totale Lordo</th>
+                {% endif %}
+                <th style="width: 8%;">Stato</th>
+                <th style="width: 12%;">Termini Pagam.</th>
+                <th style="width: 12%;">Tempi Consegna</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ordine_data in ordini_list %}
+                {% if raggruppa_per_fornitore and ordine_data.is_new_fornitore %}
+                <tr>
+                    <td colspan="{% if includi_iva %}10{% else %}8{% endif %}" class="fornitore-header">
+                        {{ ordine_data.ordine.fornitore.nome }}
+                    </td>
+                </tr>
+                {% endif %}
+                
+                <tr>
+                    <td>{{ ordine_data.ordine.numero_ordine }}</td>
+                    {% if not raggruppa_per_fornitore %}
+                    <td>{{ ordine_data.ordine.fornitore.nome }}</td>
+                    {% endif %}
+                    <td class="center-cell">{{ ordine_data.ordine.data_ordine|date:"d/m/Y" }}</td>
+                    <td class="center-cell">{{ ordine_data.ordine.data_consegna_richiesta|date:"d/m/Y" }}</td>
+                    <td class="number-cell">€{{ ordine_data.ordine.importo_totale|floatformat:2 }}</td>
+                    {% if includi_iva %}
+                    <td class="number-cell">€{{ ordine_data.importo_iva|floatformat:2 }}</td>
+                    <td class="number-cell">€{{ ordine_data.importo_lordo|floatformat:2 }}</td>
+                    {% endif %}
+                    <td class="center-cell">
+                        <span class="badge badge-{{ ordine_data.ordine.stato|lower }}">
+                            {{ ordine_data.ordine.get_stato_display }}
+                        </span>
+                    </td>
+                    <td>{{ ordine_data.ordine.termini_pagamento|default:"-" }}</td>
+                    <td>{{ ordine_data.ordine.tempi_consegna|default:"-" }}</td>
+                    <td class="notes-cell">{{ ordine_data.ordine.note_ordine|default:"-"|truncatechars:50 }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Subtotali per fornitore -->
+    {% if raggruppa_per_fornitore %}
+    <div class="section-title">Subtotali per Fornitore</div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60%;">Fornitore</th>
+                <th style="width: 20%;">Importo Netto</th>
+                {% if includi_iva %}
+                <th style="width: 20%;">Totale Lordo</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for fornitore, totali in fornitori_subtotali.items %}
+            <tr>
+                <td>{{ fornitore }}</td>
+                <td class="number-cell">€{{ totali.netto|floatformat:2 }}</td>
+                {% if includi_iva %}
+                <td class="number-cell">€{{ totali.lordo|floatformat:2 }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <!-- Totale generale -->
+    <div class="section-title">Totale Generale</div>
+    <table>
+        <tbody>
+            <tr class="total-row">
+                <td style="width: 60%; text-align: center; font-size: 11pt;">
+                    TOTALE GENERALE ({{ numero_ordini }} ordini)
+                </td>
+                <td style="width: 20%; text-align: right; font-size: 11pt;">
+                    €{{ totale_generale_netto|floatformat:2 }}
+                </td>
+                {% if includi_iva %}
+                <td style="width: 20%; text-align: right; font-size: 11pt;">
+                    €{{ totale_generale_lordo|floatformat:2 }}
+                </td>
+                {% endif %}
+            </tr>
+        </tbody>
+    </table>
+
+    {% else %}
+    <div style="text-align: center; margin-top: 100px; color: #7f8c8d;">
+        <h2>Nessun ordine trovato</h2>
+        <p>Non sono stati trovati ordini di acquisto nel periodo selezionato.</p>
+    </div>
+    {% endif %}
+</body>
+</html>

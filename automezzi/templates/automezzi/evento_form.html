@@ -1,0 +1,515 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+
+{% block title %}{{ form.instance.pk|yesno:"Modifica Evento,Nuovo Evento" }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:evento_list' %}">Eventi</a></li>
+        {% if form.instance.pk %}
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:evento_detail' form.instance.pk %}">{{ form.instance.get_tipo_display }} - {{ form.instance.automezzo.targa }}</a></li>
+        <li class="breadcrumb-item active">Modifica</li>
+        {% else %}
+        <li class="breadcrumb-item active">Nuovo</li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con azioni -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>{{ form.instance.pk|yesno:"Modifica Evento,Nuovo Evento" }}
+            </h1>
+            <p class="text-muted mb-0">{{ form.instance.pk|yesno:"Modifica evento esistente,Registrazione nuovo evento/incidente" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'automezzi:evento_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!-- Alert di stato evento -->
+                    {% if form.instance.pk %}
+                        {% if form.instance.risolto %}
+                        <div class="alert alert-success border-start border-success border-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle fa-2x text-success me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Evento Risolto</h5>
+                                    <p class="mb-0">L'evento è stato risolto e gestito completamente.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning border-start border-warning border-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Evento Aperto</h5>
+                                    <p class="mb-0">L'evento è ancora in gestione e richiede attenzione.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Errori nella compilazione:</h5>
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs mb-4" id="eventoTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="general-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#general" type="button" role="tab">
+                                    <i class="fas fa-info-circle me-2"></i>Informazioni Generali
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="details-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#details" type="button" role="tab">
+                                    <i class="fas fa-clipboard-list me-2"></i>Dettagli Evento
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="management-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#management" type="button" role="tab">
+                                    <i class="fas fa-user-cog me-2"></i>Gestione e Costi
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="eventoTabContent">
+                            <!-- Informazioni Generali -->
+                            <div class="tab-pane fade show active" id="general" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.automezzo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-car me-2 text-primary"></i>Automezzo *
+                                            </label>
+                                            <select name="{{ form.automezzo.name }}" 
+                                                    class="form-select{% if form.automezzo.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.automezzo.id_for_label }}"
+                                                    required>
+                                                <option value="">Seleziona automezzo...</option>
+                                                {% for value, label in form.automezzo.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.automezzo.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.automezzo.errors %}
+                                                <div class="invalid-feedback">{{ form.automezzo.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Veicolo coinvolto nell'evento</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.tipo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-tags me-2 text-warning"></i>Tipo Evento *
+                                            </label>
+                                            <select name="{{ form.tipo.name }}" 
+                                                    class="form-select{% if form.tipo.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.tipo.id_for_label }}"
+                                                    required>
+                                                {% for value, label in form.tipo.field.choices %}
+                                                    <option value="{{ value }}" 
+                                                            {% if form.tipo.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.tipo.errors %}
+                                                <div class="invalid-feedback">{{ form.tipo.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.data_evento.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-calendar-alt me-2 text-danger"></i>Data Evento *
+                                            </label>
+                                            <input type="date" name="{{ form.data_evento.name }}" 
+                                                   class="form-control{% if form.data_evento.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.data_evento.id_for_label }}" 
+                                                   value="{{ form.data_evento.value|default:'' }}"
+                                                   required>
+                                            {% if form.data_evento.errors %}
+                                                <div class="invalid-feedback">{{ form.data_evento.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.dipendente_coinvolto.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-user me-2 text-info"></i>Dipendente Coinvolto
+                                            </label>
+                                            <select name="{{ form.dipendente_coinvolto.name }}" 
+                                                    class="form-select{% if form.dipendente_coinvolto.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.dipendente_coinvolto.id_for_label }}">
+                                                <option value="">Nessun dipendente coinvolto...</option>
+                                                {% for value, label in form.dipendente_coinvolto.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.dipendente_coinvolto.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.dipendente_coinvolto.errors %}
+                                                <div class="invalid-feedback">{{ form.dipendente_coinvolto.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Dipendente che utilizzava il mezzo durante l'evento</div>
+                                        </div>
+
+                                        <!-- Info sui tipi di evento -->
+                                        <div class="alert alert-light border">
+                                            <h6><i class="fas fa-info-circle me-2 text-info"></i>Tipologie Eventi</h6>
+                                            <small class="text-muted">
+                                                • <strong>Incidente:</strong> Sinistri stradali, danni a terzi<br>
+                                                • <strong>Furto:</strong> Furto del veicolo o di parti<br>
+                                                • <strong>Fermo:</strong> Sequestri, blocchi amministrativi<br>
+                                                • <strong>Guasto:</strong> Avarie meccaniche, panne<br>
+                                                • <strong>Altro:</strong> Altri eventi non catalogabili
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dettagli Evento -->
+                            <div class="tab-pane fade" id="details" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="{{ form.descrizione.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-clipboard-list me-2 text-primary"></i>Descrizione Evento *
+                                            </label>
+                                            <textarea name="{{ form.descrizione.name }}" 
+                                                      class="form-control{% if form.descrizione.errors %} is-invalid{% endif %}"
+                                                      id="{{ form.descrizione.id_for_label }}" 
+                                                      rows="6" 
+                                                      required
+                                                      placeholder="Descrivi dettagliatamente l'evento: come è accaduto, dove, circostanze, danni riportati...">{{ form.descrizione.value|default:'' }}</textarea>
+                                            {% if form.descrizione.errors %}
+                                                <div class="invalid-feedback">{{ form.descrizione.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Fornisci tutti i dettagli possibili per una gestione completa dell'evento</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.file_allegato.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-paperclip me-2 text-success"></i>File Allegato
+                                            </label>
+                                            <input type="file" name="{{ form.file_allegato.name }}" 
+                                                   class="form-control{% if form.file_allegato.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.file_allegato.id_for_label }}" 
+                                                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                            {% if form.file_allegato.errors %}
+                                                <div class="invalid-feedback">{{ form.file_allegato.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.file_allegato %}
+                                                <div class="form-text">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    <a href="{{ form.instance.file_allegato.url }}" target="_blank">File attuale</a>
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">Foto, verbali, documenti, perizie relativi all'evento</div>
+                                        </div>
+
+                                        <!-- Suggerimenti per la documentazione -->
+                                        <div class="alert alert-warning">
+                                            <h6><i class="fas fa-lightbulb me-2"></i>Documentazione Importante:</h6>
+                                            <ul class="mb-0 small">
+                                                <li><strong>Incidenti:</strong> Foto danni, verbali polizia, constatazione amichevole</li>
+                                                <li><strong>Furti:</strong> Denuncia alle autorità, foto del luogo</li>
+                                                <li><strong>Fermi:</strong> Documentazione ufficiale del provvedimento</li>
+                                                <li><strong>Guasti:</strong> Perizie tecniche, preventivi riparazione</li>
+                                                <li><strong>Generale:</strong> Sempre allegare documentazione fotografica</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Gestione e Costi -->
+                            <div class="tab-pane fade" id="management" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="text-success border-bottom pb-2 mb-3">
+                                            <i class="fas fa-euro-sign me-2"></i>Aspetti Economici
+                                        </h5>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.costo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-calculator me-2 text-warning"></i>Costo Stimato (€)
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">€</span>
+                                                <input type="number" name="{{ form.costo.name }}" 
+                                                       class="form-control{% if form.costo.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.costo.id_for_label }}" 
+                                                       value="{{ form.costo.value|default:'' }}"
+                                                       step="0.01" min="0" placeholder="0.00">
+                                                {% if form.costo.errors %}
+                                                    <div class="invalid-feedback">{{ form.costo.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="form-text">Costo stimato o effettivo per riparazione/gestione evento</div>
+                                        </div>
+
+                                        <!-- Info sui costi -->
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-info-circle me-2"></i>Gestione Costi:</h6>
+                                            <small class="text-muted">
+                                                • Inserire il costo non appena disponibile<br>
+                                                • Per incidenti: considerare franchigia assicurazione<br>
+                                                • Per riparazioni: allegare preventivi<br>
+                                                • Aggiornare il valore al completamento
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <h5 class="text-primary border-bottom pb-2 mb-3">
+                                            <i class="fas fa-tasks me-2"></i>Stato Gestione
+                                        </h5>
+
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input type="checkbox" name="{{ form.risolto.name }}" 
+                                                       class="form-check-input{% if form.risolto.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.risolto.id_for_label }}" 
+                                                       {% if form.risolto.value %}checked{% endif %}>
+                                                <label class="form-check-label fw-semibold" for="{{ form.risolto.id_for_label }}">
+                                                    <i class="fas fa-check-circle me-2 text-success"></i>Evento risolto e completato
+                                                </label>
+                                                {% if form.risolto.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.risolto.errors.0 }}</div>
+                                                {% endif %}
+                                                <div class="form-text">Spunta quando l'evento è stato completamente gestito e risolto</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Timeline evento -->
+                                        {% if form.instance.pk %}
+                                        <div class="alert alert-light">
+                                            <h6><i class="fas fa-history me-2"></i>Timeline Evento</h6>
+                                            <div class="timeline-simple">
+                                                <div class="timeline-item completed">
+                                                    <i class="fas fa-exclamation-triangle text-warning"></i>
+                                                    <span>Segnalato: {{ form.instance.data_evento|date:"d/m/Y" }}</span>
+                                                </div>
+                                                {% if form.instance.risolto %}
+                                                <div class="timeline-item completed">
+                                                    <i class="fas fa-check-circle text-success"></i>
+                                                    <span>Risolto</span>
+                                                </div>
+                                                {% else %}
+                                                <div class="timeline-item pending">
+                                                    <i class="fas fa-clock text-muted"></i>
+                                                    <span>In gestione...</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'automezzi:evento_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Annulla
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>{{ form.instance.pk|yesno:"Aggiorna Evento,Registra Evento" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestione tipo evento e suggerimenti
+    const tipoField = document.getElementById('{{ form.tipo.id_for_label }}');
+    const descrizioneField = document.getElementById('{{ form.descrizione.id_for_label }}');
+    
+    const suggestionsByType = {
+        'incidente': 'Descrivi: luogo, ora, dinamica, veicoli coinvolti, danni riportati, presenza autorità, testimoni...',
+        'furto': 'Descrivi: luogo, ora scoperta, parti rubate, circostanze, denuncia presentata...',
+        'fermo': 'Descrivi: motivo fermo, autorità competente, documentazione ricevuta, scadenze...',
+        'guasto': 'Descrivi: sintomi rilevati, luogo evento, tipo avaria, intervento richiesto...',
+        'altro': 'Descrivi dettagliatamente l\'evento e le circostanze...'
+    };
+    
+    if (tipoField && descrizioneField) {
+        tipoField.addEventListener('change', function() {
+            const suggestion = suggestionsByType[this.value];
+            if (suggestion && !descrizioneField.value.trim()) {
+                descrizioneField.placeholder = suggestion;
+            }
+        });
+        
+        // Imposta placeholder iniziale
+        if (tipoField.value) {
+            const suggestion = suggestionsByType[tipoField.value];
+            if (suggestion && !descrizioneField.value.trim()) {
+                descrizioneField.placeholder = suggestion;
+            }
+        }
+    }
+
+    // Validazione data evento
+    const dataField = document.getElementById('{{ form.data_evento.id_for_label }}');
+    if (dataField) {
+        dataField.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+            
+            if (selectedDate > today) {
+                this.setCustomValidity('La data dell\'evento non può essere nel futuro');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    // Gestione switch risolto e validazioni
+    const risoltoSwitch = document.getElementById('{{ form.risolto.id_for_label }}');
+    const costoField = document.getElementById('{{ form.costo.id_for_label }}');
+    
+    if (risoltoSwitch && costoField) {
+        risoltoSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                // Se marcato come risolto, suggerisci di inserire il costo
+                if (!costoField.value || costoField.value == '0' || costoField.value == '0.00') {
+                    costoField.focus();
+                    costoField.setAttribute('placeholder', 'Inserire costo finale...');
+                }
+            }
+        });
+    }
+
+    // Calcolo automatico stato in base ai campi
+    function updateEventStatus() {
+        const hasDescription = descrizioneField && descrizioneField.value.trim().length > 10;
+        const hasCost = costoField && costoField.value && parseFloat(costoField.value) > 0;
+        const isResolved = risoltoSwitch && risoltoSwitch.checked;
+        
+        // Visual feedback per completezza
+        if (hasDescription && (hasCost || isResolved)) {
+            // Evento completo
+            document.querySelector('.card').classList.add('border-success');
+        }
+    }
+
+    // Aggiorna stato quando cambiano i campi
+    [descrizioneField, costoField, risoltoSwitch].forEach(field => {
+        if (field) {
+            field.addEventListener('input', updateEventStatus);
+            field.addEventListener('change', updateEventStatus);
+        }
+    });
+
+    // Evidenzia tab con errori
+    function highlightTabsWithErrors() {
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        tabPanes.forEach(pane => {
+            const hasErrors = pane.querySelector('.is-invalid');
+            const tabButton = document.querySelector(`[data-bs-target="#${pane.id}"]`);
+            if (hasErrors && tabButton) {
+                tabButton.classList.add('text-danger');
+                tabButton.innerHTML = tabButton.innerHTML + ' <i class="fas fa-exclamation-circle"></i>';
+            }
+        });
+    }
+
+    highlightTabsWithErrors();
+    updateEventStatus();
+});
+</script>
+
+<style>
+.timeline-simple .timeline-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timeline-simple .timeline-item i {
+    margin-right: 8px;
+    width: 16px;
+}
+
+.timeline-simple .timeline-item.completed {
+    opacity: 1;
+}
+
+.timeline-simple .timeline-item.pending {
+    opacity: 0.6;
+}
+
+.border-start {
+    border-left: 4px solid !important;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+    .nav-tabs .nav-link {
+        font-size: 0.875rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .nav-tabs .nav-link i {
+        display: none;
+    }
+    
+    .alert {
+        font-size: 0.875rem;
+    }
+    
+    .form-text {
+        font-size: 0.75rem;
+    }
+}
+</style>
+{% endblock %}

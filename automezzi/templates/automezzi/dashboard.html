@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Automezzi{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item active">Automezzi</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="fas fa-warehouse"></i> Dashboard Automezzi</h2>
+  </div>
+
+  <!-- Ricerca cronologia automezzo -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="mb-3"><i class="fas fa-search me-2"></i>Cronologia Automezzo</h5>
+      <form method="get" action="{% url 'automezzi:cronologia' %}" class="row g-3">
+        <div class="col-md-4">
+          <label for="targa" class="form-label">Targa Automezzo:</label>
+          <input type="text" class="form-control" id="targa" name="targa" 
+                 placeholder="Inserisci targa (es. AB123CD)" required>
+        </div>
+        <div class="col-md-3">
+          <label for="data_da" class="form-label">Data da:</label>
+          <input type="date" class="form-control" id="data_da" name="data_da">
+        </div>
+        <div class="col-md-3">
+          <label for="data_a" class="form-label">Data a:</label>
+          <input type="date" class="form-control" id="data_a" name="data_a">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-dark w-100">
+            <i class="fas fa-search me-2"></i>Cerca
+          </button>
+        </div>
+      </form>
+      <small class="text-muted mt-2 d-block">
+        <i class="fas fa-info-circle me-1"></i>
+        Visualizza tutti i rifornimenti, eventi e manutenzioni per un automezzo specifico in ordine cronologico
+      </small>
+    </div>
+  </div>
+
+  <!-- Card delle sezioni principali -->
+  <div class="row g-4">
+    
+    <!-- Card Automezzi -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-start border-4 border-primary h-100">
+        <div class="card-header bg-light d-flex align-items-center">
+          <div class="me-3">
+            <i class="fas fa-car fa-2x text-primary"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">Automezzi</h5>
+            <small class="text-muted">Gestione flotta</small>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div class="fs-4 fw-bold text-primary">{{ automezzi_count }}</div>
+              <small class="text-muted">{{ attivi_count }} attivi - {{ disponibili_count }} disponibili</small>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <a href="{% url 'automezzi:automezzo_create' %}" class="btn btn-primary btn-sm">
+              <i class="fas fa-plus me-2"></i>Nuovo Automezzo
+            </a>
+            <a href="{% url 'automezzi:automezzo_list' %}" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-list me-2"></i>Elenco Automezzi
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Manutenzioni -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-start border-4 border-success h-100">
+        <div class="card-header bg-light d-flex align-items-center">
+          <div class="me-3">
+            <i class="fas fa-tools fa-2x text-success"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">Manutenzioni</h5>
+            <small class="text-muted">Assistenza e riparazioni</small>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div class="fs-4 fw-bold text-success">{{ manutenzioni_in_corso|length }}</div>
+              <small class="text-muted">{{ manutenzioni_in_corso|length }} in corso</small>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <a href="{% url 'automezzi:manutenzione_create' %}" class="btn btn-success btn-sm">
+              <i class="fas fa-plus me-2"></i>Nuova Manutenzione
+            </a>
+            <a href="{% url 'automezzi:manutenzione_list' %}" class="btn btn-outline-success btn-sm">
+              <i class="fas fa-list me-2"></i>Elenco Manutenzioni
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Rifornimenti -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-start border-4 border-info h-100">
+        <div class="card-header bg-light d-flex align-items-center">
+          <div class="me-3">
+            <i class="fas fa-gas-pump fa-2x text-info"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">Rifornimenti</h5>
+            <small class="text-muted">Carburante e costi</small>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div class="fs-4 fw-bold text-info">{{ rifornimenti_recenti|length }}</div>
+              <small class="text-muted">rifornimenti recenti</small>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <a href="{% url 'automezzi:rifornimento_create' %}" class="btn btn-info btn-sm">
+              <i class="fas fa-plus me-2"></i>Nuovo Rifornimento
+            </a>
+            <a href="{% url 'automezzi:rifornimento_list' %}" class="btn btn-outline-info btn-sm">
+              <i class="fas fa-list me-2"></i>Elenco Rifornimenti
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card Eventi -->
+    <div class="col-xl-3 col-md-6">
+      <div class="card border-start border-4 border-warning h-100">
+        <div class="card-header bg-light d-flex align-items-center">
+          <div class="me-3">
+            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+          </div>
+          <div>
+            <h5 class="mb-0">Eventi</h5>
+            <small class="text-muted">Incidenti e guasti</small>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <div class="fs-4 fw-bold text-warning">{{ eventi_recenti|length }}</div>
+              <small class="text-muted">eventi recenti</small>
+            </div>
+          </div>
+          <div class="d-grid gap-2">
+            <a href="{% url 'automezzi:evento_create' %}" class="btn btn-warning btn-sm">
+              <i class="fas fa-plus me-2"></i>Nuovo Evento
+            </a>
+            <a href="{% url 'automezzi:evento_list' %}" class="btn btn-outline-warning btn-sm">
+              <i class="fas fa-list me-2"></i>Elenco Eventi
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sezioni di riepilogo -->
+  <div class="row mt-5 g-4">
+    
+    <!-- Automezzi bloccati (se presenti) -->
+    {% if automezzi_bloccati %}
+    <div class="col-lg-12">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0"><i class="fas fa-ban me-2"></i>Automezzi Bloccati</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for automezzo in automezzi_bloccati %}
+            <div class="col-md-4 mb-2">
+              <div class="alert alert-danger mb-0">
+                <strong>{{ automezzo.targa }}</strong> - {{ automezzo.marca }} {{ automezzo.modello }}<br>
+                <small>{{ automezzo.motivo_blocco|truncatechars:50 }}</small>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Sezione prossime scadenze -->
+    {% if prossime_revisioni %}
+    <div class="col-lg-12">
+      <div class="card h-100">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Prossime Revisioni</h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% for automezzo in prossime_revisioni %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <strong>{{ automezzo.targa }}</strong> - {{ automezzo.marca }} {{ automezzo.modello }}
+                <br><small class="text-muted">Revisione: {{ automezzo.data_revisione|date:"d/m/Y" }}</small>
+              </div>
+              <a href="{% url 'automezzi:automezzo_detail' automezzo.pk %}" class="btn btn-sm btn-outline-info">
+                <i class="fas fa-eye"></i>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

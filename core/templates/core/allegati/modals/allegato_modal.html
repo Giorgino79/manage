@@ -1,0 +1,373 @@
+<!-- 
+ALLEGATO MODAL - Modal Bootstrap per CRUD allegati
+===================================================
+
+Modal universale per creazione e modifica allegati.
+Supporta upload file, URL esterni e contenuto testuale.
+
+Usage:
+    {% include 'core/allegati/modals/allegato_modal.html' %}
+    
+JavaScript required:
+    - Bootstrap 5 modal
+    - allegati_scripts.html
+-->
+
+{% load widget_tweaks %}
+
+<!-- Modal Allegato -->
+<div class="modal fade" id="allegatoModal" tabindex="-1" aria-labelledby="allegatoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            
+            <!-- Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="allegatoModalLabel">Nuovo Allegato</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+                <!-- Alert per messaggi -->
+                <div id="allegatoModalAlert" class="alert alert-danger d-none" role="alert"></div>
+
+                <!-- Form Allegato -->
+                <form id="allegatoForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Campi nascosti -->
+                    <input type="hidden" name="content_type" id="id_content_type">
+                    <input type="hidden" name="object_id" id="id_object_id">
+                    <input type="hidden" name="allegato_id" id="id_allegato_id">
+
+                    <!-- Informazioni Base -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="id_titolo" class="form-label">
+                                Titolo <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" name="titolo" id="id_titolo" 
+                                   placeholder="Inserisci il titolo dell'allegato" required maxlength="255">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="id_tipo_allegato" class="form-label">
+                                Tipo Allegato <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" name="tipo_allegato" id="id_tipo_allegato" required>
+                                <option value="">Seleziona tipo...</option>
+                                <optgroup label="📄 Documenti">
+                                    <option value="doc_contratto">📄 Contratto</option>
+                                    <option value="doc_fattura">🧾 Fattura</option>
+                                    <option value="doc_preventivo">💰 Preventivo</option>
+                                    <option value="doc_ordine">📋 Ordine</option>
+                                    <option value="doc_bolla">📦 Bolla Consegna</option>
+                                    <option value="doc_certificato">🏆 Certificato</option>
+                                    <option value="doc_libretto">📓 Libretto</option>
+                                    <option value="doc_patente">🪪 Patente</option>
+                                    <option value="doc_carta_identita">🆔 Carta Identità</option>
+                                    <option value="doc_codice_fiscale">📊 Codice Fiscale</option>
+                                </optgroup>
+                                <optgroup label="📧 Comunicazioni">
+                                    <option value="email_inviata">📧 Email Inviata</option>
+                                    <option value="email_ricevuta">📨 Email Ricevuta</option>
+                                    <option value="sms_inviato">💬 SMS Inviato</option>
+                                    <option value="chiamata">☎️ Chiamata</option>
+                                    <option value="fax">📠 Fax</option>
+                                </optgroup>
+                                <optgroup label="📷 Media">
+                                    <option value="foto_documento">📷 Foto Documento</option>
+                                    <option value="foto_generale">🖼️ Fotografia</option>
+                                    <option value="video">🎥 Video</option>
+                                    <option value="audio">🎵 Audio</option>
+                                    <option value="screenshot">🖥️ Screenshot</option>
+                                </optgroup>
+                                <optgroup label="📝 Note">
+                                    <option value="nota_interna">📝 Nota Interna</option>
+                                    <option value="nota_cliente">💭 Nota Cliente</option>
+                                    <option value="promemoria">⏰ Promemoria</option>
+                                    <option value="appunto">✏️ Appunto</option>
+                                </optgroup>
+                                <optgroup label="🔗 Altri">
+                                    <option value="link_esterno">🔗 Link Esterno</option>
+                                    <option value="altro">📎 Altro</option>
+                                </optgroup>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+
+                    <!-- Descrizione -->
+                    <div class="mb-3">
+                        <label for="id_descrizione" class="form-label">Descrizione</label>
+                        <textarea class="form-control" name="descrizione" id="id_descrizione" rows="3"
+                                  placeholder="Descrizione dettagliata dell'allegato (opzionale)"></textarea>
+                    </div>
+
+                    <!-- Tabs per Tipo Contenuto -->
+                    <ul class="nav nav-tabs mb-3" id="allegatoContentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="file-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#file-content" type="button" role="tab">
+                                <i class="fas fa-file-upload me-1"></i>
+                                File Upload
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="url-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#url-content" type="button" role="tab">
+                                <i class="fas fa-link me-1"></i>
+                                URL Esterno
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="text-tab" data-bs-toggle="tab" 
+                                    data-bs-target="#text-content" type="button" role="tab">
+                                <i class="fas fa-edit me-1"></i>
+                                Testo
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Contents -->
+                    <div class="tab-content" id="allegatoContentTabsContent">
+                        
+                        <!-- File Upload Tab -->
+                        <div class="tab-pane fade show active" id="file-content" role="tabpanel">
+                            <div class="file-upload-area">
+                                <input type="file" class="form-control" name="file" id="id_file" 
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.zip,.rar">
+                                <div class="file-drop-zone mt-3" data-file-drop="true">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                    <p class="mb-1">Trascina il file qui o <strong>clicca per selezionare</strong></p>
+                                    <small class="text-muted">
+                                        Formati supportati: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, GIF, ZIP<br>
+                                        Dimensione massima: 20MB
+                                    </small>
+                                </div>
+                                <div id="filePreview" class="mt-3 d-none">
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex align-items-center">
+                                            <i id="fileIcon" class="fas fa-file fa-2x me-3"></i>
+                                            <div>
+                                                <div id="fileName" class="fw-medium"></div>
+                                                <small id="fileSize" class="text-muted"></small>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-auto" 
+                                                    onclick="clearFileUpload()">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- URL Esterno Tab -->
+                        <div class="tab-pane fade" id="url-content" role="tabpanel">
+                            <div class="mb-3">
+                                <label for="id_url_esterno" class="form-label">URL Esterno</label>
+                                <input type="url" class="form-control" name="url_esterno" id="id_url_esterno"
+                                       placeholder="https://esempio.com/documento.pdf">
+                                <div class="form-text">
+                                    Inserisci l'URL completo di un documento o risorsa online
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contenuto Testo Tab -->
+                        <div class="tab-pane fade" id="text-content" role="tabpanel">
+                            <div class="mb-3">
+                                <label for="id_contenuto_testo" class="form-label">Contenuto Testuale</label>
+                                <textarea class="form-control" name="contenuto_testo" id="id_contenuto_testo" 
+                                          rows="8" placeholder="Inserisci il contenuto testuale..."></textarea>
+                                <div class="form-text">
+                                    Per note, appunti o contenuti testuali che non richiedono file
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Opzioni Avanzate -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_data_documento" class="form-label">Data Documento</label>
+                            <input type="date" class="form-control" name="data_documento" id="id_data_documento">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_data_scadenza" class="form-label">Data Scadenza</label>
+                            <input type="date" class="form-control" name="data_scadenza" id="id_data_scadenza">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="id_priorita" class="form-label">Priorità</label>
+                            <select class="form-select" name="priorita" id="id_priorita">
+                                <option value="bassa">Bassa</option>
+                                <option value="normale" selected>Normale</option>
+                                <option value="alta">Alta</option>
+                                <option value="critica">Critica</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="id_tags" class="form-label">Tags</label>
+                            <input type="text" class="form-control" name="tags" id="id_tags"
+                                   placeholder="tag1, tag2, tag3">
+                            <div class="form-text">Separare i tag con virgole</div>
+                        </div>
+                    </div>
+
+                    <!-- Opzioni Privacy -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_pubblico" 
+                                       id="id_is_pubblico" checked>
+                                <label class="form-check-label" for="id_is_pubblico">
+                                    Pubblico (visibile a tutti gli utenti autorizzati)
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="is_confidenziale" 
+                                       id="id_is_confidenziale">
+                                <label class="form-check-label" for="id_is_confidenziale">
+                                    Confidenziale (solo creatore e amministratori)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Annulla
+                </button>
+                <button type="submit" form="allegatoForm" class="btn btn-primary" id="allegatoSubmitBtn">
+                    <i class="fas fa-save me-1"></i>
+                    Salva Allegato
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Script per gestione modal -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('allegatoForm');
+    const modal = document.getElementById('allegatoModal');
+    const fileInput = document.getElementById('id_file');
+    const dropZone = document.querySelector('#file-content .file-drop-zone');
+
+    // Gestione form submit
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitAllegatoForm();
+    });
+
+    // Gestione file input change
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            showFilePreview(this.files[0]);
+        }
+    });
+
+    // Gestione click su drop zone
+    dropZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // Reset modal al close
+    modal.addEventListener('hidden.bs.modal', function() {
+        form.reset();
+        clearFileUpload();
+        hideAlert();
+        
+        // Reset tab attivo
+        const activeTab = modal.querySelector('.nav-link.active');
+        const firstTab = modal.querySelector('#file-tab');
+        if (activeTab !== firstTab) {
+            activeTab.classList.remove('active');
+            firstTab.classList.add('active');
+            
+            const activePane = modal.querySelector('.tab-pane.show.active');
+            const firstPane = modal.querySelector('#file-content');
+            if (activePane !== firstPane) {
+                activePane.classList.remove('show', 'active');
+                firstPane.classList.add('show', 'active');
+            }
+        }
+    });
+
+    // Funzioni utility
+    window.showFilePreview = function(file) {
+        const preview = document.getElementById('filePreview');
+        const icon = document.getElementById('fileIcon');
+        const name = document.getElementById('fileName');
+        const size = document.getElementById('fileSize');
+
+        icon.className = window.allegatiUtils.getFileIcon(file.name);
+        name.textContent = file.name;
+        size.textContent = window.allegatiUtils.formatFileSize(file.size);
+        
+        preview.classList.remove('d-none');
+        dropZone.style.display = 'none';
+    };
+
+    window.clearFileUpload = function() {
+        fileInput.value = '';
+        document.getElementById('filePreview').classList.add('d-none');
+        dropZone.style.display = 'block';
+    };
+
+    window.showAlert = function(message, type = 'danger') {
+        const alert = document.getElementById('allegatoModalAlert');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        alert.classList.remove('d-none');
+    };
+
+    window.hideAlert = function() {
+        document.getElementById('allegatoModalAlert').classList.add('d-none');
+    };
+
+    window.submitAllegatoForm = function() {
+        const submitBtn = document.getElementById('allegatoSubmitBtn');
+        const originalText = submitBtn.innerHTML;
+        
+        // Disabilita pulsante e mostra loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Salvando...';
+
+        // Prepara FormData
+        const formData = new FormData(form);
+
+        // TODO: Implementare invio AJAX
+        console.log('Invio form allegato:', formData);
+        
+        // Simulazione per ora
+        setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+            
+            // TODO: Gestire risposta reale
+            showAlert('Allegato salvato con successo!', 'success');
+            
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(modal).hide();
+                if (window.refreshAllegatiWidget) {
+                    window.refreshAllegatiWidget();
+                }
+            }, 1000);
+        }, 2000);
+    };
+});
+</script>

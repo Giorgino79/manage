@@ -1,0 +1,619 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+
+{% block title %}{{ form.instance.pk|yesno:"Modifica Manutenzione,Nuova Manutenzione" }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:manutenzione_list' %}">Manutenzioni</a></li>
+        {% if form.instance.pk %}
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:manutenzione_detail' form.instance.pk %}">{{ form.instance.descrizione|truncatewords:3 }}</a></li>
+        <li class="breadcrumb-item active">Modifica</li>
+        {% else %}
+        <li class="breadcrumb-item active">Nuova</li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con azioni -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-tools me-2"></i>{{ form.instance.pk|yesno:"Modifica Manutenzione,Nuova Manutenzione" }}
+            </h1>
+            <p class="text-muted mb-0">{{ form.instance.pk|yesno:"Aggiorna dati manutenzione esistente,Apertura nuova pratica di manutenzione" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'automezzi:manutenzione_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!-- Alert di stato -->
+                    {% if not form.instance.pk %}
+                    <div class="alert alert-info border-start border-info border-4">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle fa-2x text-info me-3"></i>
+                            <div>
+                                <h5 class="alert-heading mb-1">Nuova Pratica di Manutenzione</h5>
+                                <p class="mb-0">Stai aprendo una nuova manutenzione con stato <span class="badge bg-info">Aperta</span>. La pratica sarà seguita automaticamente da te e potrà essere presa in carico dal responsabile designato.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                        {% if form.instance.stato == 'aperta' %}
+                        <div class="alert alert-warning border-start border-warning border-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-clock fa-2x text-warning me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Manutenzione Aperta</h5>
+                                    <p class="mb-0">La manutenzione è in attesa di essere presa in carico dal responsabile.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif form.instance.stato == 'in_corso' %}
+                        <div class="alert alert-primary border-start border-primary border-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-cogs fa-2x text-primary me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Manutenzione in Corso</h5>
+                                    <p class="mb-0">Il lavoro è iniziato il {{ form.instance.data_inizio_manutenzione|date:"d/m/Y H:i" }}. Il responsabile può completare la pratica quando terminato.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif form.instance.stato == 'terminata' %}
+                        <div class="alert alert-success border-start border-success border-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle fa-2x text-success me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Manutenzione Completata</h5>
+                                    <p class="mb-0">La manutenzione è stata completata il {{ form.instance.data_completamento|date:"d/m/Y H:i" }}.</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Errori nella compilazione:</h5>
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs mb-4" id="manutenzioneTab" role="tablist" style="opacity: 1 !important; visibility: visible !important;">
+                            <li class="nav-item" role="presentation" style="opacity: 1 !important; visibility: visible !important;">
+                                <button class="nav-link active" id="general-tab" data-bs-toggle="tab"
+                                        data-bs-target="#general" type="button" role="tab" aria-selected="true"
+                                        style="display: inline-block !important; opacity: 1 !important; visibility: visible !important; color: #212529 !important; background-color: #ffffff !important; border: 2px solid #dee2e6 !important; border-bottom: 2px solid #ffffff !important; padding: 12px 20px !important; font-size: 15px !important; font-weight: 600 !important; cursor: pointer !important;">
+                                    <i class="fas fa-info-circle me-2" style="color: #0d6efd !important; opacity: 1 !important; visibility: visible !important;"></i>Informazioni Generali
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation" style="opacity: 1 !important; visibility: visible !important;">
+                                <button class="nav-link" id="details-tab" data-bs-toggle="tab"
+                                        data-bs-target="#details" type="button" role="tab" aria-selected="false"
+                                        style="display: inline-block !important; opacity: 1 !important; visibility: visible !important; color: #212529 !important; background-color: #e9ecef !important; border: 2px solid #dee2e6 !important; border-bottom: 2px solid #dee2e6 !important; padding: 12px 20px !important; font-size: 15px !important; font-weight: 500 !important; cursor: pointer !important;">
+                                    <i class="fas fa-clipboard-list me-2" style="color: #6c757d !important; opacity: 1 !important; visibility: visible !important;"></i>Dettagli Intervento
+                                </button>
+                            </li>
+                            {% if form.instance.pk %}
+                            <li class="nav-item" role="presentation" style="opacity: 1 !important; visibility: visible !important;">
+                                <button class="nav-link" id="status-tab" data-bs-toggle="tab"
+                                        data-bs-target="#status" type="button" role="tab" aria-selected="false"
+                                        style="display: inline-block !important; opacity: 1 !important; visibility: visible !important; color: #212529 !important; background-color: #e9ecef !important; border: 2px solid #dee2e6 !important; border-bottom: 2px solid #dee2e6 !important; padding: 12px 20px !important; font-size: 15px !important; font-weight: 500 !important; cursor: pointer !important;">
+                                    <i class="fas fa-tasks me-2" style="color: #6c757d !important; opacity: 1 !important; visibility: visible !important;"></i>Stato e Costi
+                                </button>
+                            </li>
+                            {% endif %}
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="manutenzioneTabContent">
+                            <!-- Informazioni Generali -->
+                            <div class="tab-pane fade show active" id="general" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.automezzo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-car me-2 text-primary"></i>Automezzo *
+                                            </label>
+                                            <select name="{{ form.automezzo.name }}" 
+                                                    class="form-select{% if form.automezzo.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.automezzo.id_for_label }}"
+                                                    required
+                                                    {% if form.instance.pk %}disabled{% endif %}>
+                                                <option value="">Seleziona automezzo...</option>
+                                                {% for value, label in form.automezzo.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.automezzo.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.automezzo.errors %}
+                                                <div class="invalid-feedback">{{ form.automezzo.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.pk %}
+                                                <div class="form-text">L'automezzo non può essere modificato dopo la creazione</div>
+                                                <input type="hidden" name="{{ form.automezzo.name }}" value="{{ form.automezzo.value }}">
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.data_prevista.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-calendar-alt me-2 text-warning"></i>Data Prevista Intervento *
+                                            </label>
+                                            <input type="date" name="{{ form.data_prevista.name }}" 
+                                                   class="form-control{% if form.data_prevista.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.data_prevista.id_for_label }}" 
+                                                   value="{{ form.data_prevista.value|default:'' }}"
+                                                   required>
+                                            {% if form.data_prevista.errors %}
+                                                <div class="invalid-feedback">{{ form.data_prevista.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% if form.instance.pk %}
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-clock me-2 text-info"></i>Data Apertura
+                                            </label>
+                                            <input type="text" class="form-control" value="{{ form.instance.data_apertura|date:'d/m/Y H:i' }}" readonly>
+                                            <div class="form-text">Apertura automatica della pratica</div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.fornitore.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-industry me-2 text-success"></i>Fornitore/Officina
+                                            </label>
+                                            <select name="{{ form.fornitore.name }}" 
+                                                    class="form-select{% if form.fornitore.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.fornitore.id_for_label }}">
+                                                <option value="">Seleziona fornitore...</option>
+                                                {% for value, label in form.fornitore.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.fornitore.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.fornitore.errors %}
+                                                <div class="invalid-feedback">{{ form.fornitore.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Officina o fornitore che eseguirà l'intervento</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.luogo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-map-marker-alt me-2 text-info"></i>Luogo Intervento
+                                            </label>
+                                            <input type="text" name="{{ form.luogo.name }}" 
+                                                   class="form-control{% if form.luogo.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.luogo.id_for_label }}" 
+                                                   value="{{ form.luogo.value|default:'' }}"
+                                                   placeholder="es: Officina ABC, Via Roma 10, Milano">
+                                            {% if form.luogo.errors %}
+                                                <div class="invalid-feedback">{{ form.luogo.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.responsabile.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-user-tie me-2 text-primary"></i>Responsabile
+                                            </label>
+                                            <select name="{{ form.responsabile.name }}" 
+                                                    class="form-select{% if form.responsabile.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.responsabile.id_for_label }}">
+                                                <option value="">Nessun responsabile designato...</option>
+                                                {% for value, label in form.responsabile.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.responsabile.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.responsabile.errors %}
+                                                <div class="invalid-feedback">{{ form.responsabile.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Chi si occuperà di portare il mezzo e gestire l'intervento</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dettagli Intervento -->
+                            <div class="tab-pane fade" id="details" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="{{ form.descrizione.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-clipboard-list me-2 text-primary"></i>Descrizione Intervento *
+                                            </label>
+                                            <textarea name="{{ form.descrizione.name }}" 
+                                                      class="form-control{% if form.descrizione.errors %} is-invalid{% endif %}"
+                                                      id="{{ form.descrizione.id_for_label }}" 
+                                                      rows="5" 
+                                                      required
+                                                      placeholder="Descrivi dettagliatamente il tipo di manutenzione da eseguire...">{{ form.descrizione.value|default:'' }}</textarea>
+                                            {% if form.descrizione.errors %}
+                                                <div class="invalid-feedback">{{ form.descrizione.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Specifica il tipo di intervento, i componenti da controllare/sostituire, eventuali problemi riscontrati</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.allegati.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-paperclip me-2 text-success"></i>Allegati Iniziali
+                                            </label>
+                                            <input type="file" name="{{ form.allegati.name }}" 
+                                                   class="form-control{% if form.allegati.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.allegati.id_for_label }}" 
+                                                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                            {% if form.allegati.errors %}
+                                                <div class="invalid-feedback">{{ form.allegati.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.allegati %}
+                                                <div class="form-text">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    <a href="{{ form.instance.allegati.url }}" target="_blank">File attuale</a>
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">Preventivi, foto del problema, documentazione tecnica (PDF, DOC, JPG, PNG)</div>
+                                        </div>
+
+                                        <!-- Info Box -->
+                                        <div class="alert alert-light border">
+                                            <h6><i class="fas fa-lightbulb me-2 text-warning"></i>Suggerimenti per la descrizione:</h6>
+                                            <ul class="mb-0">
+                                                <li><strong>Manutenzione ordinaria:</strong> Controllo olio, filtri, freni, gomme</li>
+                                                <li><strong>Riparazione:</strong> Specificare il componente danneggiato e i sintomi</li>
+                                                <li><strong>Revisione:</strong> Indicare data scadenza e eventuali problemi da controllare</li>
+                                                <li><strong>Sostituzione:</strong> Elencare i componenti da sostituire e il motivo</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stato e Costi (solo in modifica) -->
+                            {% if form.instance.pk %}
+                            <div class="tab-pane fade" id="status" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="text-primary border-bottom pb-2 mb-3">
+                                            <i class="fas fa-tasks me-2"></i>Gestione Stato
+                                        </h5>
+
+                                        {% if 'stato' in form.fields %}
+                                        <div class="mb-3">
+                                            <label for="{{ form.stato.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-flag me-2 text-warning"></i>Stato Manutenzione
+                                            </label>
+                                            <select name="{{ form.stato.name }}" 
+                                                    class="form-select{% if form.stato.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.stato.id_for_label }}">
+                                                {% for value, label in form.stato.field.choices %}
+                                                    <option value="{{ value }}" 
+                                                            {% if form.stato.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.stato.errors %}
+                                                <div class="invalid-feedback">{{ form.stato.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+
+                                        {% if 'seguito_da' in form.fields %}
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-user-check me-2 text-info"></i>Seguito da
+                                            </label>
+                                            <input type="text" class="form-control" 
+                                                   value="{{ form.instance.seguito_da.get_full_name|default:form.instance.seguito_da.username }}" 
+                                                   readonly>
+                                            <div class="form-text">Utente che ha aperto la pratica (non modificabile)</div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <h5 class="text-success border-bottom pb-2 mb-3">
+                                            <i class="fas fa-euro-sign me-2"></i>Costi
+                                        </h5>
+
+                                        {% if 'costo' in form.fields %}
+                                        <div class="mb-3">
+                                            <label for="{{ form.costo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-calculator me-2 text-success"></i>Costo (€)
+                                                {% if form.instance.stato == 'terminata' %}<span class="text-danger">*</span>{% endif %}
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">€</span>
+                                                <input type="number" name="{{ form.costo.name }}" 
+                                                       class="form-control{% if form.costo.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.costo.id_for_label }}" 
+                                                       value="{{ form.costo.value|default:'' }}"
+                                                       step="0.01" min="0" placeholder="0.00"
+                                                       {% if form.instance.stato == 'terminata' %}required{% endif %}>
+                                                {% if form.costo.errors %}
+                                                    <div class="invalid-feedback">{{ form.costo.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            {% if form.instance.stato == 'terminata' %}
+                                                <div class="form-text text-danger">Il costo è obbligatorio per manutenzioni terminate</div>
+                                            {% else %}
+                                                <div class="form-text">Inserire il costo quando la manutenzione è completata</div>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+
+                                        <!-- Stato Timeline -->
+                                        <div class="alert alert-light">
+                                            <h6><i class="fas fa-history me-2"></i>Timeline Manutenzione</h6>
+                                            <div class="timeline-simple">
+                                                <div class="timeline-item completed">
+                                                    <i class="fas fa-play-circle text-success"></i>
+                                                    <span>Aperta: {{ form.instance.data_apertura|date:"d/m H:i" }}</span>
+                                                </div>
+                                                {% if form.instance.data_inizio_manutenzione %}
+                                                <div class="timeline-item completed">
+                                                    <i class="fas fa-cogs text-primary"></i>
+                                                    <span>Iniziata: {{ form.instance.data_inizio_manutenzione|date:"d/m H:i" }}</span>
+                                                </div>
+                                                {% endif %}
+                                                {% if form.instance.data_completamento %}
+                                                <div class="timeline-item completed">
+                                                    <i class="fas fa-check-circle text-success"></i>
+                                                    <span>Completata: {{ form.instance.data_completamento|date:"d/m H:i" }}</span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'automezzi:manutenzione_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Annulla
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>{{ form.instance.pk|yesno:"Aggiorna Manutenzione,Apri Manutenzione" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestione stato e costo
+    const statoField = document.getElementById('{{ form.stato.id_for_label }}');
+    const costoField = document.getElementById('{{ form.costo.id_for_label }}');
+    
+    if (statoField && costoField) {
+        statoField.addEventListener('change', function() {
+            if (this.value === 'terminata') {
+                costoField.required = true;
+                costoField.closest('.mb-3').querySelector('.form-text').textContent = 'Il costo è obbligatorio per manutenzioni terminate';
+                costoField.closest('.mb-3').querySelector('.form-text').className = 'form-text text-danger';
+            } else {
+                costoField.required = false;
+                costoField.closest('.mb-3').querySelector('.form-text').textContent = 'Inserire il costo quando la manutenzione è completata';
+                costoField.closest('.mb-3').querySelector('.form-text').className = 'form-text';
+            }
+        });
+    }
+
+    // Validazione data prevista
+    const dataField = document.getElementById('{{ form.data_prevista.id_for_label }}');
+    if (dataField) {
+        dataField.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                this.setCustomValidity('La data prevista non può essere nel passato');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    // Evidenzia tab con errori
+    function highlightTabsWithErrors() {
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        tabPanes.forEach(pane => {
+            const hasErrors = pane.querySelector('.is-invalid');
+            const tabButton = document.querySelector(`[data-bs-target="#${pane.id}"]`);
+            if (hasErrors && tabButton) {
+                tabButton.classList.add('text-danger');
+                tabButton.innerHTML = tabButton.innerHTML + ' <i class="fas fa-exclamation-circle"></i>';
+            }
+        });
+    }
+
+    highlightTabsWithErrors();
+
+    // Gestione stile tab al clic
+    const tabButtons = document.querySelectorAll('#manutenzioneTab button[data-bs-toggle="tab"]');
+    tabButtons.forEach(button => {
+        button.addEventListener('shown.bs.tab', function(e) {
+            // Reset tutti i tab
+            tabButtons.forEach(btn => {
+                btn.style.backgroundColor = '#e9ecef';
+                btn.style.borderBottom = '2px solid #dee2e6';
+                btn.style.fontWeight = '500';
+                const icon = btn.querySelector('i');
+                if (icon) icon.style.color = '#6c757d';
+            });
+
+            // Attiva il tab cliccato
+            this.style.backgroundColor = '#ffffff';
+            this.style.borderBottom = '2px solid #ffffff';
+            this.style.fontWeight = '600';
+            const icon = this.querySelector('i');
+            if (icon) icon.style.color = '#0d6efd';
+        });
+    });
+});
+</script>
+
+<style>
+.timeline-simple .timeline-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.timeline-simple .timeline-item i {
+    margin-right: 8px;
+    width: 16px;
+}
+
+.timeline-simple .timeline-item.completed {
+    opacity: 1;
+}
+
+.border-start {
+    border-left: 4px solid !important;
+}
+
+/* DEBUG e FIX per visibilità tab */
+
+/* Forza visibilità su TUTTI gli elementi dentro i tab */
+ul#manutenzioneTab,
+ul#manutenzioneTab *,
+ul#manutenzioneTab li,
+ul#manutenzioneTab button,
+ul#manutenzioneTab i {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+/* Stile button dei tab con MASSIMA specificità */
+ul#manutenzioneTab li.nav-item button.nav-link,
+button#general-tab,
+button#details-tab,
+button#status-tab {
+    /* Layout */
+    display: inline-block !important;
+    position: relative !important;
+    z-index: 100 !important;
+
+    /* COLORI CON CONTRASTO ESTREMO */
+    color: #FF0000 !important; /* ROSSO per debug - deve essere visibile */
+    background: #FFFF00 !important; /* GIALLO per debug */
+    background-color: #FFFF00 !important;
+
+    /* Bordi */
+    border: 5px solid #000000 !important;
+    border-radius: 8px 8px 0 0 !important;
+
+    /* Dimensioni */
+    min-width: 150px !important;
+    min-height: 50px !important;
+    padding: 15px 25px !important;
+    margin: 0 5px 0 0 !important;
+
+    /* Testo */
+    font-family: Arial, sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    line-height: 1.5 !important;
+    text-align: center !important;
+    text-decoration: none !important;
+
+    /* Visibilità ASSOLUTA */
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: visible !important;
+
+    /* Interattività */
+    pointer-events: auto !important;
+    cursor: pointer !important;
+
+    /* Reset trasformazioni */
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+    filter: none !important;
+    clip: auto !important;
+    clip-path: none !important;
+}
+
+/* Testo e icone dentro i button */
+ul#manutenzioneTab button *,
+ul#manutenzioneTab button i,
+ul#manutenzioneTab button i.fas {
+    color: #FF0000 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline !important;
+}
+
+/* Hover */
+ul#manutenzioneTab li.nav-item button.nav-link:hover,
+button#general-tab:hover,
+button#details-tab:hover,
+button#status-tab:hover {
+    color: #000000 !important;
+    background: #00FF00 !important;
+    background-color: #00FF00 !important;
+    border-color: #000000 !important;
+}
+
+/* Active */
+ul#manutenzioneTab li.nav-item button.nav-link.active,
+button#general-tab.active,
+button#details-tab.active,
+button#status-tab.active {
+    color: #0000FF !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    border-color: #0000FF !important;
+    border-width: 5px 5px 0 5px !important;
+}
+</style>
+{% endblock %}

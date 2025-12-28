@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+
+{% block title %}{{ form.instance.pk|yesno:"Modifica Rifornimento,Nuovo Rifornimento" }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:rifornimento_list' %}">Rifornimenti</a></li>
+        {% if form.instance.pk %}
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:rifornimento_detail' form.instance.pk %}">{{ form.instance.automezzo.targa }} - {{ form.instance.data|date:"d/m/Y" }}</a></li>
+        <li class="breadcrumb-item active">Modifica</li>
+        {% else %}
+        <li class="breadcrumb-item active">Nuovo</li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con azioni -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-gas-pump me-2"></i>{{ form.instance.pk|yesno:"Modifica Rifornimento,Nuovo Rifornimento" }}
+            </h1>
+            <p class="text-muted mb-0">{{ form.instance.pk|yesno:"Modifica dati rifornimento esistente,Registrazione nuovo rifornimento carburante" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'automezzi:rifornimento_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Errori nella compilazione:</h5>
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs mb-4" id="rifornimentoTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="general-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#general" type="button" role="tab">
+                                    <i class="fas fa-info-circle me-2"></i>Informazioni Generali
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="details-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#details" type="button" role="tab">
+                                    <i class="fas fa-calculator me-2"></i>Dati Rifornimento
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="documents-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#documents" type="button" role="tab">
+                                    <i class="fas fa-receipt me-2"></i>Documentazione
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="rifornimentoTabContent">
+                            <!-- Informazioni Generali -->
+                            <div class="tab-pane fade show active" id="general" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.automezzo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-car me-2 text-primary"></i>Automezzo *
+                                            </label>
+                                            <select name="{{ form.automezzo.name }}" 
+                                                    class="form-select{% if form.automezzo.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.automezzo.id_for_label }}"
+                                                    required>
+                                                <option value="">Seleziona automezzo...</option>
+                                                {% for value, label in form.automezzo.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.automezzo.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.automezzo.errors %}
+                                                <div class="invalid-feedback">{{ form.automezzo.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Veicolo che ha effettuato il rifornimento</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.data.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-calendar-alt me-2 text-warning"></i>Data Rifornimento *
+                                            </label>
+                                            <input type="date" name="{{ form.data.name }}" 
+                                                   class="form-control{% if form.data.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.data.id_for_label }}" 
+                                                   value="{{ form.data.value|default:'' }}"
+                                                   required>
+                                            {% if form.data.errors %}
+                                                <div class="invalid-feedback">{{ form.data.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% if form.instance.pk %}
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-clock me-2 text-info"></i>Data Inserimento
+                                            </label>
+                                            <input type="text" class="form-control" value="{{ form.instance.created_at|date:'d/m/Y H:i'|default:'Non disponibile' }}" readonly>
+                                            <div class="form-text">Registrazione automatica</div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.chilometri.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-tachometer-alt me-2 text-success"></i>Chilometri al Rifornimento
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="number" name="{{ form.chilometri.name }}" 
+                                                       class="form-control{% if form.chilometri.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.chilometri.id_for_label }}" 
+                                                       value="{{ form.chilometri.value|default:'' }}"
+                                                       min="0" placeholder="0">
+                                                <span class="input-group-text">km</span>
+                                                {% if form.chilometri.errors %}
+                                                    <div class="invalid-feedback">{{ form.chilometri.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="form-text">Lettura chilometraggio al momento del rifornimento</div>
+                                        </div>
+
+                                        <!-- Info utili per calcoli -->
+                                        <div class="alert alert-light border">
+                                            <h6><i class="fas fa-calculator me-2 text-info"></i>Calcoli Automatici</h6>
+                                            <small class="text-muted">
+                                                • <strong>Prezzo al litro:</strong> <span id="prezzoLitro">-</span><br>
+                                                • <strong>Consumo stimato:</strong> <span id="consumoStimato">-</span><br>
+                                                • <strong>Km dall'ultimo:</strong> <span id="kmUltimo">-</span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dati Rifornimento -->
+                            <div class="tab-pane fade" id="details" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="text-primary border-bottom pb-2 mb-3">
+                                            <i class="fas fa-gas-pump me-2"></i>Quantità e Costi
+                                        </h5>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.litri.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-fill-drip me-2 text-info"></i>Litri Erogati *
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="number" name="{{ form.litri.name }}" 
+                                                       class="form-control{% if form.litri.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.litri.id_for_label }}" 
+                                                       value="{{ form.litri.value|default:'' }}"
+                                                       step="0.01" min="0" placeholder="0.00" required>
+                                                <span class="input-group-text">L</span>
+                                                {% if form.litri.errors %}
+                                                    <div class="invalid-feedback">{{ form.litri.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.costo_totale.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-euro-sign me-2 text-success"></i>Costo Totale *
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">€</span>
+                                                <input type="number" name="{{ form.costo_totale.name }}" 
+                                                       class="form-control{% if form.costo_totale.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.costo_totale.id_for_label }}" 
+                                                       value="{{ form.costo_totale.value|default:'' }}"
+                                                       step="0.01" min="0" placeholder="0.00" required>
+                                                {% if form.costo_totale.errors %}
+                                                    <div class="invalid-feedback">{{ form.costo_totale.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <h5 class="text-warning border-bottom pb-2 mb-3">
+                                            <i class="fas fa-chart-line me-2"></i>Statistiche
+                                        </h5>
+
+                                        <!-- Calcolo prezzo unitario -->
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="fas fa-tag me-2 text-info"></i>Prezzo al Litro
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">€</span>
+                                                <input type="text" class="form-control" id="prezzoUnitario" readonly placeholder="0.000">
+                                                <span class="input-group-text">/L</span>
+                                            </div>
+                                            <div class="form-text">Calcolato automaticamente</div>
+                                        </div>
+
+                                        <!-- Info Box -->
+                                        <div class="alert alert-info">
+                                            <h6><i class="fas fa-lightbulb me-2"></i>Suggerimenti:</h6>
+                                            <ul class="mb-0 small">
+                                                <li>Registra sempre il rifornimento subito dopo averlo effettuato</li>
+                                                <li>Controlla che i chilometri siano progressivi</li>
+                                                <li>Conserva lo scontrino per eventuali rimborsi</li>
+                                                <li>Il prezzo al litro viene calcolato automaticamente</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Documentazione -->
+                            <div class="tab-pane fade" id="documents" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-8 mx-auto">
+                                        <div class="mb-3">
+                                            <label for="{{ form.scontrino.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-receipt me-2 text-primary"></i>Scontrino/Ricevuta
+                                            </label>
+                                            <input type="file" name="{{ form.scontrino.name }}" 
+                                                   class="form-control{% if form.scontrino.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.scontrino.id_for_label }}" 
+                                                   accept=".pdf,.jpg,.jpeg,.png">
+                                            {% if form.scontrino.errors %}
+                                                <div class="invalid-feedback">{{ form.scontrino.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.scontrino %}
+                                                <div class="form-text">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    <a href="{{ form.instance.scontrino.url }}" target="_blank">File attuale</a>
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">Upload dello scontrino per documentazione e rimborsi</div>
+                                        </div>
+
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Formati supportati:</strong> PDF, JPG, JPEG, PNG<br>
+                                            <strong>Dimensione massima:</strong> 10MB<br>
+                                            <strong>Consiglio:</strong> Fotografa o scansiona lo scontrino in buona qualità
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'automezzi:rifornimento_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Annulla
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>{{ form.instance.pk|yesno:"Aggiorna Rifornimento,Registra Rifornimento" }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcolo prezzo al litro in tempo reale
+    const litriField = document.getElementById('{{ form.litri.id_for_label }}');
+    const costoField = document.getElementById('{{ form.costo_totale.id_for_label }}');
+    const prezzoUnitarioField = document.getElementById('prezzoUnitario');
+    const prezzoLitroSpan = document.getElementById('prezzoLitro');
+    
+    function calcolaPrezzoLitro() {
+        const litri = parseFloat(litriField.value) || 0;
+        const costo = parseFloat(costoField.value) || 0;
+        
+        if (litri > 0 && costo > 0) {
+            const prezzoLitro = (costo / litri).toFixed(3);
+            prezzoUnitarioField.value = prezzoLitro;
+            prezzoLitroSpan.textContent = `€${prezzoLitro}/L`;
+        } else {
+            prezzoUnitarioField.value = '';
+            prezzoLitroSpan.textContent = '-';
+        }
+    }
+    
+    if (litriField && costoField) {
+        litriField.addEventListener('input', calcolaPrezzoLitro);
+        costoField.addEventListener('input', calcolaPrezzoLitro);
+        
+        // Calcolo iniziale
+        calcolaPrezzoLitro();
+    }
+
+    // Validazione data
+    const dataField = document.getElementById('{{ form.data.id_for_label }}');
+    if (dataField) {
+        dataField.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            today.setHours(23, 59, 59, 999); // Fine giornata corrente
+            
+            if (selectedDate > today) {
+                this.setCustomValidity('La data del rifornimento non può essere nel futuro');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    // Validazione chilometri progressivi (se disponibile dato precedente)
+    const kmField = document.getElementById('{{ form.chilometri.id_for_label }}');
+    if (kmField) {
+        kmField.addEventListener('blur', function() {
+            const km = parseInt(this.value) || 0;
+            if (km > 0) {
+                // Qui potresti aggiungere una validazione AJAX per controllare 
+                // che i km siano superiori all'ultimo rifornimento
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    }
+
+    // Evidenzia tab con errori
+    function highlightTabsWithErrors() {
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        tabPanes.forEach(pane => {
+            const hasErrors = pane.querySelector('.is-invalid');
+            const tabButton = document.querySelector(`[data-bs-target="#${pane.id}"]`);
+            if (hasErrors && tabButton) {
+                tabButton.classList.add('text-danger');
+                tabButton.innerHTML = tabButton.innerHTML + ' <i class="fas fa-exclamation-circle"></i>';
+            }
+        });
+    }
+
+    highlightTabsWithErrors();
+});
+</script>
+{% endblock %}

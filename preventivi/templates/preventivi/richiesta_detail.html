@@ -1,0 +1,778 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ richiesta.numero }} - Dettaglio Richiesta{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Card e sezioni */
+.detail-card {
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+/* Header */
+.request-header {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.request-number {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+    color: #212529;
+}
+
+.request-title {
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+/* Badge stato */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
+/* Step indicator - minimal */
+.workflow-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0.5rem 0;
+    padding: 0 0.5rem;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+
+.step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: #e9ecef;
+    color: #6c757d;
+    border: 2px solid #e9ecef;
+    z-index: 2;
+}
+
+.step.completed .step-circle {
+    background: #198754;
+    border-color: #198754;
+    color: white;
+}
+
+.step.current .step-circle {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.step-label {
+    margin-top: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.step-line {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    right: -50%;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+.step.completed .step-line {
+    background: #198754;
+}
+
+.step:last-child .step-line {
+    display: none;
+}
+
+/* Info grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.info-label {
+    font-size: 0.7rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.info-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+/* Fornitori table */
+.fornitori-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+}
+
+.fornitori-table thead th {
+    background: #f8f9fa;
+    padding: 0.4rem 0.6rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.fornitori-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background 0.2s;
+}
+
+.fornitori-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.fornitori-table tbody td {
+    padding: 0.5rem 0.6rem;
+}
+
+.fornitore-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.fornitore-badge.responded {
+    background: #d1e7dd;
+    color: #0f5132;
+}
+
+.fornitore-badge.pending {
+    background: #fff3cd;
+    color: #664d03;
+}
+
+.fornitore-badge.evaluated {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+/* Parametri */
+.parametro-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 0.3rem;
+    font-size: 0.8rem;
+}
+
+.parametro-name {
+    font-weight: 500;
+    flex: 1;
+}
+
+.parametro-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.parametro-peso {
+    background: #0d6efd;
+    color: white;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.7rem;
+}
+
+.parametro-tipo {
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+.tipo-importo { background: #e7f1ff; color: #0d6efd; }
+.tipo-numero { background: #d1e7dd; color: #198754; }
+.tipo-stella { background: #fff3cd; color: #b45309; }
+.tipo-percentuale { background: #f0e6ff; color: #6610f2; }
+.tipo-testo { background: #e9ecef; color: #6c757d; }
+
+/* Ranking */
+.ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s;
+}
+
+.ranking-item:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.ranking-item.first {
+    background: #fffbf0;
+    border-color: #ffd700;
+}
+
+.ranking-item.second {
+    background: #f8f9fa;
+    border-color: #c0c0c0;
+}
+
+.ranking-item.third {
+    background: #fff5ed;
+    border-color: #cd7f32;
+}
+
+.ranking-position {
+    font-size: 1.1rem;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: center;
+    color: #495057;
+}
+
+.ranking-details {
+    flex: 1;
+}
+
+.ranking-fornitore {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.1rem;
+}
+
+.ranking-importo {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #198754;
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #198754;
+    border: 2px solid white;
+    box-shadow: 0 0 0 1px #198754;
+}
+
+.timeline-item.pending::before {
+    background: #6c757d;
+    box-shadow: 0 0 0 1px #6c757d;
+}
+
+.timeline-date {
+    font-size: 0.7rem;
+    color: #6c757d;
+    margin-bottom: 0.1rem;
+}
+
+.timeline-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: 0.1rem;
+}
+
+.timeline-content {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-steps {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .step-line {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block page_title %}Dettaglio Richiesta Preventivo{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i class="fas fa-file-invoice-dollar me-1"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item active">{{ richiesta.numero }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="request-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="request-number">{{ richiesta.numero }}</div>
+                <div class="request-title">{{ richiesta.titolo }}</div>
+            </div>
+            <span class="status-badge
+                {% if richiesta.stato == 'RICHIESTO' %}bg-primary
+                {% elif richiesta.stato == 'COMPLETATO' %}bg-warning
+                {% elif richiesta.stato == 'APPROVATO' %}bg-success
+                {% elif richiesta.stato == 'ANNULLATO' %}bg-danger
+                {% else %}bg-secondary
+                {% endif %}">
+                <i class="fas fa-circle"></i>
+                {{ richiesta.get_stato_display }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Workflow Steps -->
+    <div class="detail-card">
+        <div class="workflow-steps">
+            <div class="step {% if richiesta.stato != 'CREATO' %}completed{% elif richiesta.stato == 'CREATO' %}current{% endif %}">
+                <div class="step-circle">
+                    {% if richiesta.stato != 'CREATO' %}<i class="fas fa-check"></i>{% else %}1{% endif %}
+                </div>
+                <div class="step-label">Creazione</div>
+                <div class="step-line"></div>
+            </div>
+            <div class="step {% if richiesta.stato == 'PREVENTIVI_RACCOLTI' or richiesta.stato == 'IN_VALUTAZIONE' or richiesta.stato == 'APPROVATO' %}completed{% elif richiesta.stato == 'INVIATO_FORNITORI' %}current{% endif %}">
+                <div class="step-circle">
+                    {% if richiesta.stato == 'PREVENTIVI_RACCOLTI' or richiesta.stato == 'IN_VALUTAZIONE' or richiesta.stato == 'APPROVATO' %}<i class="fas fa-check"></i>{% else %}2{% endif %}
+                </div>
+                <div class="step-label">Raccolta Preventivi</div>
+                <div class="step-line"></div>
+            </div>
+            <div class="step {% if richiesta.stato == 'APPROVATO' %}completed{% elif richiesta.stato == 'IN_VALUTAZIONE' %}current{% endif %}">
+                <div class="step-circle">
+                    {% if richiesta.stato == 'APPROVATO' %}<i class="fas fa-check"></i>{% else %}3{% endif %}
+                </div>
+                <div class="step-label">Valutazione e Approvazione</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="detail-card">
+        <div class="section-title">
+            <i class="fas fa-info-circle"></i>
+            Informazioni Generali
+        </div>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Richiedente</span>
+                <span class="info-value">{{ richiesta.richiedente.get_full_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Data Creazione</span>
+                <span class="info-value">{{ richiesta.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Scadenza</span>
+                <span class="info-value">{{ richiesta.data_scadenza|date:"d/m/Y" }}</span>
+            </div>
+            {% if richiesta.budget_massimo %}
+            <div class="info-item">
+                <span class="info-label">Budget Massimo</span>
+                <span class="info-value text-success">€{{ richiesta.budget_massimo|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <span class="info-label">Risposte</span>
+                <span class="info-value">{{ richiesta.fornitori_risposto }}/{{ richiesta.fornitori_totali }} fornitori</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="detail-card">
+        <div class="section-title">
+            <i class="fas fa-bolt"></i>
+            Azioni Disponibili
+        </div>
+        <div class="action-buttons">
+            {% if richiesta.stato == 'CREATO' %}
+                {% if richiesta.può_essere_inviato %}
+                    <a href="{% url 'preventivi:step1_invia_fornitori' richiesta.pk %}" class="btn btn-primary">
+                        <i class="fas fa-paper-plane me-2"></i>Step 1: Invia ai Fornitori
+                    </a>
+                {% else %}
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Impossibile procedere: dati mancanti o incompleti
+                    </div>
+                {% endif %}
+            {% elif richiesta.stato == 'INVIATO_FORNITORI' %}
+                {% if user == richiesta.operatore or user.is_staff %}
+                    <a href="{% url 'preventivi:step2_raccolta' richiesta.pk %}" class="btn btn-info">
+                        <i class="fas fa-inbox me-2"></i>Step 2: Raccogli Preventivi
+                    </a>
+                    <a href="{% url 'preventivi:preventivo_create' richiesta.pk %}" class="btn btn-success">
+                        <i class="fas fa-plus-circle me-2"></i>Aggiungi Preventivo
+                    </a>
+                {% endif %}
+            {% elif richiesta.stato == 'PREVENTIVI_RACCOLTI' %}
+                {% if user.is_staff %}
+                    <a href="{% url 'preventivi:step3_valutazione' richiesta.pk %}" class="btn btn-warning">
+                        <i class="fas fa-balance-scale me-2"></i>Step 3: Valuta e Approva
+                    </a>
+                {% endif %}
+            {% elif richiesta.stato == 'IN_VALUTAZIONE' %}
+                {% if user == richiesta.approvatore or user.is_staff %}
+                    <a href="{% url 'preventivi:step3_valutazione' richiesta.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>Modifica Valutazione
+                    </a>
+                {% endif %}
+            {% elif richiesta.stato == 'APPROVATO' %}
+                <div class="alert alert-success mb-0 d-flex align-items-center">
+                    <i class="fas fa-check-circle fa-2x me-3"></i>
+                    <div>
+                        <strong>Preventivo Approvato</strong><br>
+                        <span class="text-muted">{{ richiesta.preventivo_approvato.fornitore.nome }} - €{{ richiesta.preventivo_approvato.importo_totale|floatformat:2 }}</span>
+                    </div>
+                </div>
+            {% endif %}
+            <a href="{% url 'preventivi:richieste_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Fornitori -->
+        <div class="col-lg-8">
+            <div class="detail-card">
+                <div class="section-title">
+                    <i class="fas fa-users"></i>
+                    Fornitori ({{ fornitori_status|length }})
+                </div>
+                <div class="table-responsive">
+                    <table class="fornitori-table">
+                        <thead>
+                            <tr>
+                                <th>Fornitore</th>
+                                <th>Stato Email</th>
+                                <th>Preventivo</th>
+                                <th>Termini Pagamento</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for status in fornitori_status %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ status.fornitore_preventivo.fornitore.nome }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if status.fornitore_preventivo.email_inviata %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>
+                                                Inviata {{ status.fornitore_preventivo.data_invio|date:"d/m" }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>
+                                                Non inviata
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if status.preventivo %}
+                                            <strong class="text-success">€{{ status.preventivo.importo_totale|floatformat:2 }}</strong>
+                                        {% else %}
+                                            <span class="fornitore-badge pending">
+                                                <i class="fas fa-clock"></i>
+                                                In attesa ({{ status.fornitore_preventivo.giorni_senza_risposta }} giorni)
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if status.preventivo %}
+                                            {{ status.preventivo.termini_pagamento|truncatechars:20 }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if status.valutato %}
+                                            <span class="fornitore-badge evaluated">
+                                                <i class="fas fa-check-double"></i>
+                                                Valutato
+                                            </span>
+                                            {% if status.preventivo %}
+                                                <a href="{% url 'preventivi:preventivo_valuta' status.preventivo.pk %}" class="btn btn-sm btn-outline-primary ms-2">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                        {% elif status.preventivo %}
+                                            <a href="{% url 'preventivi:preventivo_valuta' status.preventivo.pk %}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-balance-scale me-1"></i>Valuta
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parametri -->
+        <div class="col-lg-4">
+            <div class="detail-card">
+                <div class="section-title">
+                    <i class="fas fa-sliders-h"></i>
+                    Parametri di Valutazione ({{ parametri|length }})
+                </div>
+                {% if parametri %}
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        {% for parametro in parametri %}
+                            <div class="parametro-item">
+                                <div class="parametro-name">
+                                    {{ parametro.titolo }}
+                                    {% if parametro.migliore_valore_alto %}
+                                        <i class="fas fa-arrow-up text-success" title="Valore alto è migliore"></i>
+                                    {% else %}
+                                        <i class="fas fa-arrow-down text-danger" title="Valore basso è migliore"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="parametro-meta">
+                                    <span class="parametro-tipo tipo-{{ parametro.tipo_valore|lower }}">
+                                        {{ parametro.get_tipo_valore_display }}
+                                    </span>
+                                    <span class="parametro-peso">{{ parametro.peso_percentuale }}%</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                        <p>Nessun parametro definito</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking -->
+    {% if ranking_preventivi %}
+    <div class="detail-card">
+        <div class="section-title">
+            <i class="fas fa-trophy"></i>
+            Ranking Preventivi
+        </div>
+        {% for item in ranking_preventivi %}
+            <div class="ranking-item {% if forloop.first %}first{% elif forloop.counter == 2 %}second{% elif forloop.counter == 3 %}third{% endif %}">
+                <div class="ranking-position">
+                    {{ forloop.counter }}
+                </div>
+                <div class="ranking-details">
+                    <div class="ranking-fornitore">
+                        {{ item.preventivo.fornitore.nome }}
+                        {% if richiesta.preventivo_approvato == item.preventivo %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check-circle"></i> Approvato
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="ranking-importo">€{{ item.preventivo.importo_totale|floatformat:2 }}</div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Timeline e Note -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="detail-card">
+                <div class="section-title">
+                    <i class="fas fa-history"></i>
+                    Timeline Eventi
+                </div>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">{{ richiesta.created_at|date:"d/m/Y H:i" }}</div>
+                        <div class="timeline-title">Richiesta Creata</div>
+                        <div class="timeline-content">Da {{ richiesta.richiedente.get_full_name }}</div>
+                    </div>
+                    {% if richiesta.data_completamento %}
+                        <div class="timeline-item">
+                            <div class="timeline-date">{{ richiesta.data_completamento|date:"d/m/Y H:i" }}</div>
+                            <div class="timeline-title">Preventivi Completati</div>
+                            <div class="timeline-content">Tutti i preventivi raccolti</div>
+                        </div>
+                    {% endif %}
+                    {% if richiesta.data_approvazione %}
+                        <div class="timeline-item">
+                            <div class="timeline-date">{{ richiesta.data_approvazione|date:"d/m/Y H:i" }}</div>
+                            <div class="timeline-title text-success">Preventivo Approvato</div>
+                            <div class="timeline-content">
+                                Da {{ richiesta.approvatore.get_full_name }}
+                                {% if richiesta.preventivo_approvato %}
+                                    <br><strong>{{ richiesta.preventivo_approvato.fornitore.nome }}</strong>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if richiesta.stato == 'RICHIESTO' %}
+                        <div class="timeline-item pending">
+                            <div class="timeline-date">Scadenza: {{ richiesta.data_scadenza|date:"d/m/Y" }}</div>
+                            <div class="timeline-title text-muted">In Attesa Risposte</div>
+                            <div class="timeline-content">Attendere preventivi dai fornitori</div>
+                        </div>
+                    {% elif richiesta.stato == 'COMPLETATO' %}
+                        <div class="timeline-item pending">
+                            <div class="timeline-date">In sospeso</div>
+                            <div class="timeline-title text-muted">Da Approvare</div>
+                            <div class="timeline-content">
+                                {% if richiesta.approvatore %}
+                                    In attesa di approvazione da {{ richiesta.approvatore.get_full_name }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if richiesta.note_interne %}
+        <div class="col-lg-6">
+            <div class="detail-card">
+                <div class="section-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Note Interne
+                </div>
+                <div class="alert alert-info mb-0">
+                    {{ richiesta.note_interne|linebreaks }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons if available
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
+</script>
+{% endblock %}

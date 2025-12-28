@@ -1,0 +1,394 @@
+<!-- 
+ALLEGATO DETAIL - Template per visualizzazione dettaglio allegato
+==================================================================
+
+Template specifico per visualizzare i dettagli di un singolo allegato.
+Include preview, metadati completi e azioni.
+
+Context variables:
+- allegato: Oggetto Allegato
+- object: Oggetto collegato
+- can_edit/can_delete: Permessi
+
+Usage:
+    Utilizzato dalle views di dettaglio allegato
+-->
+
+{% extends 'base.html' %}
+{% load static %}
+{% load allegati_tags %}
+
+{% block title %}{{ allegato.titolo }} - Allegato{% endblock %}
+
+{% block extra_css %}
+<style>
+.allegato-detail-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.allegato-metadata .metadata-item {
+    border-bottom: 1px solid #eee;
+    padding: 0.75rem 0;
+}
+
+.allegato-metadata .metadata-item:last-child {
+    border-bottom: none;
+}
+
+.file-preview {
+    max-height: 600px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.file-preview img {
+    max-width: 100%;
+    height: auto;
+}
+
+.file-preview iframe {
+    width: 100%;
+    height: 600px;
+    border: none;
+}
+
+.download-stats {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header Allegato -->
+<div class="allegato-detail-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="{% allegato_icon allegato.tipo_allegato %} fa-2x me-3"></i>
+                    <div>
+                        <h1 class="h3 mb-0">{{ allegato.titolo }}</h1>
+                        <p class="mb-0 opacity-75">
+                            {{ allegato.get_tipo_allegato_display }}
+                            {% if allegato.dimensione_file %}
+                                • {{ allegato.dimensione_file|filesize_human }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if allegato.descrizione %}
+                    <p class="mb-0 opacity-90">{{ allegato.descrizione }}</p>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="btn-group" role="group">
+                    <!-- Pulsante Download -->
+                    {% if allegato.file %}
+                        <a href="{{ allegato.file.url }}" download 
+                           class="btn btn-light">
+                            <i class="fas fa-download me-1"></i>
+                            Scarica
+                        </a>
+                    {% elif allegato.url_esterno %}
+                        <a href="{{ allegato.url_esterno }}" target="_blank" 
+                           class="btn btn-light">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            Apri Link
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Pulsante Modifica -->
+                    {% if can_edit %}
+                        <button type="button" class="btn btn-light allegato-edit-btn"
+                                data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                                data-action="edit" data-allegato-id="{{ allegato.id }}">
+                            <i class="fas fa-edit me-1"></i>
+                            Modifica
+                        </button>
+                    {% endif %}
+                    
+                    <!-- Pulsante Elimina -->
+                    {% if can_delete %}
+                        <button type="button" class="btn btn-outline-light allegato-delete-btn"
+                                data-allegato-id="{{ allegato.id }}"
+                                data-allegato-title="{{ allegato.titolo }}">
+                            <i class="fas fa-trash me-1"></i>
+                            Elimina
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Colonna Principale - Preview -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-eye me-1"></i>
+                        Anteprima
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if allegato.file %}
+                        {% with file_ext=allegato.file.name|slice:"-3:" %}
+                            {% if file_ext == "pdf" %}
+                                <!-- Preview PDF -->
+                                <div class="file-preview">
+                                    <iframe src="{{ allegato.file.url }}"></iframe>
+                                </div>
+                            {% elif file_ext in "jpg,jpeg,png,gif" %}
+                                <!-- Preview Immagine -->
+                                <div class="file-preview text-center">
+                                    <img src="{{ allegato.file.url }}" alt="{{ allegato.titolo }}" class="img-fluid">
+                                </div>
+                            {% else %}
+                                <!-- File generico -->
+                                <div class="text-center py-5">
+                                    <i class="{% allegato_icon allegato.tipo_allegato %} fa-5x text-muted mb-3"></i>
+                                    <h5>{{ allegato.titolo|truncate_filename:40 }}</h5>
+                                    <p class="text-muted">Anteprima non disponibile per questo tipo di file</p>
+                                    <a href="{{ allegato.file.url }}" target="_blank" class="btn btn-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>
+                                        Apri File
+                                    </a>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                    {% elif allegato.url_esterno %}
+                        <!-- URL Esterno -->
+                        <div class="text-center py-5">
+                            <i class="fas fa-link fa-5x text-muted mb-3"></i>
+                            <h5>Link Esterno</h5>
+                            <p class="text-muted">{{ allegato.url_esterno }}</p>
+                            <a href="{{ allegato.url_esterno }}" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt me-1"></i>
+                                Apri Link
+                            </a>
+                        </div>
+                    {% elif allegato.contenuto_testo %}
+                        <!-- Contenuto Testuale -->
+                        <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                            <pre class="mb-0" style="white-space: pre-wrap;">{{ allegato.contenuto_testo }}</pre>
+                        </div>
+                    {% else %}
+                        <!-- Nessun contenuto -->
+                        <div class="text-center py-5 text-muted">
+                            <i class="fas fa-question-circle fa-3x mb-3"></i>
+                            <p>Nessun contenuto disponibile</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Oggetto Collegato -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-link me-1"></i>
+                        Collegato a
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-cube fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1">{{ object }}</h6>
+                            <small class="text-muted">{{ allegato.content_type.model|title }}</small>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="{{ object.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-arrow-right me-1"></i>
+                                Vai a {{ object }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar - Metadati -->
+        <div class="col-lg-4">
+            <!-- Informazioni Allegato -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Informazioni
+                    </h5>
+                </div>
+                <div class="card-body allegato-metadata">
+                    <div class="metadata-item">
+                        <strong>Tipo:</strong><br>
+                        <span class="badge bg-{% allegato_color allegato.tipo_allegato %} mt-1">
+                            {{ allegato.get_tipo_allegato_display }}
+                        </span>
+                    </div>
+                    
+                    {% if allegato.dimensione_file %}
+                        <div class="metadata-item">
+                            <strong>Dimensione:</strong><br>
+                            {{ allegato.dimensione_file|filesize_human }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if allegato.mime_type %}
+                        <div class="metadata-item">
+                            <strong>Formato:</strong><br>
+                            <code>{{ allegato.mime_type }}</code>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="metadata-item">
+                        <strong>Creato il:</strong><br>
+                        {{ allegato.creato_il|date:"d/m/Y H:i" }}
+                        {% if allegato.creato_da %}
+                            <br><small class="text-muted">da {{ allegato.creato_da.get_full_name|default:allegato.creato_da.username }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    {% if allegato.modificato_il != allegato.creato_il %}
+                        <div class="metadata-item">
+                            <strong>Modificato il:</strong><br>
+                            {{ allegato.modificato_il|date:"d/m/Y H:i" }}
+                            {% if allegato.modificato_da %}
+                                <br><small class="text-muted">da {{ allegato.modificato_da.get_full_name|default:allegato.modificato_da.username }}</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    {% if allegato.data_documento %}
+                        <div class="metadata-item">
+                            <strong>Data Documento:</strong><br>
+                            {{ allegato.data_documento|date:"d/m/Y" }}
+                        </div>
+                    {% endif %}
+                    
+                    {% if allegato.data_scadenza %}
+                        <div class="metadata-item">
+                            <strong>Data Scadenza:</strong><br>
+                            {{ allegato.data_scadenza|date:"d/m/Y" }}
+                            {% if allegato.data_scadenza < today %}
+                                <span class="badge bg-danger ms-2">Scaduto</span>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="metadata-item">
+                        <strong>Priorità:</strong><br>
+                        {% with prio=allegato.priorita %}
+                            <span class="badge bg-{% if prio == 'critica' %}danger{% elif prio == 'alta' %}warning{% elif prio == 'bassa' %}secondary{% else %}primary{% endif %}">
+                                {{ allegato.get_priorita_display }}
+                            </span>
+                        {% endwith %}
+                    </div>
+                    
+                    <div class="metadata-item">
+                        <strong>Stato:</strong><br>
+                        {% with stato=allegato.stato %}
+                            <span class="badge bg-{% if stato == 'attivo' %}success{% elif stato == 'archiviato' %}secondary{% elif stato == 'scaduto' %}warning{% else %}danger{% endif %}">
+                                {{ allegato.get_stato_display }}
+                            </span>
+                        {% endwith %}
+                    </div>
+                    
+                    {% if allegato.tags %}
+                        <div class="metadata-item">
+                            <strong>Tags:</strong><br>
+                            {% for tag in allegato.tags.split:',' %}
+                                <span class="badge bg-light text-dark me-1">{{ tag.strip }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="metadata-item">
+                        <strong>Versione:</strong><br>
+                        v{{ allegato.versione }}
+                        {% if allegato.allegato_padre %}
+                            <br><small class="text-muted">
+                                Derivato da: <a href="{% url 'core:allegato_detail' allegato.allegato_padre.id %}">v{{ allegato.allegato_padre.versione }}</a>
+                            </small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="metadata-item">
+                        <strong>Privacy:</strong><br>
+                        {% if allegato.is_confidenziale %}
+                            <span class="badge bg-danger">Confidenziale</span>
+                        {% elif allegato.is_pubblico %}
+                            <span class="badge bg-success">Pubblico</span>
+                        {% else %}
+                            <span class="badge bg-warning">Riservato</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Statistiche Download (placeholder) -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-1"></i>
+                        Statistiche
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="download-stats">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="h5 mb-0 text-primary">--</div>
+                                <small class="text-muted">Visualizzazioni</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="h5 mb-0 text-success">--</div>
+                                <small class="text-muted">Download</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Modal Allegato -->
+{% include 'core/allegati/modals/allegato_modal.html' %}
+
+<!-- Include Scripts Allegati -->
+{% allegati_scripts allegato %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gestione eliminazione allegato
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.allegato-delete-btn')) {
+        e.preventDefault();
+        const btn = e.target.closest('.allegato-delete-btn');
+        const allegatoId = btn.dataset.allegatoId;
+        const allegatoTitle = btn.dataset.allegatoTitle;
+        
+        if (confirm(`Sei sicuro di voler eliminare "${allegatoTitle}"?\nQuesta azione non può essere annullata.`)) {
+            // TODO: Implementare eliminazione via AJAX
+            console.log('Elimina allegato:', allegatoId);
+            
+            // Placeholder per ora
+            alert('Funzionalità in sviluppo');
+        }
+    }
+});
+</script>
+{% endblock %}

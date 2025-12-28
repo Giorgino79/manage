@@ -1,0 +1,556 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 py-md-4">
+    <!-- Header -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-truck-moving me-2"></i>{{ page_title }}
+                    </h6>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    <a href="{{ object.get_absolute_url }}" class="btn btn-outline-info me-2">
+                        <i class="fas fa-eye me-1"></i>Vedi Dettaglio
+                    </a>
+                    <a href="{% url 'anagrafica:elenco_fornitori' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Torna all'Elenco
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info fornitore attuale -->
+        <div class="card-footer bg-light">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Fornitore attuale:</strong> {{ object.nome }}
+                        {% if not object.attivo %} - <span class="text-warning">Inattivo</span>{% endif %}
+                    </small>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <small class="text-muted">
+                        Fornitore dal <strong>{{ object.created_at|date:"d/m/Y" }}</strong>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form modifica fornitore -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Dati Anagrafici -->
+                            <div class="col-md-6">
+                                <div class="card border-left-warning h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="m-0 text-warning">
+                                            <i class="fas fa-building me-1"></i>Dati Anagrafici
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.nome.label }}</label>
+                                            {{ form.nome }}
+                                            {% if form.nome.errors %}
+                                                <div class="text-danger small">{{ form.nome.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.indirizzo.label }}</label>
+                                            {{ form.indirizzo }}
+                                            {% if form.indirizzo.errors %}
+                                                <div class="text-danger small">{{ form.indirizzo.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="mb-3">
+                                                    <label class="form-label">{{ form.citta.label }}</label>
+                                                    {{ form.citta }}
+                                                    {% if form.citta.errors %}
+                                                        <div class="text-danger small">{{ form.citta.errors.0 }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label">{{ form.cap.label }}</label>
+                                                    {{ form.cap }}
+                                                    {% if form.cap.errors %}
+                                                        <div class="text-danger small">{{ form.cap.errors.0 }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.zona.label }}</label>
+                                            {{ form.zona }}
+                                            {% if form.zona.errors %}
+                                                <div class="text-danger small">{{ form.zona.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Contatti -->
+                            <div class="col-md-6">
+                                <div class="card border-left-info h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="m-0 text-info">
+                                            <i class="fas fa-address-book me-1"></i>Contatti
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.telefono.label }}</label>
+                                            {{ form.telefono }}
+                                            {% if form.telefono.errors %}
+                                                <div class="text-danger small">{{ form.telefono.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.email.label }}</label>
+                                            {{ form.email }}
+                                            {% if form.email.errors %}
+                                                <div class="text-danger small">{{ form.email.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.pec.label }}</label>
+                                            {{ form.pec }}
+                                            {% if form.pec.errors %}
+                                                <div class="text-danger small">{{ form.pec.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <!-- Dati Fiscali -->
+                            <div class="col-md-6">
+                                <div class="card border-left-secondary h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="m-0 text-secondary">
+                                            <i class="fas fa-file-invoice me-1"></i>Dati Fiscali
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.partita_iva.label }}</label>
+                                            {{ form.partita_iva }}
+                                            {% if form.partita_iva.errors %}
+                                                <div class="text-danger small">{{ form.partita_iva.errors.0 }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">{{ form.partita_iva.help_text }}</small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.codice_fiscale.label }}</label>
+                                            {{ form.codice_fiscale }}
+                                            {% if form.codice_fiscale.errors %}
+                                                <div class="text-danger small">{{ form.codice_fiscale.errors.0 }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">{{ form.codice_fiscale.help_text }}</small>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.codice_univoco.label }}</label>
+                                            {{ form.codice_univoco }}
+                                            {% if form.codice_univoco.errors %}
+                                                <div class="text-danger small">{{ form.codice_univoco.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dati Commerciali -->
+                            <div class="col-md-6">
+                                <div class="card border-left-success h-100">
+                                    <div class="card-header bg-light">
+                                        <h6 class="m-0 text-success">
+                                            <i class="fas fa-handshake me-1"></i>Dati Commerciali
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.tipo_pagamento.label }}</label>
+                                            {{ form.tipo_pagamento }}
+                                            {% if form.tipo_pagamento.errors %}
+                                                <div class="text-danger small">{{ form.tipo_pagamento.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.iban.label }}</label>
+                                            {{ form.iban }}
+                                            {% if form.iban.errors %}
+                                                <div class="text-danger small">{{ form.iban.errors.0 }}</div>
+                                            {% endif %}
+                                            <small class="form-text text-muted">{{ form.iban.help_text }}</small>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">{{ form.giorno_chiusura.label }}</label>
+                                                    {{ form.giorno_chiusura }}
+                                                    {% if form.giorno_chiusura.errors %}
+                                                        <div class="text-danger small">{{ form.giorno_chiusura.errors.0 }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <!-- Orari e Note -->
+                            <div class="col-12">
+                                <div class="card border-left-primary">
+                                    <div class="card-header bg-light">
+                                        <h6 class="m-0 text-primary">
+                                            <i class="fas fa-clock me-1"></i>Orari e Note
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label">{{ form.orario_consegna.label }}</label>
+                                                    {{ form.orario_consegna }}
+                                                    {% if form.orario_consegna.errors %}
+                                                        <div class="text-danger small">{{ form.orario_consegna.errors.0 }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="form-check">
+                                                        {{ form.attivo }}
+                                                        <label class="form-check-label" for="{{ form.attivo.id_for_label }}">
+                                                            {{ form.attivo.label }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ form.note.label }}</label>
+                                            {{ form.note }}
+                                            {% if form.note.errors %}
+                                                <div class="text-danger small">{{ form.note.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Errori del form -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mt-3" role="alert">
+                                <h6><i class="fas fa-exclamation-triangle me-1"></i>Errori di Validazione</h6>
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Footer con pulsanti -->
+                    <div class="card-footer bg-light">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Fornitore creato il {{ object.created_at|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                <a href="{{ object.get_absolute_url }}" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-times me-1"></i>Annulla
+                                </a>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save me-1"></i>Salva Modifiche
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Form styling migliorato per modifica */
+.form-control:focus, .form-select:focus {
+    border-color: #f39c12;
+    box-shadow: 0 0 0 0.2rem rgba(243, 156, 18, 0.25);
+}
+
+/* Card con bordi colorati */
+.border-left-warning { border-left: 4px solid #f39c12 !important; }
+.border-left-info { border-left: 4px solid #17a2b8 !important; }
+.border-left-secondary { border-left: 4px solid #6c757d !important; }
+.border-left-success { border-left: 4px solid #28a745 !important; }
+.border-left-primary { border-left: 4px solid #667eea !important; }
+
+/* Evidenziazione campi modificati */
+.form-control:not([readonly]):focus {
+    background-color: #fff9e6;
+}
+
+/* Alert personalizzato */
+.alert {
+    border-left: 4px solid;
+    background-color: #f8f9fc;
+}
+
+.alert.border-left-warning { 
+    border-color: #f39c12; 
+}
+
+/* Input group styling */
+.input-group-text {
+    background-color: #f8f9fc;
+    border-color: #e3e6f0;
+    color: #5a5c69;
+}
+
+/* Button hover effects */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Card styling */
+.card {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+}
+
+/* Form check styling */
+.form-check-input:checked {
+    background-color: #f39c12;
+    border-color: #f39c12;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .card-body { 
+        padding: 1rem; 
+    }
+    
+    .row { 
+        margin-bottom: 1rem; 
+    }
+    
+    .btn-group .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Help text styling */
+.form-text {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* Textarea styling */
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Required field indicator */
+label:has(+ input[required])::after,
+label:has(+ select[required])::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* Valid/invalid field styling */
+.form-control.is-valid {
+    border-color: #28a745;
+    background-color: #f8fff9;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: none;
+}
+
+/* Animation for modified fields */
+.form-control.modified {
+    animation: highlightChange 0.5s ease-out;
+}
+
+@keyframes highlightChange {
+    0% { background-color: #fff3cd; }
+    100% { background-color: #fff9e6; }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Evidenzia campi modificati
+    $('.form-control, .form-select').on('change', function() {
+        $(this).addClass('border-warning modified');
+    });
+    
+    // Auto-formattazione campi
+    $('#id_cap').on('input', function() {
+        this.value = this.value.replace(/\D/g, '').substring(0, 5);
+    });
+    
+    $('#id_partita_iva').on('input', function() {
+        let value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (value.length >= 2 && !value.startsWith('IT')) {
+            value = 'IT' + value.replace('IT', '');
+        }
+        this.value = value.substring(0, 13);
+    });
+    
+    $('#id_codice_fiscale').on('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 16);
+    });
+    
+    // Auto-formattazione IBAN con validazione
+    $('#id_iban').on('input', function() {
+        let value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (value.length >= 2 && !value.startsWith('IT')) {
+            value = 'IT' + value.replace('IT', '');
+        }
+        this.value = value.substring(0, 27);
+    });
+    
+    // Validazione IBAN real-time
+    $('#id_iban').on('blur', function() {
+        const iban = this.value.replace(/\s/g, '');
+        if (iban.length > 0 && iban.length < 27) {
+            $(this).addClass('is-invalid');
+            if (!$(this).next('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">IBAN deve essere di 27 caratteri</div>');
+            }
+        } else if (iban.length === 27) {
+            $(this).removeClass('is-invalid').addClass('is-valid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+    
+    // Validazione email real-time
+    $('#id_email, #id_pec').on('blur', function() {
+        const email = this.value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        if (email && !emailRegex.test(email)) {
+            $(this).addClass('is-invalid');
+            if (!$(this).next('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">Formato email non valido</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+    
+    // Controlla se ci sono modifiche prima di abbandonare la pagina
+    let formModified = false;
+    $('.form-control, .form-select, .form-check-input').on('change input', function() {
+        formModified = true;
+    });
+    
+    window.addEventListener('beforeunload', function(e) {
+        if (formModified) {
+            e.preventDefault();
+            e.returnValue = 'Ci sono modifiche non salvate. Sei sicuro di voler abbandonare la pagina?';
+        }
+    });
+    
+    // Reset warning dopo submit
+    $('form').on('submit', function() {
+        formModified = false;
+        
+        // Mostra loading sul pulsante
+        const submitBtn = $(this).find('button[type="submit"]');
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Salvataggio...');
+    });
+    
+    // Tooltip per aiuto
+    $('[data-bs-toggle="tooltip"]').tooltip();
+    
+    // Auto-focus sul primo campo se ci sono errori
+    {% if form.errors %}
+    setTimeout(function() {
+        $('.form-control.is-invalid').first().focus();
+    }, 100);
+    {% endif %}
+    
+    // Conferma prima di salvare modifiche importanti
+    $('form').on('submit', function(e) {
+        const nomeOriginale = "{{ object.nome|escapejs }}";
+        const nuovoNome = $('#id_nome').val().trim();
+        
+        if (nomeOriginale !== nuovoNome) {
+            if (!confirm(`Stai modificando il nome del fornitore da "${nomeOriginale}" a "${nuovoNome}". Continuare?`)) {
+                e.preventDefault();
+                // Ripristina il pulsante
+                const submitBtn = $(this).find('button[type="submit"]');
+                submitBtn.prop('disabled', false).html('<i class="fas fa-save me-1"></i>Salva Modifiche');
+            }
+        }
+    });
+    
+    // Comparazione valori per evidenziare cambiamenti
+    const originalValues = {};
+    $('.form-control, .form-select').each(function() {
+        originalValues[this.id] = this.value;
+    });
+    
+    $('.form-control, .form-select').on('blur', function() {
+        if (originalValues[this.id] !== this.value) {
+            $(this).addClass('modified');
+        } else {
+            $(this).removeClass('modified border-warning');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ordine di Acquisto {{ numero_ordine }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @page {
+            size: A4;
+            margin: 1.5cm 2cm;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        /* Header aziendale */
+        .company-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #4472C4;
+        }
+
+        .company-name {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #4472C4;
+            margin-bottom: 5px;
+        }
+
+        .company-details {
+            font-size: 9pt;
+            color: #666;
+        }
+
+        /* Titolo documento */
+        .document-title {
+            text-align: center;
+            font-size: 18pt;
+            font-weight: bold;
+            color: #4472C4;
+            margin: 20px 0;
+            text-transform: uppercase;
+        }
+
+        /* Sezione informazioni */
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin-bottom: 25px;
+        }
+
+        .info-section {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+
+        .info-section + .info-section {
+            border-left: none;
+        }
+
+        .info-title {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #4472C4;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #4472C4;
+        }
+
+        .info-content {
+            font-size: 10pt;
+            line-height: 1.6;
+        }
+
+        .info-content strong {
+            color: #333;
+            display: inline-block;
+            width: 150px;
+        }
+
+        /* Dettagli ordine */
+        .order-details {
+            margin: 25px 0;
+            padding: 20px;
+            background: #fff;
+            border: 2px solid #4472C4;
+            border-radius: 5px;
+        }
+
+        .detail-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .detail-label {
+            display: table-cell;
+            width: 40%;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .detail-value {
+            display: table-cell;
+            width: 60%;
+            color: #333;
+        }
+
+        .detail-highlight {
+            font-size: 14pt;
+            color: #4472C4;
+            font-weight: bold;
+        }
+
+        /* Sezioni */
+        .section {
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #4472C4;
+            margin-bottom: 10px;
+            padding: 8px 0 8px 15px;
+            background: #f0f4f8;
+            border-left: 4px solid #4472C4;
+        }
+
+        .section-content {
+            padding: 10px 15px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+        }
+
+        /* Note */
+        .notes-box {
+            margin: 20px 0;
+            padding: 15px;
+            background: #fffacd;
+            border: 1px solid #ffd700;
+            border-radius: 5px;
+        }
+
+        .notes-title {
+            font-weight: bold;
+            color: #b8860b;
+            margin-bottom: 8px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #4472C4;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+        }
+
+        /* Firme */
+        .signatures {
+            display: table;
+            width: 100%;
+            margin-top: 50px;
+        }
+
+        .signature-box {
+            display: table-cell;
+            width: 50%;
+            text-align: center;
+            padding: 20px 10px;
+        }
+
+        .signature-line {
+            margin-top: 50px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+
+        /* Watermark per bozze */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80pt;
+            color: rgba(200, 200, 200, 0.3);
+            z-index: -1;
+            font-weight: bold;
+        }
+
+        /* Utility */
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+
+        .mt-20 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header aziendale -->
+    {% if company %}
+    <div class="company-header">
+        <div class="company-name">{{ company.name }}</div>
+        <div class="company-details">
+            {{ company.address }}<br>
+            Tel: {{ company.phone }} | Email: {{ company.email }}
+            {% if company.website %} | {{ company.website }}{% endif %}<br>
+            {% if company.vat_number %}P.IVA: {{ company.vat_number }}{% endif %}
+            {% if company.tax_code %} | C.F.: {{ company.tax_code }}{% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Titolo documento -->
+    <div class="document-title">Ordine di Acquisto</div>
+
+    <!-- Griglia informazioni -->
+    <div class="info-grid">
+        <!-- Dati ordine -->
+        <div class="info-section">
+            <div class="info-title">DATI ORDINE</div>
+            <div class="info-content">
+                <strong>Numero Ordine:</strong> {{ numero_ordine }}<br>
+                <strong>Data Ordine:</strong> {{ data_ordine }}<br>
+                <strong>Data Consegna:</strong> {{ data_consegna }}<br>
+                {% if riferimento_esterno %}
+                <strong>Rif. Fornitore:</strong> {{ riferimento_esterno }}<br>
+                {% endif %}
+                {% if preventivo_numero %}
+                <strong>Da Preventivo:</strong> {{ preventivo_numero }}<br>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Dati fornitore -->
+        <div class="info-section">
+            <div class="info-title">FORNITORE</div>
+            <div class="info-content">
+                <strong>{{ fornitore.nome }}</strong><br>
+                {% if fornitore.indirizzo %}{{ fornitore.indirizzo }}<br>{% endif %}
+                {% if fornitore.citta %}{{ fornitore.citta }} {% if fornitore.cap %}{{ fornitore.cap }}{% endif %}<br>{% endif %}
+                {% if fornitore.telefono %}Tel: {{ fornitore.telefono }}<br>{% endif %}
+                {% if fornitore.email %}Email: {{ fornitore.email }}<br>{% endif %}
+                {% if fornitore.partita_iva %}P.IVA: {{ fornitore.partita_iva }}{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Dettagli commerciali -->
+    <div class="order-details">
+        <div class="detail-row">
+            <div class="detail-label">IMPORTO TOTALE:</div>
+            <div class="detail-value detail-highlight">€ {{ importo_totale|floatformat:2 }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Valuta:</div>
+            <div class="detail-value">{{ valuta }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Termini di Pagamento:</div>
+            <div class="detail-value">{{ termini_pagamento }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">Tempi di Consegna:</div>
+            <div class="detail-value">{{ tempi_consegna }}</div>
+        </div>
+    </div>
+
+    <!-- Descrizione/Note ordine -->
+    {% if note_ordine %}
+    <div class="section">
+        <div class="section-title">DESCRIZIONE ORDINE</div>
+        <div class="section-content">
+            {{ note_ordine|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Informazioni preventivo originale -->
+    {% if preventivo_info %}
+    <div class="section">
+        <div class="section-title">DETTAGLI GARA DI ORIGINE</div>
+        <div class="section-content">
+            <strong>Numero Gara:</strong> {{ preventivo_info.numero_gara }}<br>
+            <strong>Titolo:</strong> {{ preventivo_info.titolo_gara }}<br>
+            <strong>Preventivo Fornitore:</strong> {{ preventivo_info.numero_preventivo_fornitore }}<br>
+            {% if preventivo_info.garanzia %}
+            <strong>Garanzia:</strong> {{ preventivo_info.garanzia }}<br>
+            {% endif %}
+            {% if preventivo_info.condizioni_trasporto %}
+            <strong>Trasporto:</strong> {{ preventivo_info.condizioni_trasporto }}<br>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Condizioni generali -->
+    <div class="section">
+        <div class="section-title">CONDIZIONI GENERALI</div>
+        <div class="section-content">
+            Il presente ordine è soggetto alle nostre condizioni generali di acquisto.<br>
+            La merce dovrà essere consegnata all'indirizzo specificato entro la data indicata.<br>
+            La fattura dovrà riportare il numero d'ordine come riferimento.<br>
+            Il pagamento verrà effettuato secondo i termini concordati.
+        </div>
+    </div>
+
+    <!-- Note aggiuntive -->
+    {% if note_aggiuntive %}
+    <div class="notes-box">
+        <div class="notes-title">NOTE IMPORTANTI:</div>
+        {{ note_aggiuntive|linebreaks }}
+    </div>
+    {% endif %}
+
+    <!-- Firme -->
+    <div class="signatures">
+        <div class="signature-box">
+            <div>L'AZIENDA</div>
+            <div class="signature-line">{{ creato_da }}</div>
+        </div>
+        <div class="signature-box">
+            <div>PER ACCETTAZIONE</div>
+            <div class="signature-line">{{ fornitore.nome }}</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Documento generato automaticamente in data {{ data_generazione }}<br>
+        Ordine di Acquisto {{ numero_ordine }} - Pagina 1
+    </div>
+</body>
+</html>

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - Management System{% endblock %}
+
+{% block landing_content %}
+<div class="login-container">
+    <div class="login-card card">
+        <div class="login-header">
+            <div class="login-logo">
+                <i class="fas fa-sign-in-alt"></i>
+            </div>
+            <h1 class="login-title">Accesso al Sistema</h1>
+            <p class="text-muted">Inserisci le tue credenziali</p>
+        </div>
+        
+        <div class="card-body p-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message-bubble message-{{ message.tags }} mb-3">
+                        {% if message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    {{ form.username.label_tag }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        {{ form.username }}
+                    </div>
+                    {% if form.username.help_text %}
+                        <div class="form-text">{{ form.username.help_text }}</div>
+                    {% endif %}
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.username.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.password.label_tag }}
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        {{ form.password }}
+                        <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="password-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.help_text %}
+                        <div class="form-text">{{ form.password.help_text }}</div>
+                    {% endif %}
+                    {% if form.password.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.password.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                        {{ form.remember_me }}
+                        {{ form.remember_me.label_tag }}
+                    </div>
+                </div>
+                
+                <!-- Display non-field errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Accedi
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Back to landing -->
+            <div class="text-center mt-3">
+                <a href="{% url 'dipendenti:landing' %}" class="text-decoration-none">
+                    <i class="fas fa-arrow-left me-1"></i>
+                    Torna alla pagina principale
+                </a>
+            </div>
+        </div>
+        
+        <div class="card-footer text-center bg-transparent">
+            <small class="text-muted">
+                <i class="fas fa-shield-alt me-1"></i>
+                Management System - Accesso Sicuro
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePassword() {
+        const passwordInput = document.getElementById('id_password');
+        const passwordEye = document.getElementById('password-eye');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            passwordEye.classList.remove('fa-eye');
+            passwordEye.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            passwordEye.classList.remove('fa-eye-slash');
+            passwordEye.classList.add('fa-eye');
+        }
+    }
+    
+    // Auto-focus and form enhancements
+    document.addEventListener('DOMContentLoaded', function() {
+        const usernameInput = document.getElementById('id_username');
+        const passwordInput = document.getElementById('id_password');
+        
+        // Focus first empty field
+        if (usernameInput && !usernameInput.value) {
+            usernameInput.focus();
+        } else if (passwordInput) {
+            passwordInput.focus();
+        }
+        
+        // Handle enter key navigation
+        if (usernameInput) {
+            usernameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    passwordInput.focus();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

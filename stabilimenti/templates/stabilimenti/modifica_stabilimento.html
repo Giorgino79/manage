@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+        <div class="col-lg-8">
+            <div class="form-container">
+                <!-- Header del form -->
+                <div class="form-header">
+                    <h2>
+                        <i class="fas fa-edit me-3"></i>{{ page_title }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Modifica i dati dello stabilimento. I campi contrassegnati con * sono obbligatori.
+                    </p>
+                </div>
+
+                <!-- Informazioni attuali stabilimento -->
+                <div class="stabilimento-info">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Informazioni Attuali
+                        </h5>
+                        <div class="status-indicator {% if stabilimento.attivo %}status-active{% else %}status-inactive{% endif %}">
+                            <i class="fas fa-circle"></i>
+                            {% if stabilimento.attivo %}Stabilimento Attivo{% else %}Stabilimento Inattivo{% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Codice:</strong> {{ stabilimento.codice_stabilimento }}<br>
+                            <strong>Creato:</strong> {{ stabilimento.data_creazione|date:"d/m/Y H:i" }}<br>
+                            {% if stabilimento.creato_da %}
+                                <strong>Creato da:</strong> {{ stabilimento.creato_da.get_full_name|default:stabilimento.creato_da.username }}
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if stabilimento.data_modifica %}
+                                <strong>Ultima modifica:</strong> {{ stabilimento.data_modifica|date:"d/m/Y H:i" }}<br>
+                                {% if stabilimento.modificato_da %}
+                                    <strong>Modificato da:</strong> {{ stabilimento.modificato_da.get_full_name|default:stabilimento.modificato_da.username }}
+                                {% endif %}
+                            {% endif %}
+                            {% if stabilimento.data_apertura %}
+                                <strong>Data apertura:</strong> {{ stabilimento.data_apertura|date:"d/m/Y" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form principale -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Dati Anagrafici -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-info-circle me-2"></i>Dati Anagrafici
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    {{ form.nome.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.nome }}
+                                    {% if form.nome.errors %}
+                                        <div class="text-danger small">{{ form.nome.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label class="form-label">Codice Stabilimento</label>
+                                    <div class="readonly-field">{{ stabilimento.codice_stabilimento }}</div>
+                                    <div class="help-text">Il codice non può essere modificato</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    {{ form.indirizzo.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.indirizzo }}
+                                    {% if form.indirizzo.errors %}
+                                        <div class="text-danger small">{{ form.indirizzo.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    {{ form.cap.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.cap }}
+                                    {% if form.cap.errors %}
+                                        <div class="text-danger small">{{ form.cap.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="form-group">
+                                    {{ form.citta.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.citta }}
+                                    {% if form.citta.errors %}
+                                        <div class="text-danger small">{{ form.citta.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    {{ form.provincia.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.provincia }}
+                                    {% if form.provincia.errors %}
+                                        <div class="text-danger small">{{ form.provincia.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.telefono.label_tag }}
+                                    {{ form.telefono }}
+                                    {% if form.telefono.errors %}
+                                        <div class="text-danger small">{{ form.telefono.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.email_filiale.label_tag }}
+                                    {{ form.email_filiale }}
+                                    {% if form.email_filiale.errors %}
+                                        <div class="text-danger small">{{ form.email_filiale.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Responsabili -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-users me-2"></i>Responsabili
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.responsabile_operativo.label_tag }}
+                                    {{ form.responsabile_operativo }}
+                                    {% if form.responsabile_operativo.errors %}
+                                        <div class="text-danger small">{{ form.responsabile_operativo.errors }}</div>
+                                    {% endif %}
+                                    {% if form.responsabile_operativo.help_text %}
+                                        <div class="help-text">{{ form.responsabile_operativo.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.responsabile_amministrativo.label_tag }}
+                                    {{ form.responsabile_amministrativo }}
+                                    {% if form.responsabile_amministrativo.errors %}
+                                        <div class="text-danger small">{{ form.responsabile_amministrativo.errors }}</div>
+                                    {% endif %}
+                                    {% if form.responsabile_amministrativo.help_text %}
+                                        <div class="help-text">{{ form.responsabile_amministrativo.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caratteristiche Strutturali -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-ruler-combined me-2"></i>Caratteristiche Strutturali
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.superficie_mq.label_tag }}
+                                    {{ form.superficie_mq }}
+                                    {% if form.superficie_mq.errors %}
+                                        <div class="text-danger small">{{ form.superficie_mq.errors }}</div>
+                                    {% endif %}
+                                    {% if form.superficie_mq.help_text %}
+                                        <div class="help-text">{{ form.superficie_mq.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.numero_piani.label_tag }}
+                                    {{ form.numero_piani }}
+                                    {% if form.numero_piani.errors %}
+                                        <div class="text-danger small">{{ form.numero_piani.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.anno_costruzione.label_tag }}
+                                    {{ form.anno_costruzione }}
+                                    {% if form.anno_costruzione.errors %}
+                                        <div class="text-danger small">{{ form.anno_costruzione.errors }}</div>
+                                    {% endif %}
+                                    {% if form.anno_costruzione.help_text %}
+                                        <div class="help-text">{{ form.anno_costruzione.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_apertura.label_tag }}
+                                    {{ form.data_apertura }}
+                                    {% if form.data_apertura.errors %}
+                                        <div class="text-danger small">{{ form.data_apertura.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-sticky-note me-2"></i>Note Generali
+                        </h4>
+                        
+                        <div class="form-group">
+                            {{ form.note_generali.label_tag }}
+                            {{ form.note_generali }}
+                            {% if form.note_generali.errors %}
+                                <div class="text-danger small">{{ form.note_generali.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Errori generali del form -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Pulsanti di azione -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'stabilimenti:dettaglio' stabilimento.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Torna al Dettaglio
+                            </a>
+                            <a href="{% url 'stabilimenti:list' %}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-list me-2"></i>Lista Stabilimenti
+                            </a>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-warning me-2" onclick="resetForm()">
+                                <i class="fas fa-undo me-2"></i>Ripristina
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-save">
+                                <i class="fas fa-save me-2"></i>Salva Modifiche
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Salva i valori originali del form per il reset
+    const originalValues = {};
+    const formElements = document.querySelectorAll('input, select, textarea');
+    formElements.forEach(element => {
+        if (element.name) {
+            originalValues[element.name] = element.value;
+        }
+    });
+    
+    // Auto-uppercase per campo provincia
+    const provinciaField = document.querySelector('#id_provincia');
+    if (provinciaField) {
+        provinciaField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Funzione per ripristinare i valori originali
+    window.resetForm = function() {
+        if (confirm('Sei sicuro di voler ripristinare tutti i campi ai valori originali?')) {
+            Object.keys(originalValues).forEach(name => {
+                const element = document.querySelector(`[name="${name}"]`);
+                if (element) {
+                    element.value = originalValues[name];
+                }
+            });
+            
+            // Mostra feedback visivo
+            const resetBtn = document.querySelector('button[onclick="resetForm()"]');
+            const originalText = resetBtn.innerHTML;
+            resetBtn.innerHTML = '<i class="fas fa-check me-2"></i>Ripristinato!';
+            resetBtn.classList.add('btn-success');
+            resetBtn.classList.remove('btn-outline-warning');
+            
+            setTimeout(() => {
+                resetBtn.innerHTML = originalText;
+                resetBtn.classList.remove('btn-success');
+                resetBtn.classList.add('btn-outline-warning');
+            }, 2000);
+        }
+    };
+    
+    // Validazione lato client
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Controlla CAP
+            const cap = document.querySelector('#id_cap');
+            if (cap && cap.value) {
+                const capRegex = /^\d{5}$/;
+                if (!capRegex.test(cap.value)) {
+                    alert('Il CAP deve essere di 5 cifre numeriche');
+                    cap.focus();
+                    e.preventDefault();
+                    isValid = false;
+                }
+            }
+            
+            // Controlla provincia
+            const provincia = document.querySelector('#id_provincia');
+            if (provincia && provincia.value) {
+                if (provincia.value.length !== 2) {
+                    alert('La provincia deve essere di 2 lettere');
+                    provincia.focus();
+                    e.preventDefault();
+                    isValid = false;
+                }
+            }
+            
+            // Disabilita il pulsante per evitare doppi submit
+            if (isValid) {
+                const submitBtn = document.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvataggio in corso...';
+                }
+            }
+        });
+    }
+    
+    // Evidenzia campi modificati
+    formElements.forEach(element => {
+        if (element.name && originalValues[element.name] !== undefined) {
+            element.addEventListener('input', function() {
+                const label = document.querySelector(`label[for="${this.id}"]`);
+                if (label) {
+                    if (this.value !== originalValues[this.name]) {
+                        if (!label.querySelector('.change-indicator')) {
+                            const indicator = document.createElement('span');
+                            indicator.className = 'change-indicator';
+                            indicator.innerHTML = '<i class="fas fa-edit"></i> Modificato';
+                            label.appendChild(indicator);
+                        }
+                    } else {
+                        const indicator = label.querySelector('.change-indicator');
+                        if (indicator) {
+                            indicator.remove();
+                        }
+                    }
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

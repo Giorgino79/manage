@@ -1,0 +1,41 @@
+RICHIESTA PREVENTIVO - {{ richiesta.titolo }}
+
+Gentile {{ fornitore.nome }},
+
+Vi richiediamo un preventivo per il seguente servizio/prodotto:
+
+AUTOMEZZO INTERESSATO:
+- Targa: {{ automezzo.targa }}
+- Marca e Modello: {{ automezzo.marca }} {{ automezzo.modello }}
+- Anno: {{ automezzo.anno_immatricolazione }}
+- Carburante: {{ automezzo.tipo_carburante }}
+{% if automezzo.chilometri_attuali %}- Chilometraggio: {{ automezzo.chilometri_attuali|floatformat:0 }} km{% endif %}
+
+DESCRIZIONE DELLA RICHIESTA:
+{{ richiesta.descrizione }}
+
+{% if richiesta.budget_massimo %}BUDGET DISPONIBILE: €{{ richiesta.budget_massimo|floatformat:2 }}{% endif %}
+
+DOCUMENTI ALLEGATI:
+{% if automezzo.libretto_fronte %}- Libretto di circolazione (fronte){% endif %}
+{% if automezzo.libretto_retro %}- Libretto di circolazione (retro){% endif %}
+
+SCADENZA: {{ scadenza|date:"d/m/Y" }}
+
+Il preventivo deve includere:
+- Descrizione dettagliata del servizio/prodotto
+- Prezzo comprensivo di IVA
+- Tempi di consegna/esecuzione
+- Condizioni di pagamento
+- Validità dell'offerta
+- Eventuali garanzie offerte
+
+Per qualsiasi chiarimento, non esitate a contattarci.
+
+Cordiali saluti,
+{{ richiesta.richiedente.get_full_name|default:richiesta.richiedente.username }}
+{% if richiesta.richiedente.email %}{{ richiesta.richiedente.email }}{% endif %}
+
+---
+Sistema di gestione aziendale
+Data invio: {{ data_invio|date:"d/m/Y H:i" }}

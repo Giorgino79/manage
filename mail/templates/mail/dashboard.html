@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sistema Email - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="mail" class="feather me-2"></i>Sistema Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Sistema Email</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="btn-group">
+                    {% if config and config.is_configured %}
+                    <a href="{% url 'mail:compose' %}" class="btn btn-success">
+                        <i data-feather="edit" class="feather me-1"></i>Scrivi Email
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'mail:config' %}" class="btn btn-outline-primary">
+                        <i data-feather="settings" class="feather me-1"></i>Configurazione
+                    </a>
+                    <a href="{% url 'mail:template_create' %}" class="btn btn-primary">
+                        <i data-feather="plus" class="feather me-1"></i>Nuovo Template
+                    </a>
+                </div>
+            </div>
+
+            <!-- Configuration Status -->
+            {% if not config %}
+            <div class="alert alert-warning" role="alert">
+                <i data-feather="alert-triangle" class="feather me-2"></i>
+                <strong>Configurazione Richiesta</strong> - 
+                Nessuna configurazione email trovata. 
+                <a href="{% url 'mail:config' %}" class="alert-link">Configura il tuo account email</a>
+            </div>
+            {% elif not config.is_configured %}
+            <div class="alert alert-warning" role="alert">
+                <i data-feather="alert-circle" class="feather me-2"></i>
+                <strong>Configurazione Incompleta</strong> - 
+                La configurazione email non è completa. 
+                <a href="{% url 'mail:config' %}" class="alert-link">Completa la configurazione</a>
+            </div>
+            {% endif %}
+
+            <!-- Stats Cards -->
+            {% if stats_summary and stats_summary.success %}
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Email Inviate</h6>
+                                    <h3 class="mb-0">{{ stats_summary.total_sent }}</h3>
+                                    <small>Ultimi 7 giorni</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="send" class="feather" style="height: 2.5rem; width: 2.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Tasso Successo</h6>
+                                    <h3 class="mb-0">{{ stats_summary.success_rate }}%</h3>
+                                    <small>Affidabilità invii</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="check-circle" class="feather" style="height: 2.5rem; width: 2.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Media Giornaliera</h6>
+                                    <h3 class="mb-0">{{ stats_summary.daily_average }}</h3>
+                                    <small>Email al giorno</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="trending-up" class="feather" style="height: 2.5rem; width: 2.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Email Fallite</h6>
+                                    <h3 class="mb-0">{{ stats_summary.total_failed }}</h3>
+                                    <small>Da verificare</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="alert-triangle" class="feather" style="height: 2.5rem; width: 2.5rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Main Content Row -->
+            <div class="row">
+                <!-- Recent Messages -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i data-feather="inbox" class="feather me-2"></i>Messaggi Recenti
+                            </h5>
+                            <a href="{% url 'mail:message_list' %}" class="btn btn-sm btn-outline-primary">
+                                Vedi Tutti
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if recent_messages %}
+                                <div class="list-group list-group-flush">
+                                    {% for message in recent_messages %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <div class="d-flex align-items-center">
+                                                {% if message.status == 'sent' %}
+                                                    <i data-feather="check-circle" class="feather text-success me-2"></i>
+                                                {% elif message.status == 'failed' %}
+                                                    <i data-feather="x-circle" class="feather text-danger me-2"></i>
+                                                {% else %}
+                                                    <i data-feather="clock" class="feather text-warning me-2"></i>
+                                                {% endif %}
+                                                <div>
+                                                    <h6 class="mb-1">{{ message.subject|truncatechars:50 }}</h6>
+                                                    <small class="text-muted">
+                                                        Para: 
+                                                        {% if message.to_addresses %}
+                                                            {{ message.to_addresses.0 }}
+                                                            {% if message.to_addresses|length > 1 %}
+                                                                e altri {{ message.to_addresses|length|add:'-1' }}
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">{{ message.created_at|timesince }} fa</small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i data-feather="inbox" class="feather mb-2" style="height: 3rem; width: 3rem; color: #6c757d;"></i>
+                                    <p class="text-muted">Nessun messaggio ancora inviato</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Templates -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i data-feather="file-text" class="feather me-2"></i>Template Popolari
+                            </h5>
+                            <a href="{% url 'mail:template_list' %}" class="btn btn-sm btn-outline-primary">
+                                Gestisci
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if popular_templates %}
+                                {% for template in popular_templates %}
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-0">{{ template.name|truncatechars:25 }}</h6>
+                                        <small class="text-muted">{{ template.category|capfirst }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-secondary">{{ template.usage_count }}</span>
+                                        <br><small class="text-muted">utilizzi</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i data-feather="file-plus" class="feather mb-2" style="height: 3rem; width: 3rem; color: #6c757d;"></i>
+                                    <p class="text-muted mb-2">Nessun template ancora creato</p>
+                                    <a href="{% url 'mail:template_create' %}" class="btn btn-sm btn-primary">
+                                        Crea Primo Template
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="zap" class="feather me-2"></i>Azioni Rapide
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    {% if config and config.is_configured %}
+                                    <a href="{% url 'mail:compose' %}" class="btn btn-success w-100">
+                                        <i data-feather="edit" class="feather mb-2"></i><br>
+                                        Scrivi Email
+                                    </a>
+                                    {% else %}
+                                    <button class="btn btn-outline-secondary w-100" disabled>
+                                        <i data-feather="edit" class="feather mb-2"></i><br>
+                                        Scrivi Email
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <a href="{% url 'mail:config' %}" class="btn btn-outline-primary w-100">
+                                        <i data-feather="settings" class="feather mb-2"></i><br>
+                                        Configurazione Email
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <a href="{% url 'mail:template_create' %}" class="btn btn-outline-info w-100">
+                                        <i data-feather="file-plus" class="feather mb-2"></i><br>
+                                        Nuovo Template
+                                    </a>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <a href="{% url 'mail:stats' %}" class="btn btn-outline-warning w-100">
+                                        <i data-feather="bar-chart" class="feather mb-2"></i><br>
+                                        Statistiche Complete
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+</script>
+{% endblock %}

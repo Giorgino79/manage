@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="utenza-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="h3 mb-1">
+                    <i class="fas fa-plug me-2"></i>Nuova Utenza
+                </h2>
+                <p class="mb-0">{{ stabilimento.nome }} - Registra una nuova bolletta o servizio</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div><i class="fas fa-building me-2"></i>{{ stabilimento.codice_stabilimento }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Form Principale -->
+            <form method="post" enctype="multipart/form-data" id="utenza-form">
+                {% csrf_token %}
+                <!-- Aggiungi subito dopo {% csrf_token %} nel template -->
+{% if form.errors or form.non_field_errors %}
+    <div class="alert alert-danger">
+        <h6><i class="fas fa-exclamation-triangle me-2"></i>Errori nel Form</h6>
+        {% if form.non_field_errors %}
+            <ul>
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% for field, errors in form.errors.items %}
+            <div><strong>{{ field }}:</strong>
+                <ul>
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+                <!-- Tipo Utenza -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tag me-2"></i>Tipo di Utenza
+                    </h5>
+                    
+                    <div class="tipo-utenza-preview" id="tipo-preview">
+                        <i class="fas fa-plug fa-2x text-success mb-2"></i>
+                        <div>Seleziona il tipo di utenza dal menu sottostante</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.stabilimento.label_tag }}
+                            {{ form.stabilimento }}
+                            {% if form.stabilimento.errors %}
+                                <div class="text-danger small">{{ form.stabilimento.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.causale.label_tag }}
+                            {{ form.causale }}
+                            {% if form.causale.errors %}
+                                <div class="text-danger small">{{ form.causale.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informazioni Base -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Informazioni Generali
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.fornitore.label_tag }}
+                            {{ form.fornitore }}
+                            {% if form.fornitore.errors %}
+                                <div class="text-danger small">{{ form.fornitore.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.stato.label_tag }}
+                            {{ form.stato }}
+                            {% if form.stato.errors %}
+                                <div class="text-danger small">{{ form.stato.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.titolo.label_tag }}
+                        {{ form.titolo }}
+                        {% if form.titolo.errors %}
+                            <div class="text-danger small">{{ form.titolo.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.descrizione.label_tag }}
+                        {{ form.descrizione }}
+                        {% if form.descrizione.errors %}
+                            <div class="text-danger small">{{ form.descrizione.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Aspetti Economici -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-euro-sign me-2"></i>Aspetti Economici
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form.importo.label_tag }}
+                            {{ form.importo }}
+                            {% if form.importo.errors %}
+                                <div class="text-danger small">{{ form.importo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.iva_percentuale.label_tag }}
+                            {{ form.iva_percentuale }}
+                            {% if form.iva_percentuale.errors %}
+                                <div class="text-danger small">{{ form.iva_percentuale.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <strong>Riepilogo Importi:</strong>
+                        <div class="row">
+                            <div class="col-4">Imponibile: <span id="preview-imponibile">€ 0,00</span></div>
+                            <div class="col-4">IVA: <span id="preview-iva">€ 0,00</span></div>
+                            <div class="col-4">Totale: <span id="preview-totale" class="fw-bold">€ 0,00</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-calendar me-2"></i>Date e Periodi
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.data_fattura.label_tag }}
+                            {{ form.data_fattura }}
+                            {% if form.data_fattura.errors %}
+                                <div class="text-danger small">{{ form.data_fattura.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.data_scadenza_servizio.label_tag }}
+                            {{ form.data_scadenza_servizio }}
+                            {% if form.data_scadenza_servizio.errors %}
+                                <div class="text-danger small">{{ form.data_scadenza_servizio.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="periodo-fatturazione">
+                        <h6><i class="fas fa-calendar-check me-2"></i>Periodo di Fatturazione</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.periodo_fatturazione_da.label_tag }}
+                                {{ form.periodo_fatturazione_da }}
+                                {% if form.periodo_fatturazione_da.errors %}
+                                    <div class="text-danger small">{{ form.periodo_fatturazione_da.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.periodo_fatturazione_a.label_tag }}
+                                {{ form.periodo_fatturazione_a }}
+                                {% if form.periodo_fatturazione_a.errors %}
+                                    <div class="text-danger small">{{ form.periodo_fatturazione_a.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Consumi e Codici -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-tachometer-alt me-2"></i>Consumi e Identificativi
+                    </h5>
+                    
+                    <div class="consumo-fields">
+                        <h6><i class="fas fa-chart-line me-2"></i>Dati di Consumo</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.consumo_kwh.label_tag }}
+                                {{ form.consumo_kwh }}
+                                {% if form.consumo_kwh.errors %}
+                                    <div class="text-danger small">{{ form.consumo_kwh.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Per energia elettrica</small>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.consumo_mc.label_tag }}
+                                {{ form.consumo_mc }}
+                                {% if form.consumo_mc.errors %}
+                                    <div class="text-danger small">{{ form.consumo_mc.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Per gas e acqua</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            {{ form.codice_pdr_pod.label_tag }}
+                            {{ form.codice_pdr_pod }}
+                            {% if form.codice_pdr_pod.errors %}
+                                <div class="text-danger small">{{ form.codice_pdr_pod.errors }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">Codice identificativo dell'utenza (PDR per gas, POD per luce)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documenti -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-file-upload me-2"></i>Documenti
+                    </h5>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            {{ form.fattura.label_tag }}
+                            {{ form.fattura }}
+                            {% if form.fattura.errors %}
+                                <div class="text-danger small">{{ form.fattura.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.preventivo.label_tag }}
+                            {{ form.preventivo }}
+                            {% if form.preventivo.errors %}
+                                <div class="text-danger small">{{ form.preventivo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form.certificato.label_tag }}
+                            {{ form.certificato }}
+                            {% if form.certificato.errors %}
+                                <div class="text-danger small">{{ form.certificato.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Note -->
+                <div class="form-section">
+                    <h5 class="mb-3">
+                        <i class="fas fa-sticky-note me-2"></i>Note
+                    </h5>
+                    
+                    {{ form.note_interne.label_tag }}
+                    {{ form.note_interne }}
+                    {% if form.note_interne.errors %}
+                        <div class="text-danger small">{{ form.note_interne.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <!-- Pulsanti -->
+                <div class="d-flex gap-2 mb-4">
+                    <button type="submit" class="btn btn-success" id="submit-btn">
+                        <i class="fas fa-save me-2"></i>Salva Utenza
+                    </button>
+                    <a href="{% url 'stabilimenti:utenze_stabilimento' stabilimento_pk=stabilimento.pk %}" 
+                       class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Annulla
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Guida Tipi Utenza -->
+            <div class="guida-utenze">
+                <h6><i class="fas fa-question-circle me-2"></i>Tipi di Utenza</h6>
+                
+                <div class="mb-3">
+                    <div class="tipo-badge energia" onclick="selezionaTipo('energia_elettrica')">
+                        <i class="fas fa-bolt me-1"></i>Energia Elettrica
+                    </div>
+                    <p class="small text-muted mt-1">Bollette ENEL, fornitori energia, illuminazione</p>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="tipo-badge gas" onclick="selezionaTipo('gas_naturale')">
+                        <i class="fas fa-fire me-1"></i>Gas Naturale
+                    </div>
+                    <p class="small text-muted mt-1">Bollette gas, riscaldamento, cucine</p>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="tipo-badge acqua" onclick="selezionaTipo('acqua')">
+                        <i class="fas fa-tint me-1"></i>Acqua e Scarichi
+                    </div>
+                    <p class="small text-muted mt-1">Bollette idriche, fognature, depurazione</p>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="tipo-badge telefonia" onclick="selezionaTipo('telefonia')">
+                        <i class="fas fa-phone me-1"></i>Telefonia e Internet
+                    </div>
+                    <p class="small text-muted mt-1">Linee telefoniche, internet, centralini</p>
+                </div>
+            </div>
+
+            <!-- Suggerimenti -->
+            <div class="alert alert-info mt-3">
+                <h6><i class="fas fa-lightbulb me-2"></i>Suggerimenti</h6>
+                <ul class="mb-0 small">
+                    <li>Inserisci sempre il periodo di fatturazione per tracking preciso</li>
+                    <li>I codici PDR/POD servono per identificare l'utenza</li>
+                    <li>Imposta la prossima scadenza per monitoraggio automatico</li>
+                    <li>Carica sempre la fattura PDF per archiviazione</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('utenza-form');
+    const importoField = document.getElementById('{{ form.importo.id_for_label }}');
+    const ivaField = document.getElementById('{{ form.iva_percentuale.id_for_label }}');
+    const causaleField = document.getElementById('{{ form.causale.id_for_label }}');
+    
+    // Aggiorna preview importi
+    function aggiornaPreview() {
+        const importo = parseFloat(importoField.value) || 0;
+        const iva = parseFloat(ivaField.value) || 0;
+        
+        const imponibile = importo;
+        const ivaImporto = imponibile * (iva / 100);
+        const totale = imponibile + ivaImporto;
+        
+        document.getElementById('preview-imponibile').textContent = `€ ${imponibile.toFixed(2)}`;
+        document.getElementById('preview-iva').textContent = `€ ${ivaImporto.toFixed(2)}`;
+        document.getElementById('preview-totale').textContent = `€ ${totale.toFixed(2)}`;
+    }
+    
+    importoField.addEventListener('input', aggiornaPreview);
+    ivaField.addEventListener('input', aggiornaPreview);
+    
+    // Aggiorna preview tipo utenza
+    causaleField.addEventListener('change', function() {
+        const tipoPreview = document.getElementById('tipo-preview');
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (selectedOption.value) {
+            const icons = {
+                'energia_elettrica': 'fas fa-bolt',
+                'gas_naturale': 'fas fa-fire',
+                'acqua': 'fas fa-tint',
+                'telefonia': 'fas fa-phone',
+                'rifiuti': 'fas fa-trash',
+                'utilities': 'fas fa-plug'
+            };
+            
+            const icon = icons[selectedOption.value] || 'fas fa-plug';
+            tipoPreview.innerHTML = `
+                <i class="${icon} fa-2x text-success mb-2"></i>
+                <div><strong>${selectedOption.text}</strong></div>
+                <div class="small text-muted">Tipo di utenza selezionato</div>
+            `;
+        }
+    });
+    
+    // Auto-compila data fattura con oggi
+    const dataFatturaField = document.getElementById('{{ form.data_fattura.id_for_label }}');
+    if (!dataFatturaField.value) {
+        const oggi = new Date().toISOString().split('T')[0];
+        dataFatturaField.value = oggi;
+    }
+    
+    // Validazione form
+    form.addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvataggio in corso...';
+    });
+    
+    // Inizializza preview
+    aggiornaPreview();
+});
+
+// Funzione globale per selezione tipo da guida
+function selezionaTipo(tipo) {
+    const causaleField = document.getElementById('{{ form.causale.id_for_label }}');
+    causaleField.value = tipo;
+    causaleField.dispatchEvent(new Event('change'));
+    
+    // Aggiorna stile badge
+    document.querySelectorAll('.tipo-badge').forEach(badge => badge.classList.remove('selected'));
+    document.querySelector(`.tipo-badge.${tipo.split('_')[0]}`).classList.add('selected');
+}
+</script>
+{% endblock %}

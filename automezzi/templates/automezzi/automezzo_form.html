@@ -1,0 +1,472 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+
+{% block title %}{{ form.instance.pk|yesno:"Modifica Automezzo,Nuovo Automezzo" }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:automezzo_list' %}">Elenco</a></li>
+        {% if form.instance.pk %}
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:automezzo_detail' form.instance.pk %}">{{ form.instance.targa }}</a></li>
+        <li class="breadcrumb-item active">Modifica</li>
+        {% else %}
+        <li class="breadcrumb-item active">Nuovo</li>
+        {% endif %}
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con azioni -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">
+                <i class="fas fa-car me-2"></i>{{ form.instance.pk|yesno:"Modifica Automezzo,Nuovo Automezzo" }}
+            </h1>
+            <p class="text-muted mb-0">{{ form.instance.pk|yesno:"Modifica dati automezzo esistente,Inserimento nuovo automezzo nella flotta" }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'automezzi:automezzo_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Torna all'Elenco
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Errori nella compilazione:</h5>
+                            {{ form.errors }}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Tab Navigation -->
+                        <ul class="nav nav-tabs mb-4" id="automezzoTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="general-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#general" type="button" role="tab">
+                                    <i class="fas fa-info-circle me-2"></i>Informazioni Generali
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="technical-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#technical" type="button" role="tab">
+                                    <i class="fas fa-cogs me-2"></i>Dati Tecnici
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="documents-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#documents" type="button" role="tab">
+                                    <i class="fas fa-file-alt me-2"></i>Documenti
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="automezzoTabContent">
+                            <!-- Informazioni Generali -->
+                            <div class="tab-pane fade show active" id="general" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.numero_mezzo.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-hashtag me-2 text-primary"></i>Numero Mezzo
+                                            </label>
+                                            <input type="number" name="{{ form.numero_mezzo.name }}" 
+                                                   class="form-control{% if form.numero_mezzo.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.numero_mezzo.id_for_label }}" 
+                                                   value="{{ form.numero_mezzo.value|default:'' }}"
+                                                   placeholder="es: 001">
+                                            {% if form.numero_mezzo.errors %}
+                                                <div class="invalid-feedback">{{ form.numero_mezzo.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Numero identificativo interno del mezzo</div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.targa.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-id-card me-2 text-warning"></i>Targa *
+                                            </label>
+                                            <input type="text" name="{{ form.targa.name }}" 
+                                                   class="form-control{% if form.targa.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.targa.id_for_label }}" 
+                                                   value="{{ form.targa.value|default:'' }}"
+                                                   required
+                                                   placeholder="es: AB123CD">
+                                            {% if form.targa.errors %}
+                                                <div class="invalid-feedback">{{ form.targa.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.marca.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-industry me-2 text-info"></i>Marca *
+                                            </label>
+                                            <input type="text" name="{{ form.marca.name }}" 
+                                                   class="form-control{% if form.marca.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.marca.id_for_label }}" 
+                                                   value="{{ form.marca.value|default:'' }}"
+                                                   required
+                                                   placeholder="es: Ford, Fiat, Mercedes">
+                                            {% if form.marca.errors %}
+                                                <div class="invalid-feedback">{{ form.marca.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.modello.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-car me-2 text-success"></i>Modello *
+                                            </label>
+                                            <input type="text" name="{{ form.modello.name }}" 
+                                                   class="form-control{% if form.modello.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.modello.id_for_label }}" 
+                                                   value="{{ form.modello.value|default:'' }}"
+                                                   required
+                                                   placeholder="es: Transit, Ducato">
+                                            {% if form.modello.errors %}
+                                                <div class="invalid-feedback">{{ form.modello.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="{{ form.anno_immatricolazione.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-calendar me-2 text-primary"></i>Anno Immatricolazione *
+                                            </label>
+                                            <input type="number" name="{{ form.anno_immatricolazione.name }}" 
+                                                   class="form-control{% if form.anno_immatricolazione.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.anno_immatricolazione.id_for_label }}" 
+                                                   value="{{ form.anno_immatricolazione.value|default:'' }}"
+                                                   required
+                                                   min="1980" max="2030">
+                                            {% if form.anno_immatricolazione.errors %}
+                                                <div class="invalid-feedback">{{ form.anno_immatricolazione.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.chilometri_attuali.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-tachometer-alt me-2 text-warning"></i>Chilometri Attuali
+                                            </label>
+                                            <div class="input-group">
+                                                <input type="number" name="{{ form.chilometri_attuali.name }}" 
+                                                       class="form-control{% if form.chilometri_attuali.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.chilometri_attuali.id_for_label }}" 
+                                                       value="{{ form.chilometri_attuali.value|default:0 }}"
+                                                       min="0">
+                                                <span class="input-group-text">km</span>
+                                                {% if form.chilometri_attuali.errors %}
+                                                    <div class="invalid-feedback">{{ form.chilometri_attuali.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.assegnato_a.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-user-tie me-2 text-success"></i>Assegnato a
+                                            </label>
+                                            <select name="{{ form.assegnato_a.name }}" 
+                                                    class="form-select{% if form.assegnato_a.errors %} is-invalid{% endif %}"
+                                                    id="{{ form.assegnato_a.id_for_label }}">
+                                                <option value="">Nessuna assegnazione...</option>
+                                                {% for value, label in form.assegnato_a.field.choices %}
+                                                    {% if value %}
+                                                        <option value="{{ value }}" 
+                                                                {% if form.assegnato_a.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                                                            {{ label }}
+                                                        </option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.assegnato_a.errors %}
+                                                <div class="invalid-feedback">{{ form.assegnato_a.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.data_revisione.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-clipboard-check me-2 text-info"></i>Data Ultima Revisione
+                                            </label>
+                                            <input type="date" name="{{ form.data_revisione.name }}" 
+                                                   class="form-control{% if form.data_revisione.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.data_revisione.id_for_label }}" 
+                                                   value="{{ form.data_revisione.value|default:'' }}">
+                                            {% if form.data_revisione.errors %}
+                                                <div class="invalid-feedback">{{ form.data_revisione.errors.0 }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dati Tecnici -->
+                            <div class="tab-pane fade" id="technical" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="text-primary border-bottom pb-2 mb-3">
+                                            <i class="fas fa-cogs me-2"></i>Stato e Condizioni
+                                        </h5>
+
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input type="checkbox" name="{{ form.attivo.name }}" 
+                                                       class="form-check-input{% if form.attivo.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.attivo.id_for_label }}" 
+                                                       {% if form.attivo.value %}checked{% endif %}>
+                                                <label class="form-check-label fw-semibold" for="{{ form.attivo.id_for_label }}">
+                                                    <i class="fas fa-power-off me-2 text-success"></i>Automezzo attivo
+                                                </label>
+                                                {% if form.attivo.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.attivo.errors.0 }}</div>
+                                                {% endif %}
+                                                <div class="form-text">Se disattivato, il mezzo non apparirà nelle selezioni</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input type="checkbox" name="{{ form.disponibile.name }}" 
+                                                       class="form-check-input{% if form.disponibile.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.disponibile.id_for_label }}" 
+                                                       {% if form.disponibile.value %}checked{% endif %}>
+                                                <label class="form-check-label fw-semibold" for="{{ form.disponibile.id_for_label }}">
+                                                    <i class="fas fa-check-circle me-2 text-info"></i>Disponibile per utilizzo
+                                                </label>
+                                                {% if form.disponibile.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.disponibile.errors.0 }}</div>
+                                                {% endif %}
+                                                <div class="form-text">Se non disponibile, il mezzo è temporaneamente fuori servizio</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check form-switch">
+                                                <input type="checkbox" name="{{ form.bloccata.name }}" 
+                                                       class="form-check-input{% if form.bloccata.errors %} is-invalid{% endif %}"
+                                                       id="{{ form.bloccata.id_for_label }}" 
+                                                       {% if form.bloccata.value %}checked{% endif %}>
+                                                <label class="form-check-label fw-semibold" for="{{ form.bloccata.id_for_label }}">
+                                                    <i class="fas fa-ban me-2 text-danger"></i>Mezzo bloccato
+                                                </label>
+                                                {% if form.bloccata.errors %}
+                                                    <div class="invalid-feedback d-block">{{ form.bloccata.errors.0 }}</div>
+                                                {% endif %}
+                                                <div class="form-text">Per mezzi con problemi gravi o sequestrati</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <h5 class="text-warning border-bottom pb-2 mb-3">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>Note e Motivi
+                                        </h5>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.motivo_blocco.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-sticky-note me-2 text-danger"></i>Motivo Blocco
+                                            </label>
+                                            <textarea name="{{ form.motivo_blocco.name }}" 
+                                                      class="form-control{% if form.motivo_blocco.errors %} is-invalid{% endif %}"
+                                                      id="{{ form.motivo_blocco.id_for_label }}" 
+                                                      rows="4" 
+                                                      placeholder="Specificare il motivo del blocco del mezzo...">{{ form.motivo_blocco.value|default:'' }}</textarea>
+                                            {% if form.motivo_blocco.errors %}
+                                                <div class="invalid-feedback">{{ form.motivo_blocco.errors.0 }}</div>
+                                            {% endif %}
+                                            <div class="form-text">Compilare solo se il mezzo è bloccato</div>
+                                        </div>
+
+                                        <!-- Alert informativo -->
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                            <strong>Suggerimento:</strong> 
+                                            <ul class="mb-0 mt-2">
+                                                <li><strong>Attivo:</strong> Il mezzo è operativo e può essere utilizzato</li>
+                                                <li><strong>Disponibile:</strong> Il mezzo è libero e non assegnato</li>
+                                                <li><strong>Bloccato:</strong> Il mezzo ha problemi e non può essere utilizzato</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Documenti -->
+                            <div class="tab-pane fade" id="documents" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="{{ form.libretto_fronte.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-id-card me-2 text-primary"></i>Libretto Fronte
+                                            </label>
+                                            <input type="file" name="{{ form.libretto_fronte.name }}" 
+                                                   class="form-control{% if form.libretto_fronte.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.libretto_fronte.id_for_label }}" 
+                                                   accept=".pdf,.jpg,.jpeg,.png">
+                                            {% if form.libretto_fronte.errors %}
+                                                <div class="invalid-feedback">{{ form.libretto_fronte.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.libretto_fronte %}
+                                                <div class="form-text">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    <a href="{{ form.instance.libretto_fronte.url }}" target="_blank">File attuale</a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="{{ form.libretto_retro.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-id-card me-2 text-success"></i>Libretto Retro
+                                            </label>
+                                            <input type="file" name="{{ form.libretto_retro.name }}" 
+                                                   class="form-control{% if form.libretto_retro.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.libretto_retro.id_for_label }}" 
+                                                   accept=".pdf,.jpg,.jpeg,.png">
+                                            {% if form.libretto_retro.errors %}
+                                                <div class="invalid-feedback">{{ form.libretto_retro.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.libretto_retro %}
+                                                <div class="form-text">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    <a href="{{ form.instance.libretto_retro.url }}" target="_blank">File attuale</a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="{{ form.assicurazione.id_for_label }}" class="form-label fw-semibold">
+                                                <i class="fas fa-shield-alt me-2 text-warning"></i>Assicurazione
+                                            </label>
+                                            <input type="file" name="{{ form.assicurazione.name }}" 
+                                                   class="form-control{% if form.assicurazione.errors %} is-invalid{% endif %}"
+                                                   id="{{ form.assicurazione.id_for_label }}" 
+                                                   accept=".pdf,.jpg,.jpeg,.png">
+                                            {% if form.assicurazione.errors %}
+                                                <div class="invalid-feedback">{{ form.assicurazione.errors.0 }}</div>
+                                            {% endif %}
+                                            {% if form.instance.assicurazione %}
+                                                <div class="form-text">
+                                                    <i class="fas fa-file-alt me-1"></i>
+                                                    <a href="{{ form.instance.assicurazione.url }}" target="_blank">File attuale</a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Formati supportati:</strong> PDF, JPG, JPEG, PNG<br>
+                                    <strong>Dimensione massima:</strong> 10MB per file
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'automezzi:automezzo_list' %}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Annulla
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Salva Automezzo
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-format targa
+    const targaField = document.getElementById('{{ form.targa.id_for_label }}');
+    if (targaField) {
+        targaField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+    }
+
+    // Gestione checkbox blocco
+    const bloccataCheckbox = document.getElementById('{{ form.bloccata.id_for_label }}');
+    const motivoBloccoField = document.getElementById('{{ form.motivo_blocco.id_for_label }}');
+    
+    if (bloccataCheckbox && motivoBloccoField) {
+        bloccataCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                motivoBloccoField.required = true;
+                motivoBloccoField.closest('.mb-3').classList.add('required');
+                // Switch to documents tab if blocking
+                const documentsTab = document.getElementById('documents-tab');
+                if (documentsTab) {
+                    documentsTab.click();
+                }
+            } else {
+                motivoBloccoField.required = false;
+                motivoBloccoField.closest('.mb-3').classList.remove('required');
+                motivoBloccoField.value = '';
+            }
+        });
+        
+        // Initial check
+        if (bloccataCheckbox.checked) {
+            motivoBloccoField.required = true;
+        }
+    }
+
+    // Validazione anno immatricolazione
+    const annoField = document.getElementById('{{ form.anno_immatricolazione.id_for_label }}');
+    if (annoField) {
+        annoField.addEventListener('input', function() {
+            const currentYear = new Date().getFullYear();
+            const value = parseInt(this.value);
+            
+            if (value > currentYear) {
+                this.setCustomValidity('L\'anno non può essere superiore all\'anno corrente');
+            } else if (value < 1980) {
+                this.setCustomValidity('L\'anno deve essere superiore al 1980');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    // Evidenzia tab con errori
+    function highlightTabsWithErrors() {
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        tabPanes.forEach(pane => {
+            const hasErrors = pane.querySelector('.is-invalid');
+            const tabButton = document.querySelector(`[data-bs-target="#${pane.id}"]`);
+            if (hasErrors && tabButton) {
+                tabButton.classList.add('text-danger');
+                tabButton.innerHTML = tabButton.innerHTML + ' <i class="fas fa-exclamation-circle"></i>';
+            }
+        });
+    }
+
+    highlightTabsWithErrors();
+});
+</script>
+{% endblock %}

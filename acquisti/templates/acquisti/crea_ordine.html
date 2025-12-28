@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        background: white;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .form-section {
+        margin-bottom: 25px;
+    }
+    .form-section h6 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-plus-circle me-2"></i>{{ page_title }}
+        </h1>
+        <a href="{% url 'acquisti:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Torna alla Dashboard
+        </a>
+    </div>
+
+    <!-- Form -->
+    <div class="form-container">
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <!-- Sezione Fornitore -->
+            <div class="form-section">
+                <h6><i class="fas fa-truck me-2"></i>Fornitore</h6>
+                <div class="row">
+                    <div class="col-12">
+                        <label for="{{ form.fornitore.id_for_label }}" class="form-label">Fornitore *</label>
+                        {{ form.fornitore }}
+                        {% if form.fornitore.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.fornitore.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sezione Importo e Condizioni -->
+            <div class="form-section">
+                <h6><i class="fas fa-euro-sign me-2"></i>Condizioni Commerciali</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="{{ form.importo_totale.id_for_label }}" class="form-label">Importo Totale *</label>
+                        {{ form.importo_totale }}
+                        {% if form.importo_totale.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.importo_totale.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.termini_pagamento.id_for_label }}" class="form-label">Termini Pagamento *</label>
+                        {{ form.termini_pagamento }}
+                        {% if form.termini_pagamento.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.termini_pagamento.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.tempi_consegna.id_for_label }}" class="form-label">Tempi Consegna *</label>
+                        {{ form.tempi_consegna }}
+                        {% if form.tempi_consegna.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.tempi_consegna.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sezione Consegna -->
+            <div class="form-section">
+                <h6><i class="fas fa-calendar me-2"></i>Consegna</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="{{ form.data_consegna_richiesta.id_for_label }}" class="form-label">Data Consegna Richiesta *</label>
+                        {{ form.data_consegna_richiesta }}
+                        {% if form.data_consegna_richiesta.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.data_consegna_richiesta.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.riferimento_esterno.id_for_label }}" class="form-label">Riferimento Fornitore</label>
+                        {{ form.riferimento_esterno }}
+                        {% if form.riferimento_esterno.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.riferimento_esterno.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sezione Note -->
+            <div class="form-section">
+                <h6><i class="fas fa-sticky-note me-2"></i>Note e Descrizione</h6>
+                <div class="row">
+                    <div class="col-12">
+                        <label for="{{ form.note_ordine.id_for_label }}" class="form-label">Note Ordine *</label>
+                        {{ form.note_ordine }}
+                        {% if form.note_ordine.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.note_ordine.errors }}
+                        </div>
+                        {% endif %}
+                        <div class="form-text">Descrivi l'oggetto dell'ordine e i dettagli principali</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pulsanti -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'acquisti:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Annulla
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Crea Ordine
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Validazione form Bootstrap
+    const form = document.querySelector('.needs-validation');
+    
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        form.classList.add('was-validated');
+    });
+    
+    // Imposta data minima per consegna (oggi)
+    const today = new Date().toISOString().split('T')[0];
+    $('#{{ form.data_consegna_richiesta.id_for_label }}').attr('min', today);
+    
+    // Auto-focus primo campo
+    $('#{{ form.fornitore.id_for_label }}').focus();
+    
+    // Suggerimenti termini pagamento comuni
+    $('#{{ form.termini_pagamento.id_for_label }}').on('focus', function() {
+        if (!$(this).val()) {
+            $(this).attr('placeholder', 'es. 30 giorni DFFM, Pagamento immediato, 60 gg fine mese');
+        }
+    });
+    
+    // Suggerimenti tempi consegna comuni
+    $('#{{ form.tempi_consegna.id_for_label }}').on('focus', function() {
+        if (!$(this).val()) {
+            $(this).attr('placeholder', 'es. 15 giorni lavorativi, Immediato, 2 settimane');
+        }
+    });
+});
+</script>
+{% endblock %}

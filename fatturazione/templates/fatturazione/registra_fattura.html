@@ -1,0 +1,561 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Registra Nuova Fattura{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'fatturazione:dashboard' %}">Fatturazione Passiva</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Registra Nuova Fattura</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Registra Nuova Fattura
+                </h1>
+                <a href="{% url 'fatturazione:dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Torna alla Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-edit"></i>
+                        Dati Fattura
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="fatturaForm">
+                        {% csrf_token %}
+                        
+                        <!-- Errori generali del form -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <!-- Fornitore -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.fornitore.id_for_label }}" class="form-label">
+                                    <i class="fas fa-building"></i> {{ form.fornitore.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fornitore }}
+                                {% if form.fornitore.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.fornitore.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Numero Fattura -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.numero_fattura.id_for_label }}" class="form-label">
+                                    <i class="fas fa-hashtag"></i> {{ form.numero_fattura.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.numero_fattura }}
+                                {% if form.numero_fattura.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.numero_fattura.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.numero_fattura.help_text }}</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Data Fattura -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_fattura.id_for_label }}" class="form-label">
+                                    <i class="fas fa-calendar-alt"></i> {{ form.data_fattura.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.data_fattura }}
+                                {% if form.data_fattura.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.data_fattura.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Data Scadenza -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.data_scadenza.id_for_label }}" class="form-label">
+                                    <i class="fas fa-calendar-check"></i> {{ form.data_scadenza.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.data_scadenza }}
+                                {% if form.data_scadenza.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.data_scadenza.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Termini Pagamento -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.termini_pagamento.id_for_label }}" class="form-label">
+                                    <i class="fas fa-handshake"></i> {{ form.termini_pagamento.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.termini_pagamento }}
+                                {% if form.termini_pagamento.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.termini_pagamento.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.termini_pagamento.help_text }}</small>
+                            </div>
+                            
+                            <!-- Priorità Pagamento -->
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.priorita_pagamento.id_for_label }}" class="form-label">
+                                    <i class="fas fa-exclamation-triangle"></i> {{ form.priorita_pagamento.label }}
+                                </label>
+                                {{ form.priorita_pagamento }}
+                                {% if form.priorita_pagamento.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.priorita_pagamento.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Importo Netto -->
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.importo_netto.id_for_label }}" class="form-label">
+                                    <i class="fas fa-euro-sign"></i> {{ form.importo_netto.label }} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                    {{ form.importo_netto }}
+                                </div>
+                                {% if form.importo_netto.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.importo_netto.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Importo IVA -->
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.importo_iva.id_for_label }}" class="form-label">
+                                    <i class="fas fa-percentage"></i> {{ form.importo_iva.label }}
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                    {{ form.importo_iva }}
+                                </div>
+                                {% if form.importo_iva.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.importo_iva.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Importo Totale -->
+                            <div class="col-md-4 mb-3">
+                                <label for="{{ form.importo_totale.id_for_label }}" class="form-label">
+                                    <i class="fas fa-calculator"></i> {{ form.importo_totale.label }} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                    {{ form.importo_totale }}
+                                </div>
+                                {% if form.importo_totale.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.importo_totale.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Ordini di Acquisto di Riferimento -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.ordini_acquisto.id_for_label }}" class="form-label">
+                                    <i class="fas fa-shopping-cart"></i> {{ form.ordini_acquisto.label }}
+                                </label>
+                                
+                                <div id="ordini-acquisto-container" class="mt-2">
+                                    <div id="no-ordini-message" class="alert alert-info" style="display: none;">
+                                        <i class="fas fa-info-circle"></i>
+                                        Seleziona prima un fornitore per vedere gli ordini disponibili.
+                                    </div>
+                                    
+                                    <div id="no-ordini-fornitore" class="alert alert-warning" style="display: none;">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Nessun ordine disponibile per il fornitore selezionato.
+                                    </div>
+                                    
+                                    <div id="ordini-list" class="border rounded p-3" style="max-height: 200px; overflow-y: auto; display: none;">
+                                        <!-- Qui verranno inseriti dinamicamente gli ordini -->
+                                    </div>
+                                    
+                                    <div id="ordini-summary" class="mt-2 p-2 bg-light rounded" style="display: none;">
+                                        <small>
+                                            <strong>Riepilogo:</strong>
+                                            <span id="ordini-count">0</span> ordini selezionati,
+                                            totale: <span id="ordini-total" class="font-weight-bold">€ 0,00</span>
+                                        </small>
+                                    </div>
+                                </div>
+                                
+                                {% if form.ordini_acquisto.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.ordini_acquisto.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.ordini_acquisto.help_text }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Oggetto/Descrizione -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.oggetto.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tag"></i> {{ form.oggetto.label }}
+                                </label>
+                                {{ form.oggetto }}
+                                {% if form.oggetto.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.oggetto.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- File Fattura -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.file_fattura.id_for_label }}" class="form-label">
+                                    <i class="fas fa-file-upload"></i> {{ form.file_fattura.label }}
+                                </label>
+                                {{ form.file_fattura }}
+                                {% if form.file_fattura.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.file_fattura.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">{{ form.file_fattura.help_text }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Note Interne -->
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="{{ form.note_interne.id_for_label }}" class="form-label">
+                                    <i class="fas fa-sticky-note"></i> {{ form.note_interne.label }}
+                                </label>
+                                {{ form.note_interne }}
+                                {% if form.note_interne.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {% for error in form.note_interne.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Pulsanti -->
+                        <div class="row">
+                            <div class="col-12">
+                                <hr class="my-4">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'fatturazione:dashboard' %}" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Annulla
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Registra Fattura
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar informazioni -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle"></i>
+                        Informazioni
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="font-weight-bold">Workflow Fatturazione</h6>
+                    <p class="small text-muted">Una volta registrata, la fattura seguirà il workflow:</p>
+                    <ol class="small">
+                        <li><span class="badge badge-secondary">ATTESA</span> → In attesa di ricezione documento</li>
+                        <li><span class="badge badge-info">RICEVUTA</span> → Documento ricevuto</li>
+                        <li><span class="badge badge-primary">CONTROLLATA</span> → Fattura verificata</li>
+                        <li><span class="badge badge-success">CONTABILIZZATA</span> → Registrata in contabilità</li>
+                        <li><span class="badge badge-warning">PROGRAMMATA</span> → Pagamento programmato</li>
+                        <li><span class="badge badge-success">PAGATA</span> → Pagamento effettuato</li>
+                    </ol>
+                    
+                    <hr>
+                    
+                    <h6 class="font-weight-bold">Calcolo automatico scadenze</h6>
+                    <p class="small text-muted">Il sistema può calcolare automaticamente la data di scadenza dai termini di pagamento:</p>
+                    <ul class="small">
+                        <li><strong>30gg DFFM</strong> = 30 giorni dalla fine del mese</li>
+                        <li><strong>60 giorni</strong> = 60 giorni dalla data fattura</li>
+                        <li><strong>15gg</strong> = 15 giorni dalla data fattura</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6 class="font-weight-bold">Ordini di Acquisto</h6>
+                    <p class="small text-muted">Puoi collegare più ordini di acquisto alla stessa fattura:</p>
+                    <ul class="small">
+                        <li>Seleziona prima il fornitore</li>
+                        <li>Scegli uno o più ordini disponibili</li>
+                        <li>Il sistema calcolerà automaticamente la differenza</li>
+                        <li>Solo ordini con stato CREATO o RICEVUTO</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6 class="font-weight-bold">Validazioni</h6>
+                    <ul class="small text-muted">
+                        <li>La data scadenza deve essere successiva alla data fattura</li>
+                        <li>Importo totale = Importo netto + IVA</li>
+                        <li>Combinazione fornitore/numero fattura/data deve essere unica</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Calcolatrice IVA -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-calculator"></i>
+                        Calcolatrice IVA
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="calc-netto" class="form-label">Importo Netto</label>
+                        <input type="number" class="form-control" id="calc-netto" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="calc-iva-rate" class="form-label">Aliquota IVA (%)</label>
+                        <select class="form-control" id="calc-iva-rate">
+                            <option value="0">0% - Esente</option>
+                            <option value="4">4% - Ridotta</option>
+                            <option value="10">10% - Ridotta</option>
+                            <option value="22" selected>22% - Ordinaria</option>
+                        </select>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>IVA:</span>
+                        <span id="calc-iva" class="font-weight-bold">€ 0,00</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Totale:</span>
+                        <span id="calc-totale" class="font-weight-bold text-primary">€ 0,00</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-success mt-2" id="applica-calcolo">
+                        <i class="fas fa-copy"></i> Applica al Form
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fornitoreSelect = document.getElementById('{{ form.fornitore.id_for_label }}');
+    let ordiniData = {};
+    let selectedOrdini = new Set();
+    
+    // Inizializza stato
+    showNoOrdiniMessage();
+    
+    // Listener per cambio fornitore
+    fornitoreSelect.addEventListener('change', function() {
+        const fornitoreId = this.value;
+        
+        if (!fornitoreId) {
+            showNoOrdiniMessage();
+            return;
+        }
+        
+        // Carica ordini via AJAX
+        fetch(`{% url 'fatturazione:get_ordini_by_fornitore' %}?fornitore_id=${fornitoreId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('Errore caricamento ordini:', data.error);
+                    showNoOrdiniFornitore();
+                    return;
+                }
+                
+                ordiniData = {};
+                data.ordini.forEach(ordine => {
+                    ordiniData[ordine.id] = ordine;
+                });
+                
+                if (data.ordini.length === 0) {
+                    showNoOrdiniFornitore();
+                } else {
+                    showOrdiniList(data.ordini);
+                }
+            })
+            .catch(error => {
+                console.error('Errore AJAX:', error);
+                showNoOrdiniFornitore();
+            });
+    });
+    
+    function showNoOrdiniMessage() {
+        document.getElementById('no-ordini-message').style.display = 'block';
+        document.getElementById('no-ordini-fornitore').style.display = 'none';
+        document.getElementById('ordini-list').style.display = 'none';
+        document.getElementById('ordini-summary').style.display = 'none';
+    }
+    
+    function showNoOrdiniFornitore() {
+        document.getElementById('no-ordini-message').style.display = 'none';
+        document.getElementById('no-ordini-fornitore').style.display = 'block';
+        document.getElementById('ordini-list').style.display = 'none';
+        document.getElementById('ordini-summary').style.display = 'none';
+    }
+    
+    function showOrdiniList(ordini) {
+        document.getElementById('no-ordini-message').style.display = 'none';
+        document.getElementById('no-ordini-fornitore').style.display = 'none';
+        document.getElementById('ordini-list').style.display = 'block';
+        document.getElementById('ordini-summary').style.display = 'block';
+        
+        const listContainer = document.getElementById('ordini-list');
+        listContainer.innerHTML = '';
+        
+        ordini.forEach(ordine => {
+            const div = document.createElement('div');
+            div.className = 'form-check mb-2';
+            
+            const checkbox = document.createElement('input');
+            checkbox.className = 'form-check-input';
+            checkbox.type = 'checkbox';
+            checkbox.id = `ordine_${ordine.id}`;
+            checkbox.name = 'ordini_acquisto';
+            checkbox.value = ordine.id;
+            checkbox.addEventListener('change', updateOrdiniSelection);
+            
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.htmlFor = `ordine_${ordine.id}`;
+            label.innerHTML = `
+                <strong>${ordine.numero_ordine}</strong><br>
+                <small class="text-muted">
+                    ${ordine.data_ordine} - €${parseFloat(ordine.importo_totale).toLocaleString('it-IT', {minimumFractionDigits: 2})} 
+                    - <span class="badge badge-info">${ordine.stato}</span>
+                </small>
+            `;
+            
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            listContainer.appendChild(div);
+        });
+        
+        updateOrdiniSummary();
+    }
+    
+    function updateOrdiniSelection(event) {
+        const ordineId = parseInt(event.target.value);
+        
+        if (event.target.checked) {
+            selectedOrdini.add(ordineId);
+        } else {
+            selectedOrdini.delete(ordineId);
+        }
+        
+        updateOrdiniSummary();
+    }
+    
+    function updateOrdiniSummary() {
+        const count = selectedOrdini.size;
+        let total = 0;
+        
+        selectedOrdini.forEach(ordineId => {
+            if (ordiniData[ordineId]) {
+                total += parseFloat(ordiniData[ordineId].importo_totale);
+            }
+        });
+        
+        document.getElementById('ordini-count').textContent = count;
+        document.getElementById('ordini-total').textContent = 
+            `€ ${total.toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+    }
+    
+    // Calcolatrice IVA
+    function calcolaIVA() {
+        const netto = parseFloat(document.getElementById('calc-netto').value) || 0;
+        const ivaRate = parseFloat(document.getElementById('calc-iva-rate').value) || 0;
+        
+        const iva = netto * (ivaRate / 100);
+        const totale = netto + iva;
+        
+        document.getElementById('calc-iva').textContent = `€ ${iva.toFixed(2).replace('.', ',')}`;
+        document.getElementById('calc-totale').textContent = `€ ${totale.toFixed(2).replace('.', ',')}`;
+    }
+    
+    document.getElementById('calc-netto').addEventListener('input', calcolaIVA);
+    document.getElementById('calc-iva-rate').addEventListener('change', calcolaIVA);
+    
+    // Applica calcolo al form
+    document.getElementById('applica-calcolo').addEventListener('click', function() {
+        const netto = parseFloat(document.getElementById('calc-netto').value) || 0;
+        const ivaRate = parseFloat(document.getElementById('calc-iva-rate').value) || 0;
+        const iva = netto * (ivaRate / 100);
+        const totale = netto + iva;
+        
+        document.getElementById('{{ form.importo_netto.id_for_label }}').value = netto.toFixed(2);
+        document.getElementById('{{ form.importo_iva.id_for_label }}').value = iva.toFixed(2);
+        document.getElementById('{{ form.importo_totale.id_for_label }}').value = totale.toFixed(2);
+    });
+
+    // Calcolo automatico totale quando cambiano netto o iva
+    function calcolaTotaleForm() {
+        const netto = parseFloat(document.getElementById('{{ form.importo_netto.id_for_label }}').value) || 0;
+        const iva = parseFloat(document.getElementById('{{ form.importo_iva.id_for_label }}').value) || 0;
+        const totale = netto + iva;
+        
+        if (totale > 0) {
+            document.getElementById('{{ form.importo_totale.id_for_label }}').value = totale.toFixed(2);
+        }
+    }
+    
+    document.getElementById('{{ form.importo_netto.id_for_label }}').addEventListener('input', calcolaTotaleForm);
+    document.getElementById('{{ form.importo_iva.id_for_label }}').addEventListener('input', calcolaTotaleForm);
+});
+</script>
+{% endblock %}

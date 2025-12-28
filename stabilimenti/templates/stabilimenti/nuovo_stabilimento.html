@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+        <div class="col-lg-8">
+            <div class="form-container">
+                <!-- Header del form -->
+                <div class="form-header">
+                    <h2>
+                        <i class="fas fa-building me-3"></i>{{ page_title }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Compila tutti i dati per creare un nuovo stabilimento aziendale.
+                    </p>
+                </div>
+
+                <!-- Form principale -->
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Dati Anagrafici -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-info-circle me-2"></i>Dati Anagrafici
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    {{ form.nome.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.nome }}
+                                    {% if form.nome.errors %}
+                                        <div class="text-danger small">{{ form.nome.errors }}</div>
+                                    {% endif %}
+                                    {% if form.nome.help_text %}
+                                        <div class="help-text">{{ form.nome.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    {{ form.indirizzo.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.indirizzo }}
+                                    {% if form.indirizzo.errors %}
+                                        <div class="text-danger small">{{ form.indirizzo.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="form-group">
+                                    {{ form.cap.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.cap }}
+                                    {% if form.cap.errors %}
+                                        <div class="text-danger small">{{ form.cap.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="form-group">
+                                    {{ form.citta.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.citta }}
+                                    {% if form.citta.errors %}
+                                        <div class="text-danger small">{{ form.citta.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    {{ form.provincia.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.provincia }}
+                                    {% if form.provincia.errors %}
+                                        <div class="text-danger small">{{ form.provincia.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.telefono.label_tag }}
+                                    {{ form.telefono }}
+                                    {% if form.telefono.errors %}
+                                        <div class="text-danger small">{{ form.telefono.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.email_filiale.label_tag }}
+                                    {{ form.email_filiale }}
+                                    {% if form.email_filiale.errors %}
+                                        <div class="text-danger small">{{ form.email_filiale.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Responsabili -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-users me-2"></i>Responsabili
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.responsabile_operativo.label_tag }}
+                                    {{ form.responsabile_operativo }}
+                                    {% if form.responsabile_operativo.errors %}
+                                        <div class="text-danger small">{{ form.responsabile_operativo.errors }}</div>
+                                    {% endif %}
+                                    {% if form.responsabile_operativo.help_text %}
+                                        <div class="help-text">{{ form.responsabile_operativo.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.responsabile_amministrativo.label_tag }}
+                                    {{ form.responsabile_amministrativo }}
+                                    {% if form.responsabile_amministrativo.errors %}
+                                        <div class="text-danger small">{{ form.responsabile_amministrativo.errors }}</div>
+                                    {% endif %}
+                                    {% if form.responsabile_amministrativo.help_text %}
+                                        <div class="help-text">{{ form.responsabile_amministrativo.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caratteristiche Strutturali -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-ruler-combined me-2"></i>Caratteristiche Strutturali
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.superficie_mq.label_tag }}
+                                    {{ form.superficie_mq }}
+                                    {% if form.superficie_mq.errors %}
+                                        <div class="text-danger small">{{ form.superficie_mq.errors }}</div>
+                                    {% endif %}
+                                    {% if form.superficie_mq.help_text %}
+                                        <div class="help-text">{{ form.superficie_mq.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.numero_piani.label_tag }}
+                                    {{ form.numero_piani }}
+                                    {% if form.numero_piani.errors %}
+                                        <div class="text-danger small">{{ form.numero_piani.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.anno_costruzione.label_tag }}
+                                    {{ form.anno_costruzione }}
+                                    {% if form.anno_costruzione.errors %}
+                                        <div class="text-danger small">{{ form.anno_costruzione.errors }}</div>
+                                    {% endif %}
+                                    {% if form.anno_costruzione.help_text %}
+                                        <div class="help-text">{{ form.anno_costruzione.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_apertura.label_tag }}
+                                    {{ form.data_apertura }}
+                                    {% if form.data_apertura.errors %}
+                                        <div class="text-danger small">{{ form.data_apertura.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-sticky-note me-2"></i>Note Generali
+                        </h4>
+                        
+                        <div class="form-group">
+                            {{ form.note_generali.label_tag }}
+                            {{ form.note_generali }}
+                            {% if form.note_generali.errors %}
+                                <div class="text-danger small">{{ form.note_generali.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Errori generali del form -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Pulsanti di azione -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'stabilimenti:list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Torna alla Lista
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-save">
+                            <i class="fas fa-save me-2"></i>Crea Stabilimento
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-uppercase per campo provincia
+    const provinciaField = document.querySelector('#id_provincia');
+    if (provinciaField) {
+        provinciaField.addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+    
+    // Validazione lato client per alcuni campi
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Controlla CAP
+            const cap = document.querySelector('#id_cap');
+            if (cap && cap.value) {
+                const capRegex = /^\d{5}$/;
+                if (!capRegex.test(cap.value)) {
+                    alert('Il CAP deve essere di 5 cifre numeriche');
+                    cap.focus();
+                    e.preventDefault();
+                    isValid = false;
+                }
+            }
+            
+            // Controlla provincia
+            const provincia = document.querySelector('#id_provincia');
+            if (provincia && provincia.value) {
+                if (provincia.value.length !== 2) {
+                    alert('La provincia deve essere di 2 lettere');
+                    provincia.focus();
+                    e.preventDefault();
+                    isValid = false;
+                }
+            }
+            
+            // Disabilita il pulsante per evitare doppi submit
+            if (isValid) {
+                const submitBtn = document.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creazione in corso...';
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,537 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Seleziona Fornitori - {{ richiesta.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.asset-info { background-color: #e9ecef; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem; }
+.alert-sm { padding: 0.5rem 0.75rem; font-size: 0.875rem; }
+#search-input {
+    font-size: 1.1rem;
+    padding: 0.75rem;
+}
+#search-results {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-top: 1rem;
+}
+.fornitore-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.fornitore-item:hover {
+    background-color: #f8f9fa;
+}
+.fornitore-item:last-child {
+    border-bottom: none;
+}
+.fornitore-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+.selected-fornitori-list {
+    border: 2px dashed #0d6efd;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    min-height: 100px;
+    background: #f8f9fa;
+}
+.selected-fornitore-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+.selected-fornitore-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.remove-btn {
+    cursor: pointer;
+    color: #dc3545;
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+.remove-btn:hover {
+    background-color: #dc3545;
+    color: white;
+}
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+    Seleziona Fornitori - {{ richiesta.numero }}
+{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}">{{ richiesta.numero }}</a>
+        </li>
+        <li class="breadcrumb-item active">Selezione Fornitori</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4">
+            <i data-feather="users" class="me-2"></i>
+            Selezione Fornitori
+        </h1>
+        <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-outline-secondary">
+            <i data-feather="arrow-left" class="me-1"></i>Torna al Dettaglio
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <!-- Riepilogo Richiesta -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">📋 Riepilogo Richiesta</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ richiesta.titolo }}</h6>
+                    <p class="text-muted mb-2">{{ richiesta.descrizione|truncatechars:150 }}</p>
+
+                    <div class="d-flex gap-2 mb-2">
+                        <span class="badge bg-info">{{ richiesta.get_priorita_display }}</span>
+                        <span class="badge bg-warning text-dark">Scade: {{ richiesta.data_scadenza|date:"d/m/Y" }}</span>
+                        {% if richiesta.budget_massimo %}
+                        <span class="badge bg-success">Budget: €{{ richiesta.budget_massimo|floatformat:0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Asset collegato -->
+                    {% if richiesta.target %}
+                    <div class="asset-info">
+                        <h6 class="text-primary">
+                            {% if richiesta.target.targa %}
+                                🚗 Asset Collegato: {{ richiesta.target.targa }}
+                            {% else %}
+                                🏢 Asset Collegato: {{ richiesta.target.nome }}
+                            {% endif %}
+                        </h6>
+                        {% if richiesta.target.targa %}
+                        <small class="text-muted">
+                            {{ richiesta.target.marca }} {{ richiesta.target.modello }} ({{ richiesta.target.anno_immatricolazione }})
+                        </small>
+                        {% else %}
+                        <small class="text-muted">
+                            {{ richiesta.target.indirizzo }}, {{ richiesta.target.citta }}
+                        </small>
+                        {% endif %}
+
+                        {% if richiesta.auto_attach_documents %}
+                        <div class="mt-1">
+                            <small class="text-success">
+                                <i data-feather="paperclip" width="12"></i>
+                                Documenti allegati automaticamente alle email
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Fornitori Selezionati -->
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        ✅ Fornitori Selezionati
+                        <span class="badge bg-white text-primary ms-2" id="selected-count">0</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="selected-fornitori-list" id="selected-fornitori-list">
+                        <div class="empty-state" id="empty-state">
+                            <i data-feather="inbox" width="48" height="48" class="text-muted mb-2"></i>
+                            <p class="mb-0">Nessun fornitore selezionato</p>
+                            <small class="text-muted">Minimo 2 fornitori richiesti</small>
+                        </div>
+                    </div>
+
+                    <!-- Alert minimo fornitori -->
+                    <div class="alert alert-warning alert-sm mt-3" id="min-fornitori-alert">
+                        <i data-feather="alert-triangle" width="14"></i>
+                        <strong>Attenzione:</strong> Devi selezionare almeno <strong>2 fornitori</strong> per procedere.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <!-- Form Ricerca Fornitori -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">🔍 Cerca Fornitori</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input
+                            type="text"
+                            class="form-control form-control-lg"
+                            id="search-input"
+                            placeholder="Digita il nome del fornitore..."
+                            autocomplete="off"
+                        >
+                        <small class="text-muted">
+                            Digita almeno 2 caratteri per avviare la ricerca
+                        </small>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div id="loading" style="display: none;" class="text-center p-3">
+                        <div class="spinner"></div>
+                        <span class="ms-2">Ricerca in corso...</span>
+                    </div>
+
+                    <!-- Risultati ricerca -->
+                    <div id="search-results"></div>
+                </div>
+            </div>
+
+            <!-- Form Submit -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" id="fornitori-form">
+                        {% csrf_token %}
+                        <!-- Hidden inputs per fornitori selezionati -->
+                        <div id="fornitori-inputs"></div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-secondary btn-lg" id="submit-btn" disabled>
+                                <i data-feather="alert-circle" class="me-1"></i>
+                                Seleziona almeno 2 fornitori
+                            </button>
+                            <small class="text-muted text-center">
+                                I fornitori selezionati riceveranno la richiesta di preventivo via email
+                            </small>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+
+    // Stato fornitori selezionati
+    const selectedFornitori = new Map();
+
+    // Riferimenti DOM
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    const selectedList = document.getElementById('selected-fornitori-list');
+    const emptyState = document.getElementById('empty-state');
+    const selectedCount = document.getElementById('selected-count');
+    const fornitoriInputs = document.getElementById('fornitori-inputs');
+    const submitBtn = document.getElementById('submit-btn');
+    const loadingIndicator = document.getElementById('loading');
+    const minFornitoriAlert = document.getElementById('min-fornitori-alert');
+
+    // Timeout per debounce della ricerca
+    let searchTimeout;
+
+    // Event listener per la ricerca
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+
+        // Clear timeout precedente
+        clearTimeout(searchTimeout);
+
+        // Se meno di 2 caratteri, pulisci risultati
+        if (query.length < 2) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        // Debounce di 300ms
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 300);
+    });
+
+    // Funzione per eseguire la ricerca AJAX
+    function performSearch(query) {
+        loadingIndicator.style.display = 'block';
+        searchResults.innerHTML = '';
+
+        fetch(`{% url 'preventivi:search_fornitori_ajax' %}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingIndicator.style.display = 'none';
+                displayResults(data.fornitori);
+            })
+            .catch(error => {
+                loadingIndicator.style.display = 'none';
+                console.error('Errore ricerca:', error);
+                searchResults.innerHTML = '<div class="alert alert-danger">Errore durante la ricerca</div>';
+            });
+    }
+
+    // Funzione per mostrare i risultati
+    function displayResults(fornitori) {
+        if (fornitori.length === 0) {
+            searchResults.innerHTML = `
+                <div class="alert alert-info alert-sm">
+                    <i data-feather="info" width="14"></i>
+                    Nessun fornitore trovato
+                </div>
+            `;
+            feather.replace();
+            return;
+        }
+
+        let html = '<div class="border rounded">';
+
+        fornitori.forEach(fornitore => {
+            const isSelected = selectedFornitori.has(fornitore.id);
+            const checkboxHtml = isSelected
+                ? '<input type="checkbox" class="fornitore-checkbox" checked disabled>'
+                : '<input type="checkbox" class="fornitore-checkbox">';
+
+            html += `
+                <div class="fornitore-item ${isSelected ? 'bg-light' : ''}" data-id="${fornitore.id}">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3 mt-1">
+                            ${checkboxHtml}
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>${fornitore.nome}</strong>
+                            ${isSelected ? '<span class="badge bg-success ms-2">Selezionato</span>' : ''}
+                            <br>
+                            <small class="text-muted">
+                                <i data-feather="mail" width="12"></i> ${fornitore.email} |
+                                <i data-feather="phone" width="12"></i> ${fornitore.telefono}
+                                ${fornitore.categoria !== 'N/D' ? ' | ' + fornitore.categoria : ''}
+                                ${fornitore.citta !== 'N/D' ? ' | ' + fornitore.citta : ''}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        searchResults.innerHTML = html;
+
+        // Re-initialize feather icons
+        feather.replace();
+
+        // Aggiungi event listeners ai checkbox
+        document.querySelectorAll('.fornitore-item:not(.bg-light)').forEach(item => {
+            const checkbox = item.querySelector('.fornitore-checkbox');
+
+            item.addEventListener('click', function(e) {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+
+                if (checkbox.checked) {
+                    const fornitoreId = parseInt(this.dataset.id);
+                    const fornitoreData = fornitori.find(f => f.id === fornitoreId);
+                    addFornitore(fornitoreData);
+
+                    // Pulisci il campo di ricerca e i risultati
+                    searchInput.value = '';
+                    searchResults.innerHTML = '';
+                }
+            });
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    const fornitoreId = parseInt(item.dataset.id);
+                    const fornitoreData = fornitori.find(f => f.id === fornitoreId);
+                    addFornitore(fornitoreData);
+
+                    // Pulisci il campo di ricerca e i risultati
+                    searchInput.value = '';
+                    searchResults.innerHTML = '';
+                }
+            });
+        });
+    }
+
+    // Funzione per aggiungere un fornitore alla selezione
+    function addFornitore(fornitore) {
+        if (selectedFornitori.has(fornitore.id)) {
+            return; // Già selezionato
+        }
+
+        selectedFornitori.set(fornitore.id, fornitore);
+        updateSelectedList();
+        updateSubmitButton();
+    }
+
+    // Funzione per rimuovere un fornitore dalla selezione
+    function removeFornitore(fornitoreId) {
+        selectedFornitori.delete(fornitoreId);
+        updateSelectedList();
+        updateSubmitButton();
+    }
+
+    // Funzione per aggiornare la lista dei fornitori selezionati
+    function updateSelectedList() {
+        // Aggiorna contatore
+        selectedCount.textContent = selectedFornitori.size;
+
+        // Mostra/nascondi empty state
+        if (selectedFornitori.size === 0) {
+            emptyState.style.display = 'block';
+            fornitoriInputs.innerHTML = '';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+
+        // Costruisci HTML lista fornitori
+        let html = '';
+        let inputsHtml = '';
+
+        selectedFornitori.forEach(fornitore => {
+            html += `
+                <div class="selected-fornitore-item">
+                    <div>
+                        <strong>${fornitore.nome}</strong>
+                        <br>
+                        <small class="text-muted">
+                            ${fornitore.email} | ${fornitore.telefono}
+                        </small>
+                    </div>
+                    <div>
+                        <span class="remove-btn" onclick="window.removeFornitore(${fornitore.id})">
+                            <i data-feather="x-circle" width="20"></i>
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            // Aggiungi hidden input per il form
+            inputsHtml += `<input type="hidden" name="fornitori" value="${fornitore.id}">`;
+        });
+
+        // Inserisci prima dell'empty state
+        emptyState.insertAdjacentHTML('beforebegin', html);
+
+        // Rimuovi vecchi elementi
+        document.querySelectorAll('.selected-fornitore-item').forEach((item, index) => {
+            if (index < selectedFornitori.size - 1) {
+                item.remove();
+            }
+        });
+
+        // Rimpiazza tutti i selected items
+        const existingItems = selectedList.querySelectorAll('.selected-fornitore-item');
+        existingItems.forEach(item => item.remove());
+        emptyState.insertAdjacentHTML('beforebegin', html);
+
+        // Aggiorna hidden inputs
+        fornitoriInputs.innerHTML = inputsHtml;
+
+        // Re-initialize feather icons
+        feather.replace();
+    }
+
+    // Funzione per aggiornare lo stato del pulsante submit
+    function updateSubmitButton() {
+        const count = selectedFornitori.size;
+
+        if (count < 2) {
+            submitBtn.disabled = true;
+            submitBtn.classList.remove('btn-primary');
+            submitBtn.classList.add('btn-secondary');
+            submitBtn.innerHTML = `<i data-feather="alert-circle" class="me-1"></i>Seleziona almeno 2 fornitori (${count}/2)`;
+            minFornitoriAlert.style.display = 'block';
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.classList.add('btn-primary');
+            submitBtn.classList.remove('btn-secondary');
+            submitBtn.innerHTML = `<i data-feather="check" class="me-1"></i>Conferma ${count} fornitori e Procedi`;
+            minFornitoriAlert.style.display = 'none';
+        }
+
+        // Re-initialize feather icons
+        feather.replace();
+    }
+
+    // Esponi la funzione removeFornitore globalmente
+    window.removeFornitore = removeFornitore;
+
+    // Carica fornitori già selezionati (se presenti)
+    {% if fornitori_attuali %}
+    const fornitoriAttuali = [
+        {% for fornitore in fornitori_attuali %}
+        {
+            id: {{ fornitore.id }},
+            nome: "{{ fornitore.nome|escapejs }}",
+            email: "{{ fornitore.email|default:'N/D'|escapejs }}",
+            telefono: "{{ fornitore.telefono|default:'N/D'|escapejs }}",
+            categoria: "{{ fornitore.categoria|default:'N/D'|escapejs }}",
+            citta: "{{ fornitore.citta|default:'N/D'|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    fornitoriAttuali.forEach(fornitore => {
+        selectedFornitori.set(fornitore.id, fornitore);
+    });
+
+    updateSelectedList();
+    updateSubmitButton();
+    {% endif %}
+});
+</script>
+{% endblock %}

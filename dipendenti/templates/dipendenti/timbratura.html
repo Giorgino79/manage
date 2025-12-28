@@ -1,0 +1,576 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Timbratura Presenze{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timbratura-page {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .page-header {
+        background: #fff;
+        border-bottom: 2px solid #e9ecef;
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .current-time {
+        font-family: 'Courier New', monospace;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .timbratura-form {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .btn-timbratura {
+        padding: 1.5rem 3rem;
+        font-size: 1.3rem;
+        font-weight: 600;
+        border-radius: 6px;
+        border: 2px solid;
+        transition: all 0.2s;
+        min-width: 200px;
+    }
+
+    .btn-entrata {
+        background: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+
+    .btn-entrata:hover {
+        background: #218838;
+        border-color: #1e7e34;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-uscita {
+        background: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .btn-uscita:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-warning {
+        background: #ffc107;
+        border-color: #ffc107;
+    }
+
+    .btn-warning:hover {
+        background: #e0a800;
+        border-color: #d39e00;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+    }
+
+    .stats-box {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .stats-box .label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-box .value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2c3e50;
+    }
+
+    .stats-box.overtime .value {
+        color: #dc3545;
+    }
+
+    .timbrature-table {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+
+    .timbrature-table .table {
+        margin-bottom: 0;
+    }
+
+    .timbrature-table thead {
+        background: #495057;
+        color: white;
+    }
+
+    .timbrature-table thead th {
+        border: none;
+        font-weight: 600;
+        padding: 1rem;
+    }
+
+    .timbrature-table tbody tr {
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .timbrature-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .timbrature-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+
+    .badge-entrata {
+        background: #28a745;
+        color: white;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 4px;
+    }
+
+    .badge-uscita {
+        background: #dc3545;
+        color: white;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 4px;
+    }
+
+    .report-section {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-top: 2rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #495057;
+        box-shadow: 0 0 0 0.2rem rgba(73, 80, 87, 0.25);
+    }
+
+    .table-week {
+        font-size: 0.95rem;
+    }
+
+    .table-week .overtime-row {
+        background-color: #ffe6e6;
+    }
+
+    .table-week .overtime-value {
+        color: #dc3545;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="timbratura-page container py-4">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h2 class="mb-1">
+                    <i class="fas fa-clock me-2"></i>
+                    Timbratura Presenze
+                </h2>
+                <p class="text-muted mb-0">
+                    {{ user.nome_completo }} - {{ oggi|date:"l d F Y" }}
+                </p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <div class="current-time" id="currentTime"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche Oggi -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stats-box">
+                <div class="label">Stato Attuale</div>
+                <div class="value">
+                    {% if stato_attuale == 'dentro' %}
+                        <i class="fas fa-user-check text-success"></i> In Servizio
+                    {% else %}
+                        <i class="fas fa-user-clock text-secondary"></i> Fuori Servizio
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-box">
+                <div class="label">Ore Lavorate Oggi</div>
+                <div class="value">{{ ore_lavorate_oggi }} h</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-box overtime">
+                <div class="label">Straordinari Oggi</div>
+                <div class="value">{{ straordinari_oggi }} h</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Timbratura -->
+    <div class="timbratura-form">
+        <h4 class="mb-4">Registra Timbratura</h4>
+
+        <form method="post" id="timbraturaForm">
+            {% csrf_token %}
+
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <button type="submit" name="tipo" value="entrata" class="btn btn-entrata w-100">
+                        <i class="fas fa-arrow-right me-2"></i>
+                        ENTRATA
+                    </button>
+                </div>
+                <div class="col-md-4 mb-3 mb-md-0">
+                    <button type="submit" name="tipo" value="uscita" class="btn btn-uscita w-100">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        USCITA
+                    </button>
+                </div>
+                <div class="col-md-4">
+                    {% if giornata_oggi_conclusa %}
+                        <button type="button" class="btn btn-secondary w-100" disabled>
+                            <i class="fas fa-check-circle me-2"></i>
+                            GIORNATA CONCLUSA
+                        </button>
+                    {% else %}
+                        <a href="{% url 'dipendenti:concludi_giornata' %}" class="btn btn-warning w-100 text-dark fw-bold">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            CONCLUSIONE GIORNATA
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <label for="note" class="form-label fw-bold">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Note (opzionale)
+                    </label>
+                    <textarea
+                        class="form-control"
+                        id="note"
+                        name="note"
+                        rows="3"
+                        placeholder="Es: Pausa pranzo, Trasferta, Lavoro straordinario, ecc."></textarea>
+                    <small class="text-muted">
+                        Aggiungi una nota per specificare il motivo della timbratura (pausa pranzo, fine turno, ecc.)
+                    </small>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Timbrature di Oggi -->
+    <div class="timbrature-table">
+        <div class="p-3 border-bottom">
+            <h4 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Timbrature di Oggi
+            </h4>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Tipo</th>
+                        <th style="width: 15%;">Orario</th>
+                        <th style="width: 50%;">Note</th>
+                        <th style="width: 20%;">IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if timbrature_oggi %}
+                        {% for timbratura in timbrature_oggi %}
+                        <tr>
+                            <td>
+                                {% if timbratura.tipo == 'entrata' %}
+                                    <span class="badge-entrata">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        ENTRATA
+                                    </span>
+                                {% else %}
+                                    <span class="badge-uscita">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        USCITA
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong style="font-size: 1.1rem;">{{ timbratura.orario|time:"H:i:s" }}</strong>
+                            </td>
+                            <td>
+                                {% if timbratura.note %}
+                                    <i class="fas fa-comment text-muted me-2"></i>
+                                    {{ timbratura.note }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    <i class="fas fa-network-wired me-1"></i>
+                                    {{ timbratura.indirizzo_ip|default:"N/D" }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Nessuna timbratura registrata oggi.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Report Personalizzato -->
+    <div class="report-section">
+        <h4 class="mb-4">
+            <i class="fas fa-chart-bar me-2"></i>
+            Report Presenze
+        </h4>
+
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label for="report_data_inizio" class="form-label">Data Inizio</label>
+                <input type="date" class="form-control" id="report_data_inizio" required>
+            </div>
+
+            <div class="col-md-3">
+                <label for="report_data_fine" class="form-label">Data Fine</label>
+                <input type="date" class="form-control" id="report_data_fine" required>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Azioni</label>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary" onclick="openReport('web')">
+                        <i class="fas fa-eye me-2"></i>
+                        Visualizza
+                    </button>
+                    <button type="button" class="btn btn-outline-danger" onclick="openReport('pdf')">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        PDF
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="openReport('excel')">
+                        <i class="fas fa-file-excel me-2"></i>
+                        Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <small class="text-muted">Filtri rapidi:</small>
+            <div class="btn-group btn-group-sm ms-2" role="group">
+                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('today')">Oggi</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('week')">Settimana</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('month')">Mese</button>
+                <button type="button" class="btn btn-outline-secondary" onclick="setDateRange('lastMonth')">Mese Scorso</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Riepilogo Settimanale -->
+    {% if giornate_settimana %}
+    <div class="timbrature-table mt-4">
+        <div class="p-3 border-bottom">
+            <h4 class="mb-0">
+                <i class="fas fa-calendar-week me-2"></i>
+                Riepilogo Settimana Corrente
+            </h4>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-week">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Giorno</th>
+                        <th>Timbrature</th>
+                        <th class="text-end">Ore Totali</th>
+                        <th class="text-end">Straordinari</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for giorno in giornate_settimana %}
+                    <tr {% if giorno.ore_straordinari and giorno.ore_straordinari > 0 %}class="overtime-row"{% endif %}>
+                        <td>
+                            <strong>{{ giorno.data|date:"d/m/Y" }}</strong>
+                            {% if giorno.data == oggi %}
+                                <span class="badge bg-primary ms-2">Oggi</span>
+                            {% endif %}
+                            {% if giorno.conclusa %}
+                                <i class="fas fa-check-circle text-success ms-2" title="Giornata conclusa"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ giorno.data|date:"l" }}</td>
+                        <td>
+                            {% for t in giorno.timbrature %}
+                                {% if t.tipo == 'entrata' %}
+                                    <span class="badge bg-success me-1">E {{ t.orario|time:"H:i" }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger me-1">U {{ t.orario|time:"H:i" }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td class="text-end">
+                            {% if giorno.conclusa %}
+                                <strong>{{ giorno.ore_lavorate }} h</strong>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if giorno.conclusa %}
+                                {% if giorno.ore_straordinari > 0 %}
+                                    <span class="overtime-value">{{ giorno.ore_straordinari }} h</span>
+                                {% else %}
+                                    <span class="text-muted">0.00 h</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Orologio in tempo reale
+function updateClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('currentTime').textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// Conferma timbratura
+document.getElementById('timbraturaForm').addEventListener('submit', function(e) {
+    const tipo = e.submitter.value;
+    const note = document.getElementById('note').value;
+    const tipoText = tipo === 'entrata' ? 'ENTRATA' : 'USCITA';
+
+    let message = `Confermi la timbratura di ${tipoText}?`;
+    if (note) {
+        message += `\n\nNote: ${note}`;
+    }
+
+    if (!confirm(message)) {
+        e.preventDefault();
+    }
+});
+
+// Filtri rapidi date
+function setDateRange(range) {
+    const today = new Date();
+    const dataInizio = document.getElementById('report_data_inizio');
+    const dataFine = document.getElementById('report_data_fine');
+
+    function formatDate(date) {
+        return date.toISOString().split('T')[0];
+    }
+
+    switch(range) {
+        case 'today':
+            dataInizio.value = formatDate(today);
+            dataFine.value = formatDate(today);
+            break;
+
+        case 'week':
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            dataInizio.value = formatDate(startOfWeek);
+            dataFine.value = formatDate(endOfWeek);
+            break;
+
+        case 'month':
+            const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            dataInizio.value = formatDate(startOfMonth);
+            dataFine.value = formatDate(endOfMonth);
+            break;
+
+        case 'lastMonth':
+            const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+            dataInizio.value = formatDate(startOfLastMonth);
+            dataFine.value = formatDate(endOfLastMonth);
+            break;
+    }
+}
+
+// Apri report presenze
+function openReport(formato) {
+    const dataInizio = document.getElementById('report_data_inizio').value;
+    const dataFine = document.getElementById('report_data_fine').value;
+
+    console.log('openReport called with formato:', formato);
+    console.log('dataInizio:', dataInizio, 'dataFine:', dataFine);
+
+    if (!dataInizio || !dataFine) {
+        alert('Seleziona un periodo valido');
+        return;
+    }
+
+    let url = '/dipendenti/report-presenze/?data_inizio=' + dataInizio + '&data_fine=' + dataFine;
+
+    if (formato !== 'web') {
+        url += '&formato=' + formato;
+    }
+
+    console.log('Navigating to:', url);
+    window.location.href = url;
+}
+</script>
+{% endblock %}

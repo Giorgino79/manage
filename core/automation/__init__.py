@@ -1,0 +1,1 @@
+# Automation package per il sistema Management

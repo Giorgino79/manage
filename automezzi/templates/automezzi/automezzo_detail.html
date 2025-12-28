@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title %}Dettaglio Automezzo: {{ automezzo.targa }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:automezzo_list' %}">Elenco</a></li>
+        <li class="breadcrumb-item active">{{ automezzo.targa }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0 text-primary"><i class="fas fa-car"></i> {{ automezzo.targa }}</h4>
+          <a href="{% url 'automezzi:automezzo_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Torna all’elenco</a>
+        </div>
+        <div class="card-body">
+          <dl class="row">
+            <dt class="col-sm-4">Numero Mezzo:</dt>
+            <dd class="col-sm-8">
+              {% if automezzo.numero_mezzo %}
+                <strong>{{ automezzo.numero_mezzo }}</strong>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </dd>
+            <dt class="col-sm-4">Marca:</dt>
+            <dd class="col-sm-8">{{ automezzo.marca }}</dd>
+            <dt class="col-sm-4">Modello:</dt>
+            <dd class="col-sm-8">{{ automezzo.modello }}</dd>
+            <dt class="col-sm-4">Anno immatricolazione:</dt>
+            <dd class="col-sm-8">{{ automezzo.anno_immatricolazione }}</dd>
+            <dt class="col-sm-4">Tipo carburante:</dt>
+            <dd class="col-sm-8">{{ automezzo.tipo_carburante }}</dd>
+            <dt class="col-sm-4">Chilometri attuali:</dt>
+            <dd class="col-sm-8">{{ automezzo.chilometri_attuali }}</dd>
+            <dt class="col-sm-4">Assegnato a:</dt>
+            <dd class="col-sm-8">
+              {% if automezzo.assegnato_a %}
+                {{ automezzo.assegnato_a }}
+              {% else %}
+                <span class="text-muted">Non assegnato</span>
+              {% endif %}
+            </dd>
+            <dt class="col-sm-4">Stato:</dt>
+            <dd class="col-sm-8">
+              {% if automezzo.attivo %}
+                <span class="badge bg-success">Attivo</span>
+              {% else %}
+                <span class="badge bg-danger">Non attivo</span>
+              {% endif %}
+              {% if automezzo.disponibile %}
+                <span class="badge bg-info">Disponibile</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Non disponibile</span>
+              {% endif %}
+            </dd>
+            <dt class="col-sm-4">Note:</dt>
+            <dd class="col-sm-8">{{ automezzo.note|default:"—" }}</dd>
+          </dl>
+        </div>
+        
+        <!-- Sezione Documenti -->
+        <div class="card-body border-top">
+          <h5 class="card-title mb-3">
+            <i class="fas fa-file-alt me-2"></i>Documenti Allegati
+          </h5>
+          <div class="row g-3">
+            <!-- Libretto Fronte -->
+            <div class="col-md-4">
+              <div class="card h-100 document-card">
+                <div class="card-body text-center">
+                  <div class="document-icon mb-2">
+                    <i class="fas fa-id-card fa-2x text-primary"></i>
+                  </div>
+                  <h6 class="card-title">Libretto Fronte</h6>
+                  {% if automezzo.libretto_fronte %}
+                    <a href="{{ automezzo.libretto_fronte.url }}" target="_blank" class="btn btn-sm btn-primary">
+                      <i class="fas fa-eye me-1"></i>Visualizza
+                    </a>
+                    <br><small class="text-muted mt-1">{{ automezzo.libretto_fronte.name|slice:"20:" }}</small>
+                  {% else %}
+                    <p class="text-muted mb-2">Nessun file</p>
+                    <a href="{% url 'automezzi:automezzo_update' automezzo.pk %}" class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-upload me-1"></i>Carica
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Libretto Retro -->
+            <div class="col-md-4">
+              <div class="card h-100 document-card">
+                <div class="card-body text-center">
+                  <div class="document-icon mb-2">
+                    <i class="fas fa-id-card fa-2x text-primary"></i>
+                  </div>
+                  <h6 class="card-title">Libretto Retro</h6>
+                  {% if automezzo.libretto_retro %}
+                    <a href="{{ automezzo.libretto_retro.url }}" target="_blank" class="btn btn-sm btn-primary">
+                      <i class="fas fa-eye me-1"></i>Visualizza
+                    </a>
+                    <br><small class="text-muted mt-1">{{ automezzo.libretto_retro.name|slice:"20:" }}</small>
+                  {% else %}
+                    <p class="text-muted mb-2">Nessun file</p>
+                    <a href="{% url 'automezzi:automezzo_update' automezzo.pk %}" class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-upload me-1"></i>Carica
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Assicurazione -->
+            <div class="col-md-4">
+              <div class="card h-100 document-card">
+                <div class="card-body text-center">
+                  <div class="document-icon mb-2">
+                    <i class="fas fa-shield-alt fa-2x text-success"></i>
+                  </div>
+                  <h6 class="card-title">Assicurazione</h6>
+                  {% if automezzo.assicurazione %}
+                    <a href="{{ automezzo.assicurazione.url }}" target="_blank" class="btn btn-sm btn-success">
+                      <i class="fas fa-eye me-1"></i>Visualizza
+                    </a>
+                    <br><small class="text-muted mt-1">{{ automezzo.assicurazione.name|slice:"20:" }}</small>
+                  {% else %}
+                    <p class="text-muted mb-2">Nessun file</p>
+                    <a href="{% url 'automezzi:automezzo_update' automezzo.pk %}" class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-upload me-1"></i>Carica
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card-footer text-end">
+          <a href="{% url 'automezzi:automezzo_update' automezzo.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Modifica</a>
+          <a href="{% url 'automezzi:automezzo_delete' automezzo.pk %}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Elimina</a>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<script>
+// Imposta le informazioni dell'oggetto corrente per AJAX
+window.currentObjectInfo = {
+    model: 'automezzo',
+    pk: {{ automezzo.pk }},
+    name: '{{ automezzo.targa }}'
+};
+</script>
+{% endblock %}
+
+{% block css %}
+<style>
+.document-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #dee2e6;
+}
+
+.document-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.document-icon {
+  opacity: 0.7;
+}
+
+.document-card .card-body {
+  padding: 1rem;
+}
+
+.document-card .card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.document-card .btn {
+  font-size: 0.8rem;
+}
+
+.document-card small {
+  font-size: 0.7rem;
+  word-break: break-all;
+}
+</style>
+{% endblock %}

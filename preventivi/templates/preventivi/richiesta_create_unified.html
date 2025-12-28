@@ -1,0 +1,835 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nuova Richiesta Preventivo{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Wizard Steps */
+.wizard-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 2rem;
+}
+
+.wizard-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.wizard-steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #e9ecef;
+    z-index: 0;
+}
+
+.wizard-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.wizard-step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto 0.5rem;
+    transition: all 0.3s;
+}
+
+.wizard-step.active .wizard-step-circle {
+    background: #0d6efd;
+    color: white;
+    transform: scale(1.1);
+}
+
+.wizard-step.completed .wizard-step-circle {
+    background: #28a745;
+    color: white;
+}
+
+.wizard-step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.wizard-step.active .wizard-step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.wizard-step.completed .wizard-step-label {
+    color: #28a745;
+}
+
+/* Step Content */
+.step-content {
+    display: none;
+}
+
+.step-content.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Form sections */
+.form-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.form-section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Fornitori search */
+#search-input {
+    font-size: 1.1rem;
+    padding: 0.75rem;
+}
+
+#search-results {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-top: 1rem;
+}
+
+.fornitore-item {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.fornitore-item:hover {
+    background-color: #f8f9fa;
+}
+
+.fornitore-item:last-child {
+    border-bottom: none;
+}
+
+.fornitore-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.selected-fornitori-list {
+    border: 2px dashed #0d6efd;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    min-height: 150px;
+    background: #f8f9fa;
+}
+
+.selected-fornitore-item {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+}
+
+.selected-fornitore-item:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.remove-btn {
+    cursor: pointer;
+    color: #dc3545;
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.remove-btn:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Navigation buttons */
+.wizard-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #e9ecef;
+}
+
+.asset-info {
+    background-color: #e9ecef;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block page_title %}
+    Nuova Richiesta Preventivo
+{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item active">Nuova Richiesta</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="wizard-container">
+                <!-- Wizard Steps Indicator -->
+                <div class="wizard-steps">
+                    <div class="wizard-step active" data-step="1">
+                        <div class="wizard-step-circle">
+                            <i data-feather="file-text" width="20"></i>
+                        </div>
+                        <div class="wizard-step-label">Dati Richiesta</div>
+                    </div>
+                    <div class="wizard-step" data-step="2">
+                        <div class="wizard-step-circle">
+                            <i data-feather="users" width="20"></i>
+                        </div>
+                        <div class="wizard-step-label">Selezione Fornitori</div>
+                    </div>
+                    <div class="wizard-step" data-step="3">
+                        <div class="wizard-step-circle">
+                            <i data-feather="check-circle" width="20"></i>
+                        </div>
+                        <div class="wizard-step-label">Conferma</div>
+                    </div>
+                </div>
+
+                <!-- Main Form -->
+                <form method="post" id="wizard-form" novalidate>
+                    {% csrf_token %}
+
+                    <!-- STEP 1: Dati Base -->
+                    <div class="step-content active" id="step-1">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-section">
+                                    <div class="form-section-title">
+                                        <i data-feather="edit-3" width="18"></i>
+                                        Informazioni Generali
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.titolo.label }} *</label>
+                                        {{ form.titolo }}
+                                        {% if form.titolo.errors %}
+                                            <div class="text-danger small">{{ form.titolo.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.descrizione.label }} *</label>
+                                        {{ form.descrizione }}
+                                        {% if form.descrizione.errors %}
+                                            <div class="text-danger small">{{ form.descrizione.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Asset Collegato -->
+                                <div class="form-section">
+                                    <div class="form-section-title">
+                                        <i data-feather="box" width="18"></i>
+                                        Asset Collegato (Opzionale)
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.asset_collegato.label }}</label>
+                                        {{ form.asset_collegato }}
+                                        {% if form.asset_collegato.help_text %}
+                                            <small class="form-text text-muted">{{ form.asset_collegato.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="form-check">
+                                        {{ form.auto_attach_documents }}
+                                        <label class="form-check-label" for="{{ form.auto_attach_documents.id_for_label }}">
+                                            {{ form.auto_attach_documents.label }}
+                                        </label>
+                                        {% if form.auto_attach_documents.help_text %}
+                                            <small class="form-text text-muted d-block">{{ form.auto_attach_documents.help_text }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Note Interne -->
+                                <div class="form-section">
+                                    <div class="form-section-title">
+                                        <i data-feather="message-square" width="18"></i>
+                                        Note Interne
+                                    </div>
+                                    {{ form.note_interne }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <!-- Dettagli -->
+                                <div class="form-section">
+                                    <div class="form-section-title">
+                                        <i data-feather="settings" width="18"></i>
+                                        Dettagli
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.priorita.label }} *</label>
+                                        {{ form.priorita }}
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.data_scadenza.label }} *</label>
+                                        {{ form.data_scadenza }}
+                                        {% if form.data_scadenza.errors %}
+                                            <div class="text-danger small">{{ form.data_scadenza.errors.0 }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.budget_massimo.label }}</label>
+                                        {{ form.budget_massimo }}
+                                    </div>
+
+                                    {% if form.approvatore %}
+                                    <div class="mb-3">
+                                        <label class="form-label">{{ form.approvatore.label }}</label>
+                                        {{ form.approvatore }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: Selezione Fornitori -->
+                    <div class="step-content" id="step-2">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Form Ricerca Fornitori -->
+                                <div class="form-section">
+                                    <div class="form-section-title">
+                                        <i data-feather="search" width="18"></i>
+                                        Cerca Fornitori
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <input
+                                            type="text"
+                                            class="form-control form-control-lg"
+                                            id="search-input"
+                                            placeholder="Digita il nome del fornitore..."
+                                            autocomplete="off"
+                                        >
+                                        <small class="text-muted">
+                                            Digita almeno 2 caratteri per avviare la ricerca
+                                        </small>
+                                    </div>
+
+                                    <!-- Loading indicator -->
+                                    <div id="loading" style="display: none;" class="text-center p-3">
+                                        <div class="spinner"></div>
+                                        <span class="ms-2">Ricerca in corso...</span>
+                                    </div>
+
+                                    <!-- Risultati ricerca -->
+                                    <div id="search-results"></div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Fornitori Selezionati -->
+                                <div class="form-section">
+                                    <div class="form-section-title">
+                                        <i data-feather="check-square" width="18"></i>
+                                        Fornitori Selezionati
+                                        <span class="badge bg-primary ms-2" id="selected-count">0</span>
+                                    </div>
+
+                                    <div class="selected-fornitori-list" id="selected-fornitori-list">
+                                        <div class="empty-state" id="empty-state">
+                                            <i data-feather="inbox" width="48" height="48" class="text-muted mb-2"></i>
+                                            <p class="mb-0">Nessun fornitore selezionato</p>
+                                            <small class="text-muted">Minimo 2 fornitori richiesti</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Alert minimo fornitori -->
+                                    <div class="alert alert-warning mt-3" id="min-fornitori-alert">
+                                        <i data-feather="alert-triangle" width="14"></i>
+                                        <strong>Attenzione:</strong> Devi selezionare almeno <strong>2 fornitori</strong> per procedere.
+                                    </div>
+
+                                    <!-- Hidden inputs per fornitori selezionati -->
+                                    <div id="fornitori-inputs"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: Conferma -->
+                    <div class="step-content" id="step-3">
+                        <div class="form-section">
+                            <div class="form-section-title">
+                                <i data-feather="info" width="18"></i>
+                                Riepilogo Richiesta
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Dati Richiesta</h6>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <th width="40%">Titolo:</th>
+                                            <td id="confirm-titolo"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Descrizione:</th>
+                                            <td id="confirm-descrizione"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Priorità:</th>
+                                            <td id="confirm-priorita"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Data Scadenza:</th>
+                                            <td id="confirm-scadenza"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Budget Massimo:</th>
+                                            <td id="confirm-budget"></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h6>Fornitori Selezionati (<span id="confirm-fornitori-count">0</span>)</h6>
+                                    <div id="confirm-fornitori-list"></div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info mt-3">
+                                <i data-feather="info" width="18"></i>
+                                <strong>Prossimi passi:</strong> Dopo aver creato la richiesta, potrai inviare le email ai fornitori selezionati.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="wizard-navigation">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-prev" style="display: none;">
+                                <i data-feather="arrow-left" width="18"></i>
+                                Indietro
+                            </button>
+                        </div>
+                        <div>
+                            <a href="{% url 'preventivi:richieste_list' %}" class="btn btn-outline-danger me-2">
+                                <i data-feather="x" width="18"></i>
+                                Annulla
+                            </a>
+                            <button type="button" class="btn btn-primary" id="btn-next">
+                                Avanti
+                                <i data-feather="arrow-right" width="18"></i>
+                            </button>
+                            <button type="submit" class="btn btn-success" id="btn-submit" style="display: none;">
+                                <i data-feather="check" width="18"></i>
+                                Crea Richiesta
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+
+    // Wizard state
+    let currentStep = 1;
+    const totalSteps = 3;
+
+    // Fornitori state
+    const selectedFornitori = new Map();
+
+    // DOM elements
+    const btnNext = document.getElementById('btn-next');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnSubmit = document.getElementById('btn-submit');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    const loadingIndicator = document.getElementById('loading');
+    const selectedList = document.getElementById('selected-fornitori-list');
+    const emptyState = document.getElementById('empty-state');
+    const selectedCount = document.getElementById('selected-count');
+    const fornitoriInputs = document.getElementById('fornitori-inputs');
+    const minFornitoriAlert = document.getElementById('min-fornitori-alert');
+
+    // Wizard navigation
+    function showStep(stepNumber) {
+        // Hide all steps
+        document.querySelectorAll('.step-content').forEach(step => {
+            step.classList.remove('active');
+        });
+
+        // Show current step
+        document.getElementById(`step-${stepNumber}`).classList.add('active');
+
+        // Update step indicators
+        document.querySelectorAll('.wizard-step').forEach((step, index) => {
+            step.classList.remove('active', 'completed');
+            if (index + 1 < stepNumber) {
+                step.classList.add('completed');
+            } else if (index + 1 === stepNumber) {
+                step.classList.add('active');
+            }
+        });
+
+        // Update buttons
+        btnPrev.style.display = stepNumber > 1 ? 'inline-block' : 'none';
+        btnNext.style.display = stepNumber < totalSteps ? 'inline-block' : 'none';
+        btnSubmit.style.display = stepNumber === totalSteps ? 'inline-block' : 'none';
+
+        // Update current step
+        currentStep = stepNumber;
+
+        // Special actions per step
+        if (stepNumber === 3) {
+            updateConfirmationStep();
+        }
+
+        // Re-initialize feather icons
+        feather.replace();
+    }
+
+    // Validation for each step
+    function validateStep(stepNumber) {
+        if (stepNumber === 1) {
+            const titolo = document.getElementById('{{ form.titolo.id_for_label }}').value.trim();
+            const descrizione = document.getElementById('{{ form.descrizione.id_for_label }}').value.trim();
+            const dataScadenza = document.getElementById('{{ form.data_scadenza.id_for_label }}').value;
+
+            if (!titolo || !descrizione || !dataScadenza) {
+                alert('Compila tutti i campi obbligatori (Titolo, Descrizione, Data Scadenza)');
+                return false;
+            }
+            return true;
+        }
+
+        if (stepNumber === 2) {
+            if (selectedFornitori.size < 2) {
+                alert('Seleziona almeno 2 fornitori per procedere');
+                return false;
+            }
+            return true;
+        }
+
+        return true;
+    }
+
+    // Next button
+    btnNext.addEventListener('click', function() {
+        if (validateStep(currentStep)) {
+            showStep(currentStep + 1);
+        }
+    });
+
+    // Previous button
+    btnPrev.addEventListener('click', function() {
+        showStep(currentStep - 1);
+    });
+
+    // Fornitori search - timeout per debounce
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+
+        clearTimeout(searchTimeout);
+
+        if (query.length < 2) {
+            searchResults.innerHTML = '';
+            return;
+        }
+
+        searchTimeout = setTimeout(() => {
+            performSearch(query);
+        }, 300);
+    });
+
+    // Perform search
+    function performSearch(query) {
+        loadingIndicator.style.display = 'block';
+        searchResults.innerHTML = '';
+
+        fetch(`{% url 'preventivi:search_fornitori_ajax' %}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                loadingIndicator.style.display = 'none';
+                displayResults(data.fornitori);
+            })
+            .catch(error => {
+                loadingIndicator.style.display = 'none';
+                console.error('Errore ricerca:', error);
+                searchResults.innerHTML = '<div class="alert alert-danger">Errore durante la ricerca</div>';
+            });
+    }
+
+    // Display search results
+    function displayResults(fornitori) {
+        if (fornitori.length === 0) {
+            searchResults.innerHTML = `
+                <div class="alert alert-info">
+                    <i data-feather="info" width="14"></i>
+                    Nessun fornitore trovato
+                </div>
+            `;
+            feather.replace();
+            return;
+        }
+
+        let html = '<div class="border rounded">';
+
+        fornitori.forEach(fornitore => {
+            const isSelected = selectedFornitori.has(fornitore.id);
+            const checkboxHtml = isSelected
+                ? '<input type="checkbox" class="fornitore-checkbox" checked disabled>'
+                : '<input type="checkbox" class="fornitore-checkbox">';
+
+            html += `
+                <div class="fornitore-item ${isSelected ? 'bg-light' : ''}" data-id="${fornitore.id}">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3 mt-1">
+                            ${checkboxHtml}
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>${fornitore.nome}</strong>
+                            ${isSelected ? '<span class="badge bg-success ms-2">Selezionato</span>' : ''}
+                            <br>
+                            <small class="text-muted">
+                                <i data-feather="mail" width="12"></i> ${fornitore.email} |
+                                <i data-feather="phone" width="12"></i> ${fornitore.telefono}
+                                ${fornitore.categoria !== 'N/D' ? ' | ' + fornitore.categoria : ''}
+                                ${fornitore.citta !== 'N/D' ? ' | ' + fornitore.citta : ''}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        searchResults.innerHTML = html;
+
+        feather.replace();
+
+        // Add event listeners
+        document.querySelectorAll('.fornitore-item:not(.bg-light)').forEach(item => {
+            const checkbox = item.querySelector('.fornitore-checkbox');
+
+            item.addEventListener('click', function(e) {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+
+                if (checkbox.checked) {
+                    const fornitoreId = parseInt(this.dataset.id);
+                    const fornitoreData = fornitori.find(f => f.id === fornitoreId);
+                    addFornitore(fornitoreData);
+
+                    searchInput.value = '';
+                    searchResults.innerHTML = '';
+                }
+            });
+
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    const fornitoreId = parseInt(item.dataset.id);
+                    const fornitoreData = fornitori.find(f => f.id === fornitoreId);
+                    addFornitore(fornitoreData);
+
+                    searchInput.value = '';
+                    searchResults.innerHTML = '';
+                }
+            });
+        });
+    }
+
+    // Add fornitore
+    function addFornitore(fornitore) {
+        if (selectedFornitori.has(fornitore.id)) {
+            return;
+        }
+
+        selectedFornitori.set(fornitore.id, fornitore);
+        updateSelectedList();
+    }
+
+    // Remove fornitore
+    window.removeFornitore = function(fornitoreId) {
+        selectedFornitori.delete(fornitoreId);
+        updateSelectedList();
+    };
+
+    // Update selected list
+    function updateSelectedList() {
+        selectedCount.textContent = selectedFornitori.size;
+
+        if (selectedFornitori.size === 0) {
+            emptyState.style.display = 'block';
+            fornitoriInputs.innerHTML = '';
+            minFornitoriAlert.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        minFornitoriAlert.style.display = selectedFornitori.size < 2 ? 'block' : 'none';
+
+        let html = '';
+        let inputsHtml = '';
+
+        selectedFornitori.forEach(fornitore => {
+            html += `
+                <div class="selected-fornitore-item">
+                    <div>
+                        <strong>${fornitore.nome}</strong>
+                        <br>
+                        <small class="text-muted">
+                            ${fornitore.email} | ${fornitore.telefono}
+                        </small>
+                    </div>
+                    <div>
+                        <span class="remove-btn" onclick="window.removeFornitore(${fornitore.id})">
+                            <i data-feather="x-circle" width="20"></i>
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            inputsHtml += `<input type="hidden" name="fornitori" value="${fornitore.id}">`;
+        });
+
+        const existingItems = selectedList.querySelectorAll('.selected-fornitore-item');
+        existingItems.forEach(item => item.remove());
+        emptyState.insertAdjacentHTML('beforebegin', html);
+
+        fornitoriInputs.innerHTML = inputsHtml;
+
+        feather.replace();
+    }
+
+    // Update confirmation step
+    function updateConfirmationStep() {
+        // Get form values
+        const titolo = document.getElementById('{{ form.titolo.id_for_label }}').value;
+        const descrizione = document.getElementById('{{ form.descrizione.id_for_label }}').value;
+        const priorita = document.getElementById('{{ form.priorita.id_for_label }}').selectedOptions[0].text;
+        const scadenza = document.getElementById('{{ form.data_scadenza.id_for_label }}').value;
+        const budget = document.getElementById('{{ form.budget_massimo.id_for_label }}').value || 'Non specificato';
+
+        // Update confirmation fields
+        document.getElementById('confirm-titolo').textContent = titolo;
+        document.getElementById('confirm-descrizione').textContent = descrizione;
+        document.getElementById('confirm-priorita').textContent = priorita;
+        document.getElementById('confirm-scadenza').textContent = scadenza;
+        document.getElementById('confirm-budget').textContent = budget !== 'Non specificato' ? `€${budget}` : budget;
+
+        // Update fornitori list
+        document.getElementById('confirm-fornitori-count').textContent = selectedFornitori.size;
+
+        let fornitoriHtml = '<ul class="list-unstyled">';
+        selectedFornitori.forEach(fornitore => {
+            fornitoriHtml += `<li><i data-feather="check" width="14"></i> ${fornitore.nome}</li>`;
+        });
+        fornitoriHtml += '</ul>';
+
+        document.getElementById('confirm-fornitori-list').innerHTML = fornitoriHtml;
+
+        feather.replace();
+    }
+
+    // Initialize
+    showStep(1);
+});
+</script>
+{% endblock %}

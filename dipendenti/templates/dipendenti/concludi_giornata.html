@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Conclusione Giornata{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 800px;">
+
+    <div class="card border-warning shadow">
+        <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">
+                <i class="fas fa-clipboard-check me-2"></i>
+                Conferma Conclusione Giornata
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Stai per concludere la giornata lavorativa del <strong>{{ oggi|date:"d/m/Y" }}</strong>.
+                Una volta confermato, non potrai più modificare le timbrature di oggi.
+            </div>
+
+            <!-- Riepilogo Timbrature -->
+            <h5 class="mb-3">
+                <i class="fas fa-list me-2"></i>
+                Riepilogo Timbrature
+            </h5>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Orario</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for timbratura in timbrature %}
+                        <tr>
+                            <td>
+                                {% if timbratura.tipo == 'entrata' %}
+                                    <span class="badge bg-success">ENTRATA</span>
+                                {% else %}
+                                    <span class="badge bg-danger">USCITA</span>
+                                {% endif %}
+                            </td>
+                            <td><strong>{{ timbratura.orario|time:"H:i:s" }}</strong></td>
+                            <td>{{ timbratura.note|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Statistiche -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <small class="text-muted d-block mb-2">TIMBRATURE</small>
+                            <h5 class="mb-0">
+                                {{ entrate_count }} Entrate - {{ uscite_count }} Uscite
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <small class="text-muted d-block mb-2">ORE STANDARD</small>
+                            <h5 class="mb-0">{{ ore_standard }} h</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calcolo Ore -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card border-success">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">ORE LAVORATE</h6>
+                            <h2 class="text-success mb-0">{{ ore_lavorate }} h</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">STRAORDINARI</h6>
+                            <h2 class="text-danger mb-0">
+                                {% if straordinari > 0 %}
+                                    {{ straordinari }} h
+                                    <i class="fas fa-fire"></i>
+                                {% else %}
+                                    0.00 h
+                                {% endif %}
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if straordinari > 0 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Hai lavorato <strong>{{ straordinari }} ore</strong> oltre lo standard.
+            </div>
+            {% endif %}
+
+            <!-- Form Conferma -->
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-4">
+                    <label for="note_conclusione" class="form-label fw-bold">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Note Conclusione Giornata (opzionale)
+                    </label>
+                    <textarea
+                        class="form-control"
+                        id="note_conclusione"
+                        name="note_conclusione"
+                        rows="3"
+                        placeholder="Aggiungi eventuali note sulla giornata lavorativa..."></textarea>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'dipendenti:timbratura' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Annulla
+                    </a>
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="fas fa-check me-2"></i>
+                        Conferma Conclusione Giornata
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

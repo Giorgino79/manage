@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con breadcrumbs e azioni -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ page_title }}</h1>
+            <p class="text-muted mb-1">Gestione di tutti i costi degli stabilimenti</p>
+        </div>
+        <div class="btn-group-actions"><a href="{% url 'stabilimenti:list' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nuovo Costo (Scegli Stabilimento)
+            </a>
+            <a href="{% url 'stabilimenti:scadenze' %}" class="btn btn-warning">
+                <i class="fas fa-clock me-2"></i>Scadenze
+            </a>
+            <a href="{% url 'stabilimenti:list' %}" class="btn btn-info">
+                <i class="fas fa-building me-2"></i>Stabilimenti
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiche rapide -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-primary">{{ page_obj.paginator.count }}</div>
+                    <div class="text-muted">Costi Totali</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-success">0</div>
+                    <div class="text-muted">Completati</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-warning">0</div>
+                    <div class="text-muted">In Corso</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-danger">0</div>
+                    <div class="text-muted">Scaduti</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-info">0</div>
+                    <div class="text-muted">Con Scadenze</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-secondary">{{ request.GET.anno|default:"Tutti" }}</div>
+                    <div class="text-muted">Anno Filtro</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form di ricerca -->
+    <div class="search-form">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ form.stabilimento.label_tag }}
+                {{ form.stabilimento }}
+            </div>
+            <div class="col-md-2">
+                {{ form.causale.label_tag }}
+                {{ form.causale }}
+            </div>
+            <div class="col-md-2">
+                {{ form.stato.label_tag }}
+                {{ form.stato }}
+            </div>
+            <div class="col-md-2">
+                {{ form.fornitore.label_tag }}
+                {{ form.fornitore }}
+            </div>
+            <div class="col-md-2">
+                {{ form.anno.label_tag }}
+                {{ form.anno }}
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-12">
+                <div class="form-check">
+                    {{ form.scadenze_prossime }}
+                    <label class="form-check-label" for="{{ form.scadenze_prossime.id_for_label }}">
+                        {{ form.scadenze_prossime.label }}
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabella costi -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-euro-sign me-2"></i>Elenco Costi
+            </h5>
+            <span class="badge bg-primary">{{ page_obj.paginator.count }} costi trovati</span>
+        </div>
+        <div class="card-body p-0">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Pratica</th>
+                                <th>Stabilimento</th>
+                                <th>Tipologia</th>
+                                <th>Fornitore</th>
+                                <th>Descrizione</th>
+                                <th>Importo</th>
+                                <th>Stato</th>
+                                <th>Scadenza</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for costo in page_obj %}
+                                <tr {% if costo.is_scaduto %}class="costo-scaduto"{% elif costo.is_in_scadenza %}class="costo-scadenza-urgente"{% elif costo.stato == 'completato' or costo.stato == 'pagato' %}class="costo-completato"{% endif %}>
+                                    <td>
+                                        <div class="numero-pratica">{{ costo.numero_pratica }}</div>
+                                        <small class="text-muted">{{ costo.data_creazione|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ costo.stabilimento.nome }}</strong>
+                                        <br><small class="text-muted">{{ costo.stabilimento.codice_stabilimento }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary badge-status">
+                                            {{ costo.get_causale_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ costo.fornitore.nome }}</strong>
+                                        {% if costo.incaricato %}
+                                            <br><small class="text-muted">
+                                                <i class="fas fa-user me-1"></i>{{ costo.incaricato.get_full_name|default:costo.incaricato.username }}
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ costo.titolo }}</strong>
+                                        {% if costo.descrizione %}
+                                            <br><small class="text-muted">{{ costo.descrizione|truncatechars:60 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="{% if costo.calcola_totale_con_iva > 5000 %}importo-alto{% endif %}">
+                                            <strong>€ {{ costo.calcola_totale_con_iva|floatformat:2 }}</strong>
+                                        </div>
+                                        <small class="text-muted">
+                                            IVA {{ costo.iva_percentuale|floatformat:1 }}%
+                                        </small>
+                                        {% if costo.data_fattura %}
+                                            <br><small class="text-muted">
+                                                <i class="fas fa-receipt me-1"></i>{{ costo.data_fattura|date:"d/m/Y" }}
+                                            </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if costo.stato == 'preventivo' %}
+                                            <span class="badge bg-secondary badge-status">
+                                                <i class="fas fa-file-alt me-1"></i>{{ costo.get_stato_display }}
+                                            </span>
+                                        {% elif costo.stato == 'approvato' %}
+                                            <span class="badge bg-info badge-status">
+                                                <i class="fas fa-check me-1"></i>{{ costo.get_stato_display }}
+                                            </span>
+                                        {% elif costo.stato == 'in_corso' %}
+                                            <span class="badge bg-warning badge-status">
+                                                <i class="fas fa-clock me-1"></i>{{ costo.get_stato_display }}
+                                            </span>
+                                        {% elif costo.stato == 'completato' %}
+                                            <span class="badge bg-success badge-status">
+                                                <i class="fas fa-check-circle me-1"></i>{{ costo.get_stato_display }}
+                                            </span>
+                                        {% elif costo.stato == 'fatturato' %}
+                                            <span class="badge bg-primary badge-status">
+                                                <i class="fas fa-receipt me-1"></i>{{ costo.get_stato_display }}
+                                            </span>
+                                        {% elif costo.stato == 'pagato' %}
+                                            <span class="badge bg-success badge-status">
+                                                <i class="fas fa-euro-sign me-1"></i>{{ costo.get_stato_display }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if costo.data_scadenza_servizio %}
+                                            <div class="{% if costo.is_scaduto %}text-danger{% elif costo.is_in_scadenza %}text-warning{% else %}text-success{% endif %}">
+                                                <strong>{{ costo.data_scadenza_servizio|date:"d/m/Y" }}</strong>
+                                            </div>
+                                            {% if costo.is_scaduto %}
+                                                <small class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    {% with giorni=costo.giorni_alla_scadenza %}
+                                                        {% if giorni < 0 %}Scaduto da {{ giorni|stringformat:"d"|slice:"1:" }} gg{% else %}Scaduto{% endif %}
+                                                    {% endwith %}
+                                                </small>
+                                            {% elif costo.is_in_scadenza %}
+                                                <small class="text-warning">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    {{ costo.giorni_alla_scadenza }} giorni
+                                                </small>
+                                            {% else %}
+                                                <small class="text-muted">
+                                                    {{ costo.giorni_alla_scadenza }} giorni
+                                                </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Nessuna scadenza</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'stabilimenti:dettaglio_costo' costo.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Visualizza dettaglio">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if costo.can_be_modified %}
+                                                <a href="{% url 'stabilimenti:modifica_costo' costo.pk %}" 
+                                                   class="btn btn-sm btn-outline-warning" 
+                                                   title="Modifica">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                            <div class="btn-group" role="group">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        data-bs-toggle="dropdown">
+                                                    <i class="fas fa-ellipsis-v"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="{% url 'stabilimenti:dettaglio' costo.stabilimento.pk %}">
+                                                            <i class="fas fa-building me-2"></i>Vai allo Stabilimento
+                                                        </a>
+                                                    </li>
+                                                    {% if costo.fattura %}
+                                                        <li>
+                                                            <a class="dropdown-item" href="{{ costo.fattura.url }}" target="_blank">
+                                                                <i class="fas fa-file-pdf me-2"></i>Visualizza Fattura
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+                                                    {% if costo.preventivo %}
+                                                        <li>
+                                                            <a class="dropdown-item" href="{{ costo.preventivo.url }}" target="_blank">
+                                                                <i class="fas fa-file-alt me-2"></i>Visualizza Preventivo
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+                                                    {% if costo.certificato %}
+                                                        <li>
+                                                            <a class="dropdown-item" href="{{ costo.certificato.url }}" target="_blank">
+                                                                <i class="fas fa-certificate me-2"></i>Visualizza Certificato
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    {% if costo.can_be_deleted %}
+                                                        <li>
+                                                            <a class="dropdown-item text-danger" href="#" 
+                                                               onclick="eliminaCosto({{ costo.pk }}, '{{ costo.numero_pratica }}')">
+                                                                <i class="fas fa-trash me-2"></i>Elimina
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Nessun costo trovato con i filtri selezionati.</p><a href="{% url 'stabilimenti:list' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Registra il primo costo
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Paginazione -->
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginazione costi" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="text-center text-muted">
+            Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }} 
+            ({{ page_obj.paginator.count }} costi totali)
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+function eliminaCosto(costoId, numeroPratica) {
+    if (confirm(`Sei sicuro di voler eliminare il costo ${numeroPratica}? Questa azione non può essere annullata.`)) {
+        // Qui implementeresti la chiamata AJAX per eliminare
+        // fetch(`/stabilimenti/costi/${costoId}/elimina/`, {...})
+        alert('Funzionalità di eliminazione da implementare nelle views');
+    }
+}
+
+// CSRF Token per le chiamate AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfInput);
+    }
+});
+</script>
+{% endblock %}

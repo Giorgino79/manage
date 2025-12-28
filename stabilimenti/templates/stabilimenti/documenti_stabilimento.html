@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="stabilimento-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1">
+                    <i class="fas fa-folder me-2"></i>{{ page_title }}
+                </h1>
+                <p class="mb-0">
+                    <i class="fas fa-building me-2"></i>{{ stabilimento.nome }}
+                    <span class="ms-3">
+                        <i class="fas fa-map-marker-alt me-2"></i>{{ stabilimento.citta }}
+                    </span>
+                </p>
+            </div>
+            <div class="text-end">
+                <a href="{% url 'stabilimenti:nuovo_documento' stabilimento.pk %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-upload me-2"></i>Carica Documento
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche documenti -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-primary">{{ page_obj.paginator.count }}</div>
+                    <div class="text-muted small">Documenti Totali</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-success">0</div>
+                    <div class="text-muted small">Attivi</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-warning">0</div>
+                    <div class="text-muted small">In Scadenza</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-danger">0</div>
+                    <div class="text-muted small">Scaduti</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-info">0</div>
+                    <div class="text-muted small">Tipi Diversi</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <div class="stats-number text-secondary">{{ page_obj.object_list|length }}</div>
+                    <div class="text-muted small">In Questa Pagina</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra filtri -->
+    <div class="filter-bar">
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <select class="form-select" id="filtro-tipo" onchange="filtraDocumenti()">
+                    <option value="">Tutti i tipi</option>
+                    <option value="contratto">Contratti</option>
+                    <option value="certificazione">Certificazioni</option>
+                    <option value="planimetria">Planimetrie</option>
+                    <option value="autorizzazione">Autorizzazioni</option>
+                    <option value="denuncia">Denunce/Comunicazioni</option>
+                    <option value="rapporto">Rapporti Tecnici</option>
+                    <option value="verbale">Verbali</option>
+                    <option value="altro">Altro</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filtro-stato" onchange="filtraDocumenti()">
+                    <option value="">Tutti gli stati</option>
+                    <option value="attivo">Solo attivi</option>
+                    <option value="inattivo">Solo inattivi</option>
+                    <option value="scaduti">Solo scaduti</option>
+                    <option value="scadenza-prossima">In scadenza</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="filtro-nome" placeholder="Cerca per nome documento..." onkeyup="filtraDocumenti()">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" onclick="resetFiltri()">
+                    <i class="fas fa-eraser me-1"></i>Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Area upload rapido -->
+    <div class="upload-area" onclick="document.getElementById('quick-upload').click()">
+        <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+        <h5>Carica Documenti Rapidamente</h5>
+        <p class="text-muted">Clicca qui o trascina i file per caricarli</p>
+        <input type="file" id="quick-upload" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.dwg" style="display: none;">
+        <small class="text-muted">Formati supportati: PDF, DOC, DOCX, JPG, PNG, DWG</small>
+    </div>
+
+    <!-- Lista documenti -->
+    {% if page_obj %}
+        <div class="row" id="documenti-container">
+            {% for documento in page_obj %}
+                <div class="col-lg-4 col-md-6 documento-item" 
+                     data-tipo="{{ documento.tipo_documento }}" 
+                     data-nome="{{ documento.nome_documento|lower }}"
+                     data-stato="{% if not documento.attivo %}inattivo{% elif documento.is_scaduto %}scaduto{% elif documento.giorni_alla_scadenza and documento.giorni_alla_scadenza <= 30 %}scadenza-prossima{% else %}attivo{% endif %}">
+                    <div class="document-card {% if not documento.attivo %}document-inattivo{% elif documento.is_scaduto %}document-scaduto{% elif documento.giorni_alla_scadenza and documento.giorni_alla_scadenza <= 30 %}document-scadenza-urgente{% else %}document-attivo{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="document-icon">
+                                    {% if documento.get_estensione_file == 'pdf' %}
+                                        <i class="fas fa-file-pdf document-pdf"></i>
+                                    {% elif documento.get_estensione_file in 'doc,docx' %}
+                                        <i class="fas fa-file-word document-word"></i>
+                                    {% elif documento.get_estensione_file in 'xls,xlsx' %}
+                                        <i class="fas fa-file-excel document-excel"></i>
+                                    {% elif documento.get_estensione_file in 'jpg,jpeg,png,gif' %}
+                                        <i class="fas fa-file-image document-image"></i>
+                                    {% elif documento.get_estensione_file == 'dwg' %}
+                                        <i class="fas fa-drafting-compass document-dwg"></i>
+                                    {% else %}
+                                        <i class="fas fa-file document-other"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="document-actions">
+                                    <div class="btn-group">
+                                        <a href="{{ documento.file_documento.url }}" target="_blank" 
+                                           class="btn btn-sm btn-primary" title="Visualizza">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" 
+                                                data-bs-toggle="dropdown">
+                                            <span class="visually-hidden">Toggle Dropdown</span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ documento.file_documento.url }}" download>
+                                                    <i class="fas fa-download me-2"></i>Scarica
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fas fa-edit me-2"></i>Modifica Info
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" href="#" 
+                                                   onclick="eliminaDocumento('{{ documento.nome_documento }}', {{ documento.pk }})">
+                                                    <i class="fas fa-trash me-2"></i>Elimina
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h6 class="card-title">{{ documento.nome_documento }}</h6>
+                            
+                            <div class="mb-2">
+                                <span class="badge bg-secondary">{{ documento.get_tipo_documento_display }}</span>
+                                {% if documento.versione != '1.0' %}
+                                    <span class="versione-badge ms-1">v{{ documento.versione }}</span>
+                                {% endif %}
+                                {% if not documento.attivo %}
+                                    <span class="badge bg-secondary ms-1">Inattivo</span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if documento.descrizione %}
+                                <p class="card-text small text-muted">{{ documento.descrizione|truncatechars:80 }}</p>
+                            {% endif %}
+                            
+                            <div class="small text-muted">
+                                <div><i class="fas fa-calendar me-1"></i>{{ documento.data_inserimento|date:"d/m/Y H:i" }}</div>
+                                {% if documento.data_documento %}
+                                    <div><i class="fas fa-file-alt me-1"></i>Documento: {{ documento.data_documento|date:"d/m/Y" }}</div>
+                                {% endif %}
+                                {% if documento.data_scadenza %}
+                                    <div class="{% if documento.is_scaduto %}text-danger{% elif documento.giorni_alla_scadenza and documento.giorni_alla_scadenza <= 30 %}text-warning{% endif %}">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {% if documento.is_scaduto %}
+                                            Scaduto il {{ documento.data_scadenza|date:"d/m/Y" }}
+                                        {% else %}
+                                            Scade il {{ documento.data_scadenza|date:"d/m/Y" }}
+                                            {% if documento.giorni_alla_scadenza %}
+                                                ({{ documento.giorni_alla_scadenza }} gg)
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                                <div><i class="fas fa-user me-1"></i>{{ documento.caricato_da.get_full_name|default:documento.caricato_da.username }}</div>
+                            </div>
+                            
+                            {% if documento.note %}
+                                <div class="mt-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-sticky-note me-1"></i>{{ documento.note|truncatechars:50 }}
+                                    </small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-folder-open fa-4x mb-3"></i>
+            <h4>Nessun documento trovato</h4>
+            <p>Non ci sono documenti caricati per questo stabilimento.</p>
+            <a href="{% url 'stabilimenti:nuovo_documento' stabilimento.pk %}" class="btn btn-primary">
+                <i class="fas fa-upload me-2"></i>Carica il Primo Documento
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Paginazione -->
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginazione documenti" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <div class="text-center text-muted">
+            Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }} 
+            ({{ page_obj.paginator.count }} documenti totali)
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+// Filtri documenti
+function filtraDocumenti() {
+    const tipoFiltro = document.getElementById('filtro-tipo').value;
+    const statoFiltro = document.getElementById('filtro-stato').value;
+    const nomeFiltro = document.getElementById('filtro-nome').value.toLowerCase();
+    
+    const documenti = document.querySelectorAll('.documento-item');
+    
+    documenti.forEach(documento => {
+        const tipo = documento.dataset.tipo;
+        const stato = documento.dataset.stato;
+        const nome = documento.dataset.nome;
+        
+        let mostra = true;
+        
+        // Filtro per tipo
+        if (tipoFiltro && tipo !== tipoFiltro) {
+            mostra = false;
+        }
+        
+        // Filtro per stato
+        if (statoFiltro && stato !== statoFiltro) {
+            mostra = false;
+        }
+        
+        // Filtro per nome
+        if (nomeFiltro && !nome.includes(nomeFiltro)) {
+            mostra = false;
+        }
+        
+        documento.style.display = mostra ? 'block' : 'none';
+    });
+    
+    // Aggiorna contatore risultati
+    const visibili = document.querySelectorAll('.documento-item[style="display: block"], .documento-item:not([style*="display: none"])').length;
+    console.log(`Documenti visibili: ${visibili}`);
+}
+
+function resetFiltri() {
+    document.getElementById('filtro-tipo').value = '';
+    document.getElementById('filtro-stato').value = '';
+    document.getElementById('filtro-nome').value = '';
+    filtraDocumenti();
+}
+
+function eliminaDocumento(nomeDocumento, documentoId) {
+    if (confirm(`Sei sicuro di voler eliminare il documento "${nomeDocumento}"? Questa azione non può essere annullata.`)) {
+        // Qui implementeresti la chiamata AJAX per eliminare
+        alert('Funzionalità di eliminazione da implementare nelle views');
+    }
+}
+
+// Gestione upload rapido
+document.getElementById('quick-upload').addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        const files = Array.from(e.target.files);
+        const fileNames = files.map(f => f.name).join(', ');
+        
+        if (confirm(`Vuoi caricare ${files.length} file(s): ${fileNames}?`)) {
+            // Qui implementeresti l'upload AJAX
+            alert('Funzionalità di upload rapido da implementare');
+        }
+    }
+});
+
+// Drag & Drop per area upload
+const uploadArea = document.querySelector('.upload-area');
+
+uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.style.backgroundColor = '#e3f2fd';
+    this.style.borderColor = '#0056b3';
+});
+
+uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.style.backgroundColor = '#f8f9fa';
+    this.style.borderColor = '#007bff';
+});
+
+uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.style.backgroundColor = '#f8f9fa';
+    this.style.borderColor = '#007bff';
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+        const fileNames = files.map(f => f.name).join(', ');
+        if (confirm(`Vuoi caricare ${files.length} file(s): ${fileNames}?`)) {
+            // Qui implementeresti l'upload AJAX
+            alert('Funzionalità di upload drag&drop da implementare');
+        }
+    }
+});
+</script>
+{% endblock %}

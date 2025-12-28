@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Statistiche Email{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="bar-chart" class="feather me-2"></i>Statistiche Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item active">Statistiche</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'mail:dashboard' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna al Dashboard
+                    </a>
+                    <button class="btn btn-outline-primary" onclick="refreshStats()">
+                        <i data-feather="refresh-cw" class="feather me-1"></i>Aggiorna
+                    </button>
+                </div>
+            </div>
+
+            <!-- Period Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="period" class="form-label">Periodo</label>
+                            <select class="form-select" id="period" name="period" onchange="this.form.submit()">
+                                <option value="7" {% if period == '7' %}selected{% endif %}>Ultimi 7 giorni</option>
+                                <option value="30" {% if period == '30' %}selected{% endif %}>Ultimi 30 giorni</option>
+                                <option value="90" {% if period == '90' %}selected{% endif %}>Ultimi 3 mesi</option>
+                                <option value="365" {% if period == '365' %}selected{% endif %}>Ultimo anno</option>
+                                <option value="custom" {% if period == 'custom' %}selected{% endif %}>Personalizzato</option>
+                            </select>
+                        </div>
+                        {% if period == 'custom' %}
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Da</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_to" class="form-label">A</label>
+                            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="search" class="feather me-1"></i>Applica
+                            </button>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            {% if stats %}
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Totale Email</h6>
+                                    <h2 class="mb-0">{{ stats.total_emails }}</h2>
+                                    <small>{{ period_text }}</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="mail" class="feather" style="height: 3rem; width: 3rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Email Inviate</h6>
+                                    <h2 class="mb-0">{{ stats.sent_emails }}</h2>
+                                    <small>{{ stats.success_rate }}% del totale</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="send" class="feather" style="height: 3rem; width: 3rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Email Fallite</h6>
+                                    <h2 class="mb-0">{{ stats.failed_emails }}</h2>
+                                    <small>{{ stats.failure_rate }}% del totale</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="x-circle" class="feather" style="height: 3rem; width: 3rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="card-title mb-0">Media Giornaliera</h6>
+                                    <h2 class="mb-0">{{ stats.daily_average }}</h2>
+                                    <small>Email al giorno</small>
+                                </div>
+                                <div class="align-self-start">
+                                    <i data-feather="trending-up" class="feather" style="height: 3rem; width: 3rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <!-- Chart -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="activity" class="feather me-2"></i>Andamento Email nel Tempo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="emailChart" style="height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Template Usage -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="file-text" class="feather me-2"></i>Template Più Usati
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if template_stats %}
+                                {% for template_stat in template_stats %}
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-0">{{ template_stat.template__name|truncatechars:20 }}</h6>
+                                        <small class="text-muted">{{ template_stat.template__category|capfirst }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-primary">{{ template_stat.count }}</span>
+                                        <br><small class="text-muted">utilizzi</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i data-feather="file-text" class="feather mb-2" style="height: 3rem; width: 3rem; color: #6c757d;"></i>
+                                    <p class="text-muted">Nessun dato disponibile</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Status Distribution -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="pie-chart" class="feather me-2"></i>Distribuzione Stati
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if status_distribution %}
+                                {% for status in status_distribution %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        {% if status.status == 'sent' %}
+                                            <span class="badge bg-success me-2">Inviato</span>
+                                        {% elif status.status == 'failed' %}
+                                            <span class="badge bg-danger me-2">Fallito</span>
+                                        {% else %}
+                                            <span class="badge bg-warning me-2">In Attesa</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <strong>{{ status.count }}</strong>
+                                        <small class="text-muted">({{ status.percentage }}%)</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hourly Distribution -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="clock" class="feather me-2"></i>Distribuzione Oraria
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if hourly_distribution %}
+                                <div class="row">
+                                    {% for hour in hourly_distribution %}
+                                    <div class="col-6 mb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span>{{ hour.hour }}:00</span>
+                                            <span class="badge bg-info">{{ hour.count }}</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i data-feather="clock" class="feather mb-2" style="height: 3rem; width: 3rem; color: #6c757d;"></i>
+                                    <p class="text-muted">Nessun dato disponibile</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Errors -->
+            {% if recent_errors %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="alert-triangle" class="feather me-2"></i>Errori Recenti
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Oggetto</th>
+                                            <th>Destinatario</th>
+                                            <th>Errore</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for error in recent_errors %}
+                                        <tr>
+                                            <td>{{ error.created_at|date:"d/m/Y H:i" }}</td>
+                                            <td>{{ error.subject|truncatechars:40 }}</td>
+                                            <td>
+                                                {% if error.to_addresses %}
+                                                    {{ error.to_addresses.0 }}
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <small class="text-danger">{{ error.error_message|truncatechars:50 }}</small>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'mail:message_detail' error.pk %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i data-feather="eye" class="feather"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-warning" 
+                                                        onclick="resendMessage('{{ error.id }}')">
+                                                    <i data-feather="refresh-cw" class="feather"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Email Chart
+    {% if chart_data %}
+    const ctx = document.getElementById('emailChart').getContext('2d');
+    const emailChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_data.labels|safe }},
+            datasets: [{
+                label: 'Email Inviate',
+                data: {{ chart_data.sent|safe }},
+                borderColor: 'rgb(40, 167, 69)',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.1
+            }, {
+                label: 'Email Fallite',
+                data: {{ chart_data.failed|safe }},
+                borderColor: 'rgb(220, 53, 69)',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+    {% else %}
+    // No chart data available
+    document.getElementById('emailChart').innerHTML = '<div class="text-center py-5"><p class="text-muted">Nessun dato disponibile per il grafico</p></div>';
+    {% endif %}
+
+    // Refresh stats
+    function refreshStats() {
+        location.reload();
+    }
+
+    // Resend message function
+    function resendMessage(messageId) {
+        if (!confirm('Sei sicuro di voler reinviare questo messaggio?')) {
+            return;
+        }
+
+        fetch(`{% url 'mail:api_resend' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', messageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Messaggio reinviato con successo!');
+                location.reload();
+            } else {
+                alert('Errore reinvio messaggio: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Errore di rete: ' + error.message);
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Messaggi Email{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="inbox" class="feather me-2"></i>Messaggi Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item active">Messaggi</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'mail:dashboard' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna al Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="search" class="form-label">Cerca</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Oggetto, destinatario...">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="status" class="form-label">Stato</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="">Tutti gli stati</option>
+                                <option value="pending" {% if status == 'pending' %}selected{% endif %}>In Attesa</option>
+                                <option value="sent" {% if status == 'sent' %}selected{% endif %}>Inviato</option>
+                                <option value="failed" {% if status == 'failed' %}selected{% endif %}>Fallito</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="date_from" class="form-label">Da Data</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                                   value="{{ date_from }}">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i data-feather="search" class="feather me-1"></i>Filtra
+                            </button>
+                            <a href="{% url 'mail:message_list' %}" class="btn btn-outline-secondary">
+                                <i data-feather="x" class="feather me-1"></i>Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Messages List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="list" class="feather me-2"></i>Messaggi
+                        {% if page_obj.paginator.count %}
+                            ({{ page_obj.paginator.count }} totali)
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Stato</th>
+                                        <th>Oggetto</th>
+                                        <th>Destinatari</th>
+                                        <th>Template</th>
+                                        <th>Data Invio</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for message in page_obj %}
+                                    <tr>
+                                        <td>
+                                            {% if message.status == 'sent' %}
+                                                <span class="badge bg-success">
+                                                    <i data-feather="check" class="feather me-1" style="height: 12px; width: 12px;"></i>
+                                                    Inviato
+                                                </span>
+                                            {% elif message.status == 'failed' %}
+                                                <span class="badge bg-danger">
+                                                    <i data-feather="x" class="feather me-1" style="height: 12px; width: 12px;"></i>
+                                                    Fallito
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning">
+                                                    <i data-feather="clock" class="feather me-1" style="height: 12px; width: 12px;"></i>
+                                                    In Attesa
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ message.subject|truncatechars:50 }}</strong>
+                                                {% if message.error_message %}
+                                                <br><small class="text-danger">{{ message.error_message|truncatechars:40 }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if message.to_addresses %}
+                                                <div>
+                                                    {% for email in message.to_addresses|slice:":2" %}
+                                                        <small class="d-block">{{ email }}</small>
+                                                    {% endfor %}
+                                                    {% if message.to_addresses|length > 2 %}
+                                                        <small class="text-muted">+{{ message.to_addresses|length|add:'-2' }} altri</small>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if message.template %}
+                                                <span class="badge bg-info">{{ message.template.name }}</span>
+                                            {% else %}
+                                                <span class="text-muted">Manuale</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>
+                                                {{ message.created_at|date:"d/m/Y H:i" }}
+                                                {% if message.sent_at and message.sent_at != message.created_at %}
+                                                <br>Inviato: {{ message.sent_at|date:"H:i" }}
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'mail:message_detail' message.pk %}" 
+                                                   class="btn btn-outline-primary">
+                                                    <i data-feather="eye" class="feather"></i>
+                                                </a>
+                                                {% if message.status == 'failed' %}
+                                                <button class="btn btn-outline-warning" 
+                                                        onclick="resendMessage('{{ message.id }}')">
+                                                    <i data-feather="refresh-cw" class="feather"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <div class="card-footer">
+                            <nav aria-label="Messages pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}">Prima</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}">Precedente</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}">Successiva</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}">Ultima</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="inbox" class="feather mb-3" style="height: 4rem; width: 4rem; color: #6c757d;"></i>
+                            <h5 class="text-muted">Nessun messaggio trovato</h5>
+                            <p class="text-muted">
+                                {% if search or status or date_from %}
+                                    Prova a modificare i filtri di ricerca.
+                                {% else %}
+                                    Non ci sono ancora messaggi email inviati.
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Resend message function
+    function resendMessage(messageId) {
+        if (!confirm('Sei sicuro di voler reinviare questo messaggio?')) {
+            return;
+        }
+
+        fetch(`{% url 'mail:api_resend' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', messageId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Messaggio reinviato con successo!');
+                location.reload();
+            } else {
+                alert('Errore reinvio messaggio: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Errore di rete: ' + error.message);
+        });
+    }
+</script>
+{% endblock %}

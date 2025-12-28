@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} - Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 py-md-4">
+    <!-- Header -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-truck me-2"></i>{{ page_title }}
+                        <span class="badge bg-success ms-2">{{ fornitori.count }} fornitori</span>
+                    </h6>
+                </div>
+                <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                    <a href="{% url 'anagrafica:dashboard' %}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-chart-line me-1"></i>Dashboard
+                    </a>
+                    <a href="{% url 'anagrafica:nuovo_fornitore' %}" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i>Nuovo Fornitore
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Filtri di ricerca -->
+        <div class="card-body border-bottom">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">Cerca per nome</label>
+                    <input type="text" class="form-control" name="q" 
+                           value="{{ request.GET.q }}" 
+                           placeholder="Nome o ragione sociale...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Città</label>
+                    <input type="text" class="form-control" name="citta" 
+                           value="{{ request.GET.citta }}" 
+                           placeholder="Città...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Stato</label>
+                    <select name="attivo" class="form-select">
+                        <option value="">Tutti</option>
+                        <option value="1" {% if request.GET.attivo == "1" %}selected{% endif %}>Attivi</option>
+                        <option value="0" {% if request.GET.attivo == "0" %}selected{% endif %}>Inattivi</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">Ordinamento</label>
+                    <select name="ordine" class="form-select">
+                        <option value="nome" {% if request.GET.ordine == "nome" %}selected{% endif %}>Nome A-Z</option>
+                        <option value="-nome" {% if request.GET.ordine == "-nome" %}selected{% endif %}>Nome Z-A</option>
+                        <option value="created_at" {% if request.GET.ordine == "created_at" %}selected{% endif %}>Più vecchi</option>
+                        <option value="-created_at" {% if request.GET.ordine == "-created_at" %}selected{% endif %}>Più recenti</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-outline-primary flex-grow-1">
+                        <i class="fas fa-search me-1"></i>Filtra
+                    </button>
+                    <a href="{% url 'anagrafica:elenco_fornitori' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Statistiche rapide -->
+        <div class="card-footer bg-light">
+            <div class="row text-center">
+                <div class="col-6 col-md-3">
+                    <div class="border-end">
+                        <strong class="text-success d-block">{{ stats.totali }}</strong>
+                        <small class="text-muted">Fornitori Totali</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="border-end">
+                        <strong class="text-primary d-block">{{ stats.attivi }}</strong>
+                        <small class="text-muted">Attivi</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="border-end">
+                        <strong class="text-warning d-block">{{ stats.inattivi }}</strong>
+                        <small class="text-muted">Inattivi</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <strong class="text-info d-block">{{ stats.questo_mese }}</strong>
+                    <small class="text-muted">Nuovi questo mese</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista fornitori -->
+    <div class="row">
+        {% if fornitori %}
+            {% for fornitore in fornitori %}
+            <div class="col-xl-4 col-lg-6 mb-4">
+                <div class="card shadow-sm h-100 fornitore-card" data-fornitore-id="{{ fornitore.id }}">
+                    <div class="card-header py-3 {% if not fornitore.attivo %}bg-light{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 fw-bold {% if not fornitore.attivo %}text-muted{% else %}text-success{% endif %}">
+                                    <i class="fas fa-truck me-1"></i>{{ fornitore.nome|truncatechars:30 }}
+                                </h6>
+                                {% if fornitore.citta %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ fornitore.citta }}
+                                        {% if fornitore.zona %} - {{ fornitore.zona }}{% endif %}
+                                    </small>
+                                {% endif %}
+                            </div>
+                            <div class="text-end">
+                                {% if fornitore.attivo %}
+                                    <span class="badge bg-success">Attivo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inattivo</span>
+                                {% endif %}
+                                {% if fornitore.is_nuovo_fornitore %}
+                                    <span class="badge bg-info ms-1">Nuovo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Contatti -->
+                        <div class="mb-3">
+                            {% if fornitore.telefono %}
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-phone text-success me-2" style="width: 16px;"></i>
+                                <a href="tel:{{ fornitore.telefono }}" class="text-decoration-none small">
+                                    {{ fornitore.telefono }}
+                                </a>
+                            </div>
+                            {% endif %}
+                            
+                            {% if fornitore.email %}
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-envelope text-primary me-2" style="width: 16px;"></i>
+                                <a href="mailto:{{ fornitore.email }}" class="text-decoration-none small">
+                                    {{ fornitore.email|truncatechars:25 }}
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Dati fiscali -->
+                        {% if fornitore.partita_iva or fornitore.codice_fiscale %}
+                        <div class="mb-3">
+                            {% if fornitore.partita_iva %}
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="fas fa-file-invoice text-warning me-2" style="width: 16px;"></i>
+                                <code class="small bg-light p-1 rounded">{{ fornitore.partita_iva }}</code>
+                            </div>
+                            {% endif %}
+                            {% if fornitore.codice_fiscale and not fornitore.partita_iva %}
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-id-card text-info me-2" style="width: 16px;"></i>
+                                <code class="small bg-light p-1 rounded">{{ fornitore.codice_fiscale }}</code>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Info aggiuntive -->
+                        <div class="row small text-muted">
+                            <div class="col-6">
+                                <div>Fornitore dal</div>
+                                <strong>{{ fornitore.created_at|date:"d/m/Y" }}</strong>
+                            </div>
+                            <div class="col-6 text-end">
+                                <div>Pagamento</div>
+                                <strong>{{ fornitore.get_tipo_pagamento_display }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-footer bg-light">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'anagrafica:dettaglio_fornitore' pk=fornitore.pk %}" 
+                               class="btn btn-outline-success btn-sm flex-grow-1">
+                                <i class="fas fa-eye me-1"></i>Dettagli
+                            </a>
+                            <a href="{% url 'anagrafica:modifica_fornitore' pk=fornitore.pk %}" 
+                               class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if user.is_staff %}
+                            <a href="{% url 'anagrafica:toggle_attivo' 'fornitore' fornitore.pk %}" 
+                               class="btn btn-outline-{% if fornitore.attivo %}secondary{% else %}success{% endif %} btn-sm"
+                               onclick="return confirm('Sei sicuro di voler {% if fornitore.attivo %}disattivare{% else %}attivare{% endif %} questo fornitore?')"
+                               title="{% if fornitore.attivo %}Disattiva{% else %}Attiva{% endif %} fornitore">
+                                <i class="fas fa-{% if fornitore.attivo %}ban{% else %}check{% endif %}"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Stato vuoto -->
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-body text-center py-5">
+                        <div class="mb-3">
+                            <i class="fas fa-search fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">
+                            {% if request.GET.q or request.GET.citta %}
+                                Nessun fornitore trovato
+                            {% else %}
+                                Nessun fornitore presente
+                            {% endif %}
+                        </h5>
+                        <p class="text-muted mb-4">
+                            {% if request.GET.q or request.GET.citta %}
+                                Prova a modificare i criteri di ricerca o aggiungi un nuovo fornitore.
+                            {% else %}
+                                Inizia aggiungendo il tuo primo fornitore al sistema.
+                            {% endif %}
+                        </p>
+                        
+                        <div class="d-flex justify-content-center gap-2">
+                            {% if request.GET.q or request.GET.citta %}
+                                <a href="{% url 'anagrafica:elenco_fornitori' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Rimuovi Filtri
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'anagrafica:nuovo_fornitore' %}" class="btn btn-success">
+                                <i class="fas fa-plus me-1"></i>Aggiungi Primo Fornitore
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Paginazione -->
+    {% if is_paginated %}
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="Navigazione fornitori">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.citta %}citta={{ request.GET.citta }}&{% endif %}{% if request.GET.attivo %}attivo={{ request.GET.attivo }}&{% endif %}{% if request.GET.ordine %}ordine={{ request.GET.ordine }}&{% endif %}page=1">Prima</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.citta %}citta={{ request.GET.citta }}&{% endif %}{% if request.GET.attivo %}attivo={{ request.GET.attivo }}&{% endif %}{% if request.GET.ordine %}ordine={{ request.GET.ordine }}&{% endif %}page={{ page_obj.previous_page_number }}">Precedente</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.citta %}citta={{ request.GET.citta }}&{% endif %}{% if request.GET.attivo %}attivo={{ request.GET.attivo }}&{% endif %}{% if request.GET.ordine %}ordine={{ request.GET.ordine }}&{% endif %}page={{ page_obj.next_page_number }}">Successiva</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}{% if request.GET.citta %}citta={{ request.GET.citta }}&{% endif %}{% if request.GET.attivo %}attivo={{ request.GET.attivo }}&{% endif %}{% if request.GET.ordine %}ordine={{ request.GET.ordine }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Ultima</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Card hover effects */
+.fornitore-card {
+    transition: all 0.3s ease;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.fornitore-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Card styling */
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Border styling per statistiche */
+.border-end {
+    border-right: 1px solid #dee2e6 !important;
+}
+
+/* Link styling */
+a[href^="tel:"], a[href^="mailto:"] {
+    color: inherit;
+}
+
+a[href^="tel:"]:hover, a[href^="mailto:"]:hover {
+    text-decoration: underline !important;
+}
+
+/* Code styling */
+code {
+    font-size: 0.8rem;
+    font-family: 'Monaco', 'Consolas', monospace;
+}
+
+/* Button group responsive */
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+/* Form controls */
+.form-control:focus, .form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fornitore-card:hover {
+        transform: none;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    .border-end:last-child {
+        border-bottom: none !important;
+        margin-bottom: 0;
+    }
+}
+
+/* Pagination styling */
+.pagination .page-link {
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+/* Empty state styling */
+.fas.fa-search.fa-3x {
+    opacity: 0.3;
+}
+
+/* Form label small */
+.form-label.small {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+/* Stats cards */
+.card-footer .row > div {
+    padding: 0.5rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fornitore-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Load more button hover */
+.btn:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease-in-out;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit form quando cambia il filtro di ordinamento
+    $('select[name="ordine"]').on('change', function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Tooltip per pulsanti
+    $('[title]').tooltip();
+    
+    // Highlight della ricerca
+    const searchTerm = "{{ request.GET.q }}";
+    if (searchTerm) {
+        $('.fornitore-card h6').each(function() {
+            const text = $(this).html();
+            const highlighted = text.replace(
+                new RegExp(`(${searchTerm})`, 'gi'),
+                '<mark class="bg-warning">$1</mark>'
+            );
+            $(this).html(highlighted);
+        });
+    }
+    
+    // Animazione staggered per le card
+    $('.fornitore-card').each(function(index) {
+        $(this).css('animation-delay', (index * 0.1) + 's');
+    });
+    
+    // Conferma per azioni toggle
+    $('.btn-outline-secondary, .btn-outline-success').filter('[href*="toggle_attivo"]').on('click', function(e) {
+        const isActive = $(this).hasClass('btn-outline-secondary');
+        const action = isActive ? 'disattivare' : 'attivare';
+        const nomeFornitore = $(this).closest('.fornitore-card').find('h6').text().trim();
+        
+        if (!confirm(`Sei sicuro di voler ${action} il fornitore "${nomeFornitore}"?`)) {
+            e.preventDefault();
+        }
+    });
+    
+    // Clear search on Escape
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape' && $('input[name="q"]').is(':focus')) {
+            $('input[name="q"]').val('');
+            $('form').submit();
+        }
+    });
+    
+    // Auto-focus su campo ricerca se presente nei parametri
+    {% if request.GET.q %}
+    $('input[name="q"]').focus().select();
+    {% endif %}
+});
+</script>
+{% endblock %}

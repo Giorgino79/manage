@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Fatturazione Passiva{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Fatturazione Passiva</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Fatturazione Passiva
+                </h1>
+                <div>
+                    <a href="{% url 'fatturazione:registra_fattura' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Registra Nuova Fattura
+                    </a>
+                    <div class="btn-group" role="group">
+                        <button id="exportDropdown" type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="exportDropdown">
+                            <a class="dropdown-item" href="{% url 'fatturazione:export_csv' %}">
+                                <i class="fas fa-file-csv"></i> Fatture CSV
+                            </a>
+                            <a class="dropdown-item" href="{% url 'fatturazione:export_ordini_form' %}">
+                                <i class="fas fa-file-export"></i> Ordini di Acquisto
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche rapide -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-primary h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Totale Fatture
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.totali|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-file-invoice fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-warning h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                In Attesa
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.in_attesa|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-info h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Da Pagare
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                €{{ importi.totale_da_pagare|default:0|floatformat:2 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-euro-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-left-success h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Pagate
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ stats.pagate|default:0 }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dettaglio stati -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-pie"></i>
+                        Stati Fatture
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <small class="text-muted">In Attesa</small>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-secondary" style="width: 100%">
+                                        {{ stats.in_attesa|default:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Ricevute</small>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-info" style="width: 100%">
+                                        {{ stats.ricevute|default:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Controllate</small>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-primary" style="width: 100%">
+                                        {{ stats.controllate|default:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <small class="text-muted">Contabilizzate</small>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-success" style="width: 100%">
+                                        {{ stats.contabilizzate|default:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Programmate</small>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-warning" style="width: 100%">
+                                        {{ stats.programmate|default:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Pagate</small>
+                                <div class="progress mb-1" style="height: 20px;">
+                                    <div class="progress-bar bg-success" style="width: 100%">
+                                        {{ stats.pagate|default:0 }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Alertas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="text-danger font-weight-bold">
+                            {{ stats.scadute|default:0 }}
+                        </div>
+                        <small class="text-muted">Fatture Scadute</small>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-warning font-weight-bold">
+                            {{ stats.in_scadenza|default:0 }}
+                        </div>
+                        <small class="text-muted">In Scadenza (7gg)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fatture recenti -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-list"></i>
+                        Fatture Recenti
+                    </h6>
+                    <a href="{% url 'admin:fatturazione_fatturafornitore_changelist' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> Vedi Tutte
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if fatture_recenti %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Protocollo</th>
+                                        <th>Fornitore</th>
+                                        <th>Data Fattura</th>
+                                        <th>Scadenza</th>
+                                        <th>Importo</th>
+                                        <th>Stato</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for fattura in fatture_recenti %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'admin:fatturazione_fatturafornitore_change' fattura.pk %}" 
+                                               class="text-decoration-none">
+                                                <strong>{{ fattura.numero_protocollo }}</strong>
+                                            </a>
+                                        </td>
+                                        <td>{{ fattura.fornitore.nome }}</td>
+                                        <td>{{ fattura.data_fattura|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% if fattura.is_scaduta %}
+                                                <span class="badge badge-danger">
+                                                    {{ fattura.data_scadenza|date:"d/m/Y" }} (Scaduta)
+                                                </span>
+                                            {% elif fattura.is_in_scadenza %}
+                                                <span class="badge badge-warning">
+                                                    {{ fattura.data_scadenza|date:"d/m/Y" }}
+                                                </span>
+                                            {% else %}
+                                                {{ fattura.data_scadenza|date:"d/m/Y" }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-right">
+                                            <strong>€{{ fattura.importo_totale|floatformat:2 }}</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ fattura.get_stato_css_class }}">
+                                                {{ fattura.get_stato_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="{% url 'admin:fatturazione_fatturafornitore_change' fattura.pk %}" 
+                                               class="btn btn-sm btn-outline-primary" title="Modifica">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-file-invoice fa-3x text-gray-300 mb-3"></i>
+                            <h5 class="text-muted">Nessuna fattura presente</h5>
+                            <p class="text-muted">Crea la prima fattura per iniziare a gestire la fatturazione passiva.</p>
+                            <a href="{% url 'fatturazione:registra_fattura' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Registra Nuova Fattura
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fatture prioritarie -->
+    {% if fatture_prioritarie %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-left-warning">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-warning">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Fatture Prioritarie
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Protocollo</th>
+                                    <th>Fornitore</th>
+                                    <th>Scadenza</th>
+                                    <th>Importo</th>
+                                    <th>Priorità</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fattura in fatture_prioritarie %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'admin:fatturazione_fatturafornitore_change' fattura.pk %}">
+                                            {{ fattura.numero_protocollo }}
+                                        </a>
+                                    </td>
+                                    <td>{{ fattura.fornitore.nome }}</td>
+                                    <td>
+                                        {% if fattura.is_scaduta %}
+                                            <span class="text-danger">{{ fattura.data_scadenza|date:"d/m/Y" }}</span>
+                                        {% else %}
+                                            {{ fattura.data_scadenza|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </td>
+                                    <td>€{{ fattura.importo_totale|floatformat:2 }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ fattura.get_priorita_css_class }}">
+                                            {{ fattura.get_priorita_pagamento_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Scadenze prossime -->
+    {% if scadenze_prossime %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-left-info">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-calendar-alt"></i>
+                        Scadenze Prossime (7 giorni)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Data Scadenza</th>
+                                    <th>Fattura</th>
+                                    <th>Fornitore</th>
+                                    <th>Importo</th>
+                                    <th>Giorni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for scadenza in scadenze_prossime %}
+                                <tr>
+                                    <td>{{ scadenza.data_scadenza|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'admin:fatturazione_fatturafornitore_change' scadenza.fattura.pk %}">
+                                            {{ scadenza.fattura.numero_protocollo }}
+                                        </a>
+                                    </td>
+                                    <td>{{ scadenza.fattura.fornitore.nome }}</td>
+                                    <td>€{{ scadenza.importo_scadenza|floatformat:2 }}</td>
+                                    <td>
+                                        {% with giorni=scadenza.giorni_alla_scadenza %}
+                                            {% if giorni < 0 %}
+                                                <span class="text-danger">Scaduta</span>
+                                            {% elif giorni == 0 %}
+                                                <span class="text-warning">Oggi</span>
+                                            {% elif giorni <= 3 %}
+                                                <span class="text-warning">{{ giorni }} giorni</span>
+                                            {% else %}
+                                                {{ giorni }} giorni
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Azioni rapide -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-bolt"></i>
+                        Azioni Rapide
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'fatturazione:registra_fattura' %}" class="btn btn-primary btn-block">
+                                <i class="fas fa-plus mr-2"></i>Registra Nuova Fattura
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'admin:fatturazione_fatturafornitore_changelist' %}" class="btn btn-outline-info btn-block">
+                                <i class="fas fa-list mr-2"></i>Tutte le Fatture
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'admin:fatturazione_fatturafornitore_changelist' %}?stato=RICEVUTA" class="btn btn-outline-warning btn-block">
+                                <i class="fas fa-search mr-2"></i>Da Controllare
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'admin:fatturazione_fatturafornitore_changelist' %}?stato=PROGRAMMATA" class="btn btn-outline-success btn-block">
+                                <i class="fas fa-euro-sign mr-2"></i>Da Pagare
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6 mb-2">
+                            <a href="{% url 'fatturazione:export_ordini_form' %}" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-file-export mr-2"></i>Export Ordini Acquisto
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <a href="{% url 'fatturazione:export_csv' %}" class="btn btn-outline-secondary btn-block">
+                                <i class="fas fa-file-csv mr-2"></i>Export Fatture CSV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: .25rem solid #4e73df!important;
+}
+.border-left-warning {
+    border-left: .25rem solid #f6c23e!important;
+}
+.border-left-info {
+    border-left: .25rem solid #36b9cc!important;
+}
+.border-left-success {
+    border-left: .25rem solid #1cc88a!important;
+}
+.text-xs {
+    font-size: .7rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,521 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nuovo Template Email{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="file-plus" class="feather me-2"></i>Nuovo Template Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:template_list' %}">Template</a></li>
+                            <li class="breadcrumb-item active">Nuovo</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'mail:template_list' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna alla Lista
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Template Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="edit" class="feather me-2"></i>Dati Template
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="templateForm">
+                                {% csrf_token %}
+                                
+                                <!-- Basic Information -->
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label for="name" class="form-label">Nome Template <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="name" name="name" required>
+                                        <div class="form-text">Nome identificativo del template</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="category" class="form-label">Categoria <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            {% for value, label in categories %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Descrizione</label>
+                                    <textarea class="form-control" id="description" name="description" rows="2" 
+                                              placeholder="Breve descrizione del template..."></textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="subject" class="form-label">Oggetto Email <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="subject" name="subject" required 
+                                           placeholder="Oggetto del messaggio email...">
+                                    <div class="form-text">Puoi usare variabili come {{cliente}} o {{data}}</div>
+                                </div>
+
+                                <!-- Content -->
+                                <div class="mb-3">
+                                    <label for="content_html" class="form-label">Contenuto HTML <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="content_html" name="content_html" rows="12" required
+                                              placeholder="Contenuto HTML del template..."></textarea>
+                                    <div class="form-text">
+                                        <small>
+                                            <i data-feather="info" class="feather me-1"></i>
+                                            Usa {{variabile}} per inserire contenuto dinamico. 
+                                            <a href="#" onclick="insertVariable('cliente')">{{cliente}}</a>, 
+                                            <a href="#" onclick="insertVariable('data')">{{data}}</a>, 
+                                            <a href="#" onclick="insertVariable('oggetto')">{{oggetto}}</a>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="content_text" class="form-label">Contenuto Testuale (Fallback)</label>
+                                    <textarea class="form-control" id="content_text" name="content_text" rows="8" 
+                                              placeholder="Versione testuale del template (opzionale)..."></textarea>
+                                    <div class="form-text">Versione solo testo per client che non supportano HTML</div>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                    <button type="button" class="btn btn-outline-info" onclick="previewTemplate()">
+                                        <i data-feather="eye" class="feather me-1"></i>Anteprima
+                                    </button>
+                                    <div>
+                                        <a href="{% url 'mail:template_list' %}" class="btn btn-secondary me-2">Annulla</a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i data-feather="save" class="feather me-1"></i>Crea Template
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Templates Examples -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="book" class="feather me-1"></i>Template Esempi</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="examplesAccordion">
+                                <!-- Preventivo Example -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                data-bs-target="#preventivo-example" aria-expanded="false">
+                                            Richiesta Preventivo
+                                        </button>
+                                    </h2>
+                                    <div id="preventivo-example" class="accordion-collapse collapse" 
+                                         data-bs-parent="#examplesAccordion">
+                                        <div class="accordion-body">
+                                            <button class="btn btn-sm btn-outline-primary w-100 mb-2" 
+                                                    onclick="loadExample('preventivo')">
+                                                Usa questo esempio
+                                            </button>
+                                            <small class="text-muted">
+                                                Template per richieste di preventivo con dettagli cliente e scadenza.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Comunicazione Example -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                data-bs-target="#comunicazione-example" aria-expanded="false">
+                                            Comunicazione Generale
+                                        </button>
+                                    </h2>
+                                    <div id="comunicazione-example" class="accordion-collapse collapse" 
+                                         data-bs-parent="#examplesAccordion">
+                                        <div class="accordion-body">
+                                            <button class="btn btn-sm btn-outline-primary w-100 mb-2" 
+                                                    onclick="loadExample('comunicazione')">
+                                                Usa questo esempio
+                                            </button>
+                                            <small class="text-muted">
+                                                Template generico per comunicazioni aziendali.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Notifica Example -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                data-bs-target="#notifica-example" aria-expanded="false">
+                                            Notifica Sistema
+                                        </button>
+                                    </h2>
+                                    <div id="notifica-example" class="accordion-collapse collapse" 
+                                         data-bs-parent="#examplesAccordion">
+                                        <div class="accordion-body">
+                                            <button class="btn btn-sm btn-outline-primary w-100 mb-2" 
+                                                    onclick="loadExample('notifica')">
+                                                Usa questo esempio
+                                            </button>
+                                            <small class="text-muted">
+                                                Template per notifiche automatiche del sistema.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variables Help -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="code" class="feather me-1"></i>Variabili Disponibili</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><small class="text-muted">Clicca per inserire nel template:</small></p>
+                            
+                            <h6 class="h6">Generali:</h6>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('azienda')">
+                                    {{azienda}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('data')">
+                                    {{data}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('utente')">
+                                    {{utente}}
+                                </button>
+                            </div>
+
+                            <h6 class="h6">Cliente/Fornitore:</h6>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('cliente')">
+                                    {{cliente}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('email')">
+                                    {{email}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('telefono')">
+                                    {{telefono}}
+                                </button>
+                            </div>
+
+                            <h6 class="h6">Documenti:</h6>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('numero')">
+                                    {{numero}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('oggetto')">
+                                    {{oggetto}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('scadenza')">
+                                    {{scadenza}}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i data-feather="eye" class="feather me-2"></i>Anteprima Template
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% verbatim %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Insert variable function
+    function insertVariable(variable) {
+        const htmlField = document.getElementById('content_html');
+        const textField = document.getElementById('content_text');
+        const subjectField = document.getElementById('subject');
+        
+        const variableText = '{{' + variable + '}}';
+        
+        // Get currently focused field
+        const activeElement = document.activeElement;
+        let targetField;
+        
+        if (activeElement === htmlField || activeElement === textField || activeElement === subjectField) {
+            targetField = activeElement;
+        } else {
+            targetField = htmlField; // Default to HTML field
+        }
+        
+        // Insert at cursor position
+        const start = targetField.selectionStart;
+        const end = targetField.selectionEnd;
+        const text = targetField.value;
+        
+        targetField.value = text.substring(0, start) + variableText + text.substring(end);
+        
+        // Move cursor after inserted variable
+        targetField.selectionStart = targetField.selectionEnd = start + variableText.length;
+        targetField.focus();
+    }
+
+    // Load example template
+    function loadExample(type) {
+        const examples = {
+            preventivo: {
+                name: 'Richiesta Preventivo Generico',
+                category: 'preventivi',
+                description: 'Template per richieste di preventivo standard',
+                subject: 'Richiesta Preventivo - {{oggetto}}',
+                html: `<html>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Richiesta Preventivo</h2>
+        
+        <p>Gentile {{cliente}},</p>
+        
+        <p>Vi scriviamo per richiedere un preventivo per:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 20px 0;">
+            <strong>Oggetto:</strong> {{oggetto}}<br>
+            <strong>Data richiesta:</strong> {{data}}<br>
+            <strong>Scadenza:</strong> {{scadenza}}
+        </div>
+        
+        <p>Vi preghiamo di inviarci il preventivo entro la data indicata.</p>
+        
+        <p>Cordiali saluti,<br>
+        <strong>{{azienda}}</strong></p>
+    </div>
+</body>
+</html>`,
+                text: `Gentile {{cliente}},
+
+Vi scriviamo per richiedere un preventivo per: {{oggetto}}
+
+Data richiesta: {{data}}
+Scadenza: {{scadenza}}
+
+Vi preghiamo di inviarci il preventivo entro la data indicata.
+
+Cordiali saluti,
+{{azienda}}`
+            },
+            comunicazione: {
+                name: 'Comunicazione Aziendale',
+                category: 'generico',
+                description: 'Template per comunicazioni generali',
+                subject: 'Comunicazione: {{oggetto}}',
+                html: `<html>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #007bff; margin: 0;">{{azienda}}</h1>
+            <hr style="border: 1px solid #007bff; width: 100px;">
+        </div>
+        
+        <h2 style="color: #333;">{{oggetto}}</h2>
+        
+        <p>Gentile {{cliente}},</p>
+        
+        <p>[Inserire qui il contenuto della comunicazione]</p>
+        
+        <p>Per ulteriori informazioni, non esitate a contattarci.</p>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; color: #666;">
+            <p>{{azienda}} - {{data}}</p>
+        </div>
+    </div>
+</body>
+</html>`,
+                text: `{{azienda}}
+
+{{oggetto}}
+
+Gentile {{cliente}},
+
+[Inserire qui il contenuto della comunicazione]
+
+Per ulteriori informazioni, non esitate a contattarci.
+
+{{azienda}} - {{data}}`
+            },
+            notifica: {
+                name: 'Notifica Sistema',
+                category: 'sistema',
+                description: 'Template per notifiche automatiche',
+                subject: 'Notifica Sistema - {{oggetto}}',
+                html: `<html>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="background-color: #17a2b8; color: white; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+            <h2 style="margin: 0;">🔔 Notifica Sistema</h2>
+        </div>
+        
+        <h3 style="color: #333;">{{oggetto}}</h3>
+        
+        <p>Ciao {{utente}},</p>
+        
+        <p>Questo è un messaggio automatico dal sistema.</p>
+        
+        <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <strong>Data:</strong> {{data}}<br>
+            <strong>Dettagli:</strong> [Inserire dettagli specifici]
+        </div>
+        
+        <p style="color: #666; font-size: 0.9em; margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+            Questo è un messaggio automatico, non rispondere a questa email.
+        </p>
+    </div>
+</body>
+</html>`,
+                text: `🔔 NOTIFICA SISTEMA
+
+{{oggetto}}
+
+Ciao {{utente}},
+
+Questo è un messaggio automatico dal sistema.
+
+Data: {{data}}
+Dettagli: [Inserire dettagli specifici]
+
+Questo è un messaggio automatico, non rispondere a questa email.`
+            }
+        };
+        
+        if (examples[type]) {
+            const example = examples[type];
+            document.getElementById('name').value = example.name;
+            document.getElementById('category').value = example.category;
+            document.getElementById('description').value = example.description;
+            document.getElementById('subject').value = example.subject;
+            document.getElementById('content_html').value = example.html;
+            document.getElementById('content_text').value = example.text;
+        }
+    }
+
+    // Preview template
+    function previewTemplate() {
+        const subject = document.getElementById('subject').value || '[Oggetto vuoto]';
+        const html = document.getElementById('content_html').value || '<p>Contenuto HTML vuoto</p>';
+        const text = document.getElementById('content_text').value || '';
+        
+        // Simple variable replacement for preview
+        const sampleData = {
+            azienda: 'Azienda di Esempio',
+            cliente: 'Cliente di Prova',
+            data: new Date().toLocaleDateString('it-IT'),
+            oggetto: 'Oggetto di esempio',
+            utente: 'Utente Sistema',
+            email: 'cliente@esempio.it',
+            telefono: '+39 123 456 7890',
+            numero: 'DOC-001',
+            scadenza: new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString('it-IT')
+        };
+        
+        let previewSubject = subject;
+        let previewHtml = html;
+        let previewText = text;
+        
+        // Replace variables
+        Object.keys(sampleData).forEach(key => {
+            const pattern = '{' + '{\\s*' + key + '\\s*}' + '}';
+            const regex = new RegExp(pattern, 'g');
+            previewSubject = previewSubject.replace(regex, sampleData[key]);
+            previewHtml = previewHtml.replace(regex, sampleData[key]);
+            previewText = previewText.replace(regex, sampleData[key]);
+        });
+        
+        let content = '<div class="mb-3">' +
+            '<label class="form-label"><strong>Oggetto:</strong></label>' +
+            '<div class="form-control-plaintext border p-2 bg-light">' +
+                previewSubject +
+            '</div>' +
+        '</div>' +
+        '<div class="mb-3">' +
+            '<label class="form-label"><strong>Contenuto HTML:</strong></label>' +
+            '<div class="border p-3" style="max-height: 400px; overflow-y: auto;">' +
+                previewHtml +
+            '</div>' +
+        '</div>';
+        
+        if (previewText) {
+            content += '<div class="mb-3">' +
+                '<label class="form-label"><strong>Contenuto Testuale:</strong></label>' +
+                '<pre class="form-control-plaintext border p-2 bg-light" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">' + previewText + '</pre>' +
+            '</div>';
+        }
+        
+        content += '<div class="alert alert-info">' +
+            '<small>' +
+                '<i data-feather="info" class="feather me-1"></i>' +
+                'Anteprima con dati di esempio. Le variabili verranno sostituite con i dati reali durante l\'invio.' +
+            '</small>' +
+        '</div>';
+        
+        document.getElementById('previewContent').innerHTML = content;
+        
+        // Refresh feather icons in modal
+        setTimeout(() => feather.replace(), 100);
+        
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        modal.show();
+    }
+
+    // Form validation
+    document.getElementById('templateForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const subject = document.getElementById('subject').value.trim();
+        const html = document.getElementById('content_html').value.trim();
+        
+        if (!name || !subject || !html) {
+            e.preventDefault();
+            alert('Compila tutti i campi obbligatori (Nome, Oggetto e Contenuto HTML).');
+            return false;
+        }
+        
+        return true;
+    });
+</script>
+{% endverbatim %}
+{% endblock %}

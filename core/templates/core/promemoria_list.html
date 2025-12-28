@@ -1,0 +1,478 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+        color: white;
+    }
+    .table td {
+        vertical-align: middle;
+        padding: 12px 8px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,123,255,0.05);
+        cursor: pointer;
+    }
+    .overdue-badge {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.05); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    .filter-section {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .dropdown-toggle::after {
+        margin-left: 0.5em;
+    }
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+    /* Pulsanti azioni */
+    .btn-group .btn {
+        border-radius: 4px !important;
+        margin: 0 1px;
+        transition: all 0.2s ease;
+    }
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-group .btn i {
+        font-size: 0.85rem;
+    }
+    .btn-outline-primary:hover {
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    .btn-outline-success:hover {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    .btn-outline-warning:hover {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #212529;
+    }
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .table td, .table th {
+            padding: 8px 4px;
+            font-size: 0.85rem;
+        }
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .dropdown-menu {
+            min-width: 140px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con azioni -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-tasks"></i> {{ title }}</h1>
+        <div>
+            <a href="{% url 'core:promemoria_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nuovo Promemoria
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiche rapide -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center bg-primary text-white">
+                <div class="card-body">
+                    <h4>{{ promemoria.paginator.count }}</h4>
+                    <p class="mb-0"><i class="fas fa-tasks"></i> Totali</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-warning text-white">
+                <div class="card-body">
+                    <h4>
+                        {% with attivi=promemoria.object_list|length %}
+                            {% for p in promemoria.object_list %}
+                                {% if not p.completato %}{{ forloop.counter }}{% endif %}
+                            {% endfor %}
+                        {% endwith %}
+                    </h4>
+                    <p class="mb-0"><i class="fas fa-clock"></i> Attivi</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-danger text-white">
+                <div class="card-body">
+                    <h4>
+                        {% for p in promemoria.object_list %}
+                            {% if p.is_overdue %}{{ forloop.counter }}{% endif %}
+                        {% endfor %}
+                    </h4>
+                    <p class="mb-0"><i class="fas fa-exclamation-triangle"></i> Scaduti</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center bg-success text-white">
+                <div class="card-body">
+                    <h4>
+                        {% for p in promemoria.object_list %}
+                            {% if p.completato %}{{ forloop.counter }}{% endif %}
+                        {% endfor %}
+                    </h4>
+                    <p class="mb-0"><i class="fas fa-check"></i> Completati</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtri di ricerca -->
+    <div class="filter-section">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Ricerca</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ request.GET.search }}" 
+                       placeholder="Cerca per titolo o descrizione...">
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Stato</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">Tutti</option>
+                    <option value="attivi" {% if request.GET.status == 'attivi' %}selected{% endif %}>Attivi</option>
+                    <option value="completati" {% if request.GET.status == 'completati' %}selected{% endif %}>Completati</option>
+                    <option value="scaduti" {% if request.GET.status == 'scaduti' %}selected{% endif %}>Scaduti</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="priorita" class="form-label">Priorità</label>
+                <select class="form-select" id="priorita" name="priorita">
+                    <option value="">Tutte</option>
+                    <option value="alta" {% if request.GET.priorita == 'alta' %}selected{% endif %}>Alta</option>
+                    <option value="media" {% if request.GET.priorita == 'media' %}selected{% endif %}>Media</option>
+                    <option value="bassa" {% if request.GET.priorita == 'bassa' %}selected{% endif %}>Bassa</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="sort" class="form-label">Ordina per</label>
+                <select class="form-select" id="sort" name="sort">
+                    <option value="scadenza" {% if request.GET.sort == 'scadenza' %}selected{% endif %}>Scadenza</option>
+                    <option value="priorita" {% if request.GET.sort == 'priorita' %}selected{% endif %}>Priorità</option>
+                    <option value="creazione" {% if request.GET.sort == 'creazione' %}selected{% endif %}>Data creazione</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label>&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-filter"></i> Filtra
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tabella promemoria -->
+    <div class="card">
+        <div class="card-body">
+            {% if promemoria %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th width="5%">
+                                <i class="fas fa-circle"></i>
+                            </th>
+                            <th width="30%">Titolo</th>
+                            <th width="15%">Priorità</th>
+                            <th width="15%">Assegnato a</th>
+                            <th width="12%">Scadenza</th>
+                            <th width="12%">Data creazione</th>
+                            <th width="11%">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for promemoria_item in promemoria %}
+                        <tr class="
+                            {% if promemoria_item.completato %}table-success opacity-75
+                            {% elif promemoria_item.is_overdue %}table-danger
+                            {% else %}table-light{% endif %}">
+
+                            <!-- Icona stato -->
+                            <td class="text-center">
+                                {% if promemoria_item.completato %}
+                                    <i class="fas fa-check-circle text-success fs-5"></i>
+                                {% elif promemoria_item.is_overdue %}
+                                    <i class="fas fa-exclamation-circle text-danger fs-5 overdue-badge"></i>
+                                {% else %}
+                                    <i class="fas fa-clock text-warning fs-5"></i>
+                                {% endif %}
+                            </td>
+
+                            <!-- Titolo -->
+                            <td>
+                                <div class="fw-bold mb-1">{{ promemoria_item.titolo }}</div>
+                                {% if promemoria_item.descrizione %}
+                                <small class="text-muted">{{ promemoria_item.descrizione|truncatechars:80 }}</small>
+                                {% endif %}
+                            </td>
+
+                            <!-- Priorità -->
+                            <td>
+                                <span class="badge fs-6
+                                           {% if promemoria_item.priorita == 'alta' %}bg-danger
+                                           {% elif promemoria_item.priorita == 'media' %}bg-warning text-dark
+                                           {% else %}bg-success{% endif %}">
+                                    {{ promemoria_item.get_priorita_display }}
+                                </span>
+                            </td>
+
+                            <!-- Assegnato a -->
+                            <td>
+                                {% if promemoria_item.assegnato_a.first_name %}
+                                    {{ promemoria_item.assegnato_a.first_name }}
+                                {% else %}
+                                    {{ promemoria_item.assegnato_a.username }}
+                                {% endif %}
+                                {% if promemoria_item.assegnato_a == request.user %}
+                                    <br><small class="badge bg-info">Tu</small>
+                                {% endif %}
+                            </td>
+
+                            <!-- Scadenza -->
+                            <td>
+                                {% if promemoria_item.data_scadenza %}
+                                    {% if promemoria_item.is_overdue %}
+                                        <span class="text-danger fw-bold">
+                                            {{ promemoria_item.data_scadenza|date:"d/m/Y" }}
+                                            <br><small class="badge bg-danger overdue-badge">Scaduto</small>
+                                        </span>
+                                    {% else %}
+                                        {{ promemoria_item.data_scadenza|date:"d/m/Y" }}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Data creazione -->
+                            <td>
+                                <small class="text-muted">
+                                    {{ promemoria_item.data_creazione|date:"d/m/Y" }}<br>
+                                    {{ promemoria_item.data_creazione|date:"H:i" }}
+                                </small>
+                            </td>
+
+                            <!-- Azioni -->
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <!-- Modifica: solo creatore, assegnato, staff/admin -->
+                                    {% if promemoria_item.creato_da == request.user or promemoria_item.assegnato_a == request.user or request.user.is_staff %}
+                                    <a href="{% url 'core:promemoria_update' promemoria_item.id %}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="Modifica promemoria">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+
+                                    <!-- Completa/Riapri: creatore, assegnato, staff/admin -->
+                                    {% if promemoria_item.creato_da == request.user or promemoria_item.assegnato_a == request.user or request.user.is_staff %}
+                                    <a href="{% url 'core:promemoria_toggle' promemoria_item.id %}"
+                                       class="btn btn-sm {% if promemoria_item.completato %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-placement="top"
+                                       title="{% if promemoria_item.completato %}Riapri promemoria{% else %}Completa promemoria{% endif %}">
+                                        {% if promemoria_item.completato %}
+                                            <i class="fas fa-undo"></i>
+                                        {% else %}
+                                            <i class="fas fa-check"></i>
+                                        {% endif %}
+                                    </a>
+                                    {% endif %}
+
+                                    <!-- Elimina: SOLO creatore o staff/admin -->
+                                    {% if promemoria_item.creato_da == request.user or request.user.is_staff %}
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger quick-delete-btn"
+                                            data-url="{% url 'core:promemoria_delete' promemoria_item.id %}"
+                                            data-title="{{ promemoria_item.titolo|truncatechars:50 }}"
+                                            data-bs-toggle="tooltip"
+                                            data-bs-placement="top"
+                                            title="Elimina promemoria">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% elif promemoria_item.assegnato_a == request.user %}
+                                    <!-- Placeholder per utenti assegnati che non possono eliminare -->
+                                    <span class="btn btn-sm btn-outline-secondary disabled"
+                                          data-bs-toggle="tooltip"
+                                          data-bs-placement="top"
+                                          title="Solo il creatore può eliminare questo promemoria">
+                                        <i class="fas fa-ban text-muted"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty state -->
+            <div class="text-center py-5">
+                <i class="fas fa-tasks fa-4x text-muted mb-4"></i>
+                <h4 class="text-muted">Nessun promemoria trovato</h4>
+                <p class="text-muted mb-4">Non hai ancora promemoria o nessuno corrisponde ai filtri selezionati.</p>
+                <a href="{% url 'core:promemoria_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Crea il primo promemoria
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Paginazione -->
+    {% if promemoria.has_other_pages %}
+    <nav aria-label="Paginazione promemoria">
+        <ul class="pagination justify-content-center">
+            {% if promemoria.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.priorita %}priorita={{ request.GET.priorita }}&{% endif %}page={{ promemoria.previous_page_number }}">
+                        <i class="fas fa-chevron-left"></i> Precedente
+                    </a>
+                </li>
+            {% endif %}
+
+            {% for num in promemoria.paginator.page_range %}
+                {% if num == promemoria.number %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > promemoria.number|add:'-3' and num < promemoria.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.priorita %}priorita={{ request.GET.priorita }}&{% endif %}page={{ num }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if promemoria.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}{% if request.GET.status %}status={{ request.GET.status }}&{% endif %}{% if request.GET.priorita %}priorita={{ request.GET.priorita }}&{% endif %}page={{ promemoria.next_page_number }}">
+                        Successiva <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-submit filtri dopo cambio
+    $('.filter-section select').on('change', function() {
+        $(this).closest('form').submit();
+    });
+    
+    // Shortcuts da tastiera
+    $(document).on('keydown', function(e) {
+        // N = Nuovo promemoria
+        if (e.key === 'n' || e.key === 'N') {
+            if (!$('input, textarea, select').is(':focus')) {
+                window.location.href = "{% url 'core:promemoria_create' %}";
+                e.preventDefault();
+            }
+        }
+        
+        // F = Focus su ricerca
+        if (e.key === 'f' || e.key === 'F') {
+            if (!$('input, textarea, select').is(':focus')) {
+                $('#search').focus();
+                e.preventDefault();
+            }
+        }
+    });
+    
+    // Inizializza tutti i tooltip
+    $('[data-bs-toggle="tooltip"]').tooltip({
+        trigger: 'hover',
+        delay: { show: 500, hide: 100 }
+    });
+
+    // Eliminazione rapida con conferma
+    $('.quick-delete-btn').on('click', function(e) {
+        e.preventDefault();
+
+        const url = $(this).data('url');
+        const title = $(this).data('title');
+
+        const confirmation = confirm(
+            `Sei sicuro di voler eliminare definitivamente il promemoria:\n\n"${title}"\n\n` +
+            'Questa azione non può essere annullata.'
+        );
+
+        if (confirmation) {
+            // Crea form di eliminazione temporaneo
+            const form = $('<form>', {
+                method: 'POST',
+                action: url
+            });
+
+            form.append($('<input>', {
+                type: 'hidden',
+                name: 'csrfmiddlewaretoken',
+                value: $('[name=csrfmiddlewaretoken]').val() || '{{ csrf_token }}'
+            }));
+
+            // Aggiungi al body e submit
+            $('body').append(form);
+            form.submit();
+        }
+    });
+
+    // Auto-refresh per promemoria scaduti (ogni 5 minuti)
+    setTimeout(function() {
+        // Solo se ci sono promemoria scaduti visibili
+        if ($('.overdue-badge').length > 0) {
+            location.reload();
+        }
+    }, 300000); // 5 minuti
+});
+</script>
+{% endblock %}

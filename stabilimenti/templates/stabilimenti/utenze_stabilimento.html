@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="utenze-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-plug me-2"></i>Utenze {{ stabilimento.nome }}
+                </h1>
+                <p class="mb-0">Gestione bollette e servizi energetici</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="h4 mb-1">
+                    {% if stats_anno.totale_anno %}
+                        €ヌ{{ stats_anno.totale_anno|floatformat:0 }}
+                    {% else %}
+                        € 0
+                    {% endif %}
+                </div>
+                <div>Spese {{ anno_corrente }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Statistiche Anno Corrente -->
+            <div class="stats-utenze">
+                <h5><i class="fas fa-chart-line me-2"></i>Statistiche {{ anno_corrente }}</h5>
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <div class="h4 text-success">
+                            {% if stats_anno.totale_anno %}
+                                €ヌ{{ stats_anno.totale_anno|floatformat:0 }}
+                            {% else %}
+                                € 0
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">Totale Anno</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="h4 text-info">
+                            {% if stats_anno.media_mensile %}
+                                €ヌ{{ stats_anno.media_mensile|floatformat:0 }}
+                            {% else %}
+                                € 0
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">Media Mensile</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="h4 text-primary">{{ stats_anno.count_fatture|default:0 }}</div>
+                        <small class="text-muted">Fatture Pagate</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista Utenze -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-list me-2"></i>Elenco Utenze</h5><a href="{% url 'stabilimenti:nuova_utenza' stabilimento_pk=stabilimento.pk %}" 
+                   class="btn btn-success">
+                    <i class="fas fa-plus me-2"></i>Nuova Utenza
+                </a>
+            </div>
+
+            {% if page_obj %}
+                {% for utenza in page_obj %}
+                    <div class="utenza-card {{ utenza.causale }} card">
+                        <div class="card-body">
+                            <div class="row align-items-start">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-1">{{ utenza.titolo }}</h6>
+                                        <span class="tipo-utenza-badge {{ utenza.causale }}">
+                                            {{ utenza.get_causale_display }}
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <i class="fas fa-user me-1"></i>{{ utenza.fornitore.nome }}
+                                        <span class="mx-2">•</span>
+                                        <i class="fas fa-hashtag me-1"></i>{{ utenza.numero_pratica }}
+                                    </div>
+                                    
+                                    <div class="small text-muted mb-2">
+                                        {% if utenza.periodo_fatturazione_da and utenza.periodo_fatturazione_a %}
+                                            <i class="fas fa-calendar me-1"></i>
+                                            Periodo: {{ utenza.periodo_fatturazione_da|date:"d/m/Y" }} - {{ utenza.periodo_fatturazione_a|date:"d/m/Y" }}
+                                        {% endif %}
+                                        {% if utenza.data_fattura %}
+                                            <span class="mx-2">•</span>
+                                            <i class="fas fa-file-invoice me-1"></i>{{ utenza.data_fattura|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if utenza.consumo_kwh or utenza.consumo_mc or utenza.codice_pdr_pod %}
+                                        <div class="consumo-info">
+                                            {% if utenza.consumo_kwh %}
+                                                <i class="fas fa-bolt me-1"></i>{{ utenza.consumo_kwh }} kWh
+                                            {% endif %}
+                                            {% if utenza.consumo_mc %}
+                                                <i class="fas fa-fire me-1"></i>{{ utenza.consumo_mc }} mc
+                                            {% endif %}
+                                            {% if utenza.codice_pdr_pod %}
+                                                <br><small><i class="fas fa-barcode me-1"></i>{{ utenza.codice_pdr_pod }}</small>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4 text-end">
+                                    <div class="h5 mb-1">€ {{ utenza.calcola_totale_con_iva|floatformat:2 }}</div>
+                                    <div class="small text-muted mb-2">
+                                        <i class="fas fa-tag me-1"></i>{{ utenza.get_stato_display }}
+                                    </div>
+                                    
+                                    {% if utenza.data_scadenza_servizio %}
+                                        <div class="small mb-2">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Prossima: {{ utenza.data_scadenza_servizio|date:"d/m/Y" }}
+                                            {% if utenza.is_urgente %}
+                                                <span class="badge bg-warning text-dark ms-1">Urgente</span>
+                                            {% elif utenza.is_prossima_scadenza %}
+                                                <span class="badge bg-info ms-1">Prossima</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'stabilimenti:dettaglio_costo' utenza.pk %}" 
+                                           class="btn btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if utenza.can_be_modified %}
+                                            <a href="{% url 'stabilimenti:modifica_utenza' utenza.pk %}" 
+                                               class="btn btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- Paginazione -->
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Paginazione utenze" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                        <i class="fas fa-angle-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }}</span>
+                            </li>
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-plug fa-3x text-muted mb-3"></i>
+                    <h6>Nessuna utenza trovata</h6>
+                    <p class="text-muted">Non ci sono ancora utenze registrate per questo stabilimento.</p><a href="{% url 'stabilimenti:nuova_utenza' stabilimento_pk=stabilimento.pk %}" 
+                       class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Aggiungi prima utenza
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Ripartizione per Tipo -->
+            {% if stats_per_tipo %}
+                <div class="chart-container mb-4">
+                    <h6><i class="fas fa-chart-pie me-2"></i>Ripartizione {{ anno_corrente }}</h6>
+                    {% for tipo, importo in stats_per_tipo.items %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small">{{ tipo }}</span>
+                            <strong>€ {{ importo|floatformat:0 }}</strong>
+                        </div>
+                        <div class="progress mb-2" style="height: 6px;">
+                            {% widthratio importo stats_anno.totale_anno 100 as percentuale %}
+                            <div class="progress-bar" style="width: {{ percentuale }}%"></div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Prossime Scadenze -->
+            {% if prossime_scadenze %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-clock me-2"></i>Prossime Scadenze
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        {% for scadenza in prossime_scadenze %}
+                            <div class="scadenza-utenza {% if utenza.is_urgente %}urgente{% elif utenza.is_scadenza_quindicinale %}attenzione{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-bold">{{ scadenza.get_causale_display }}</div>
+                                        <div class="small text-muted">{{ scadenza.fornitore.nome }}</div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="small">{{ scadenza.data_scadenza_servizio|date:"d/m" }}</div>
+                                        <div class="small">
+                                            {% if scadenza.giorni_alla_scadenza <= 7 %}
+                                                <span class="text-danger">{{ scadenza.giorni_alla_scadenza }} gg</span>
+                                            {% elif scadenza.giorni_alla_scadenza <= 15 %}
+                                                <span class="text-warning">{{ scadenza.giorni_alla_scadenza }} gg</span>
+                                            {% else %}
+                                                <span class="text-muted">{{ scadenza.giorni_alla_scadenza }} gg</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="{% url 'stabilimenti:scadenze' %}" class="btn btn-sm btn-outline-primary">
+                            Vedi tutte le scadenze
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Azioni Rapide -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-tools me-2"></i>Azioni Rapide
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2"><a href="{% url 'stabilimenti:nuova_utenza' stabilimento_pk=stabilimento.pk %}" 
+                           class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>Nuova Utenza
+                        </a>
+                        <a href="{% url 'stabilimenti:dashboard_utenze' %}" 
+                           class="btn btn-outline-info">
+                            <i class="fas fa-chart-bar me-2"></i>Dashboard Generale
+                        </a>
+                        <a href="{% url 'stabilimenti:dettaglio' stabilimento.pk %}" 
+                           class="btn btn-outline-secondary">
+                            <i class="fas fa-building me-2"></i>Torna allo Stabilimento
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Utili -->
+            <div class="alert alert-info mt-3">
+                <h6><i class="fas fa-lightbulb me-2"></i>Suggerimenti</h6>
+                <ul class="mb-0 small">
+                    <li>Registra sempre le date di fatturazione per un tracking preciso</li>
+                    <li>Imposta le scadenze per ricevere notifiche automatiche</li>
+                    <li>Inserisci i consumi per analisi energetiche</li>
+                    <li>Usa i codici PDR/POD per identificare le utenze</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Evidenzia scadenze urgenti
+    document.querySelectorAll('.scadenza-utenza.urgente').forEach(function(item) {
+        item.style.animation = 'pulse 2s infinite';
+    });
+    
+    // Aggiungi animazione CSS per pulse
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Tooltip per informazioni aggiuntive
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

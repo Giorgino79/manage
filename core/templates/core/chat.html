@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container { height: 70vh; }
+    .chat-messages {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 15px;
+        background-color: #f9f9f9;
+    }
+    .message-item {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: flex-start;
+    }
+    .message-item.sent {
+        justify-content: flex-end;
+        flex-direction: row-reverse;
+    }
+    .message-content {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        position: relative;
+    }
+    .message-item.sent .message-content {
+        background-color: #007bff;
+        color: white;
+        margin-left: 10px;
+    }
+    .message-item.received .message-content {
+        background-color: #e9ecef;
+        color: #333;
+        margin-right: 10px;
+    }
+    .message-meta {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        margin-top: 5px;
+    }
+    .message-attachment {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background-color: rgba(255,255,255,0.1);
+        border-radius: 8px;
+    }
+    .user-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .user-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .user-item:hover {
+        background-color: #f8f9fa;
+    }
+    .user-item.active {
+        background-color: #e3f2fd;
+        border-left: 4px solid #2196f3;
+    }
+    .message-form {
+        border-top: 1px solid #ddd;
+        padding: 15px;
+        background-color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar utenti -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-users"></i> Contatti</h5>
+                    <!-- Form di ricerca contatti -->
+                    <div class="mt-2">
+                        <div class="input-group input-group-sm">
+                            <input type="text" id="searchContacts" class="form-control" 
+                                   placeholder="Cerca contatti..." autocomplete="off">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="user-list">
+                        {% for utente in utenti %}
+                        <div class="user-item {% if contatto and utente.id == contatto.id %}active{% endif %}"
+                             onclick="window.location.href='{% url "core:chat" %}?contatto={{ utente.id }}'"
+                             data-search="{% if utente.first_name %}{{ utente.first_name|lower }} {{ utente.last_name|lower }}{% endif %} {{ utente.username|lower }} {{ utente.email|lower }}">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar me-3">
+                                    <i class="fas fa-user-circle fa-2x text-muted"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">
+                                        {% if utente.first_name %}
+                                            {{ utente.first_name }} {{ utente.last_name }}
+                                        {% else %}
+                                            {{ utente.username }}
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">{{ utente.email }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="p-3 text-center text-muted">
+                            <i class="fas fa-users-slash fa-2x mb-2"></i>
+                            <p>Nessun contatto disponibile</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Area chat principale -->
+        <div class="col-md-9">
+            {% if contatto %}
+            <div class="card chat-container">
+                <div class="card-header">
+                    <h5>
+                        <i class="fas fa-comments"></i> 
+                        Chat con 
+                        {% if contatto.first_name %}
+                            {{ contatto.first_name }} {{ contatto.last_name }}
+                        {% else %}
+                            {{ contatto.username }}
+                        {% endif %}
+                    </h5>
+                </div>
+                
+                <!-- Messaggi -->
+                <div class="chat-messages" id="chat-messages">
+                    {% for messaggio in messaggi %}
+                    <div class="message-item {% if messaggio.mittente == request.user %}sent{% else %}received{% endif %}">
+                        <div class="message-content">
+                            <div class="message-text">{{ messaggio.testo|linebreaks }}</div>
+                            
+                            {% if messaggio.allegato %}
+                            <div class="message-attachment">
+                                <i class="fas fa-paperclip"></i>
+                                <a href="{{ messaggio.allegato.url }}" target="_blank" 
+                                   class="{% if messaggio.mittente == request.user %}text-light{% else %}text-primary{% endif %}">
+                                    {{ messaggio.nome_allegato }}
+                                </a>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="message-meta">
+                                {{ messaggio.data_invio|date:"d/m/Y H:i" }}
+                                {% if messaggio.mittente == request.user %}
+                                    {% if messaggio.letto %}
+                                        <i class="fas fa-check-double text-success ms-1"></i>
+                                    {% else %}
+                                        <i class="fas fa-check ms-1"></i>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-comment-slash fa-3x mb-3"></i>
+                        <p>Nessun messaggio ancora. Inizia la conversazione!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Form invio messaggio -->
+                <div class="message-form">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="destinatario" value="{{ contatto.id }}">
+                        
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <textarea name="testo" class="form-control" rows="2" 
+                                         placeholder="Scrivi il tuo messaggio..." required></textarea>
+                            </div>
+                            <div class="col-md-2">
+                                <input type="file" name="allegato" class="form-control" 
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.zip">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-paper-plane"></i> Invia
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <small class="text-muted">
+                            <i class="fas fa-paperclip"></i> Allegati supportati: PDF, DOC, XLS, immagini, ZIP
+                        </small>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <!-- Nessun contatto selezionato -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-comment-dots fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted">Seleziona un contatto per iniziare</h4>
+                    <p class="text-muted">Scegli un utente dalla lista a sinistra per avviare una conversazione</p>
+                    
+                    {% if not utenti %}
+                    <div class="alert alert-warning mt-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Non ci sono altri utenti disponibili per la chat.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Scroll automatico ai messaggi più recenti
+    const chatMessages = document.getElementById('chat-messages');
+    if (chatMessages) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    // Auto-refresh dei messaggi ogni 30 secondi (se in una conversazione)
+    {% if contatto %}
+    setInterval(function() {
+        // Ricarica solo se l'utente è ancora nella stessa conversazione
+        if (window.location.search.includes('contatto={{ contatto.id }}')) {
+            window.location.reload();
+        }
+    }, 30000);
+    {% endif %}
+    
+    // Conferma invio messaggio con Enter (Ctrl+Enter)
+    $('textarea[name="testo"]').on('keydown', function(e) {
+        if (e.ctrlKey && e.which === 13) {
+            $(this).closest('form').submit();
+        }
+    });
+    
+    // Preview allegati selezionati
+    $('input[name="allegato"]').on('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const fileName = file.name;
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
+            
+            // Crea elemento di preview se non esiste
+            let preview = $(this).next('.file-preview');
+            if (preview.length === 0) {
+                preview = $('<small class="file-preview text-info d-block mt-1"></small>');
+                $(this).after(preview);
+            }
+            
+            preview.html(`<i class="fas fa-paperclip"></i> ${fileName} (${fileSize} MB)`);
+        }
+    });
+    
+    // Ricerca contatti in tempo reale
+    $('#searchContacts').on('input', function() {
+        const searchTerm = $(this).val().toLowerCase().trim();
+        const userItems = $('.user-item');
+        
+        if (searchTerm === '') {
+            // Mostra tutti i contatti se la ricerca è vuota
+            userItems.show();
+        } else {
+            // Filtra contatti in base al termine di ricerca
+            userItems.each(function() {
+                const searchData = $(this).data('search') || '';
+                if (searchData.includes(searchTerm)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+        }
+        
+        // Mostra messaggio se nessun risultato
+        const visibleItems = userItems.filter(':visible');
+        let noResultsMsg = $('.user-list .no-results-msg');
+        
+        if (visibleItems.length === 0 && searchTerm !== '') {
+            if (noResultsMsg.length === 0) {
+                noResultsMsg = $(`
+                    <div class="no-results-msg p-3 text-center text-muted">
+                        <i class="fas fa-search fa-2x mb-2"></i>
+                        <p>Nessun contatto trovato per "<strong>${searchTerm}</strong>"</p>
+                    </div>
+                `);
+                $('.user-list').append(noResultsMsg);
+            }
+        } else {
+            noResultsMsg.remove();
+        }
+    });
+    
+    // Clear ricerca con Escape
+    $('#searchContacts').on('keydown', function(e) {
+        if (e.which === 27) { // Escape key
+            $(this).val('').trigger('input');
+        }
+    });
+});
+</script>
+{% endblock %}

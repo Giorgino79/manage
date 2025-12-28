@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Prendi in Carico Manutenzione{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:manutenzione_list' %}">Manutenzioni</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:manutenzione_detail' object.pk %}">{{ object.descrizione|truncatewords:3 }}</a></li>
+        <li class="breadcrumb-item active">Prendi in Carico</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-0">
+            <i class="fas fa-handshake"></i> Prendi in Carico Manutenzione
+          </h4>
+        </div>
+        <div class="card-body">
+          <!-- Info manutenzione -->
+          <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> Dettagli Manutenzione</h6>
+            <p class="mb-1"><strong>Automezzo:</strong> {{ object.automezzo.targa }} - {{ object.automezzo.marca }} {{ object.automezzo.modello }}</p>
+            <p class="mb-1"><strong>Descrizione:</strong> {{ object.descrizione }}</p>
+            <p class="mb-1"><strong>Data Prevista:</strong> {{ object.data_prevista|date:"d/m/Y" }}</p>
+            {% if object.fornitore %}
+            <p class="mb-1"><strong>Fornitore:</strong> {{ object.fornitore.nome }}</p>
+            {% endif %}
+            {% if object.luogo %}
+            <p class="mb-0"><strong>Luogo:</strong> {{ object.luogo }}</p>
+            {% endif %}
+          </div>
+
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <strong>Attenzione:</strong> Compilando questo form confermi di aver portato il mezzo dal fornitore e la manutenzione passerà automaticamente allo stato "In Corso".
+          </div>
+          
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {{ form }}
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Conferma Presa in Carico
+              </button>
+              <a href="{% url 'automezzi:manutenzione_detail' object.pk %}" class="btn btn-light ms-2">
+                Annulla
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

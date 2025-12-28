@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scrivi Email{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="edit" class="feather me-2"></i>Scrivi Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item active">Scrivi Email</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'mail:dashboard' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna al Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-9">
+                    <!-- Email Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="mail" class="feather me-2"></i>Nuovo Messaggio
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="composeForm">
+                                {% csrf_token %}
+                                
+                                <!-- Template Selection -->
+                                {% if templates %}
+                                <div class="mb-3">
+                                    <label for="template" class="form-label">Usa Template (Opzionale)</label>
+                                    <select class="form-select" id="template" name="template" onchange="loadTemplate()">
+                                        <option value="">Scrivi email personalizzata</option>
+                                        {% for template in templates %}
+                                        <option value="{{ template.slug }}" data-subject="{{ template.subject }}" 
+                                                data-html="{{ template.content_html|escapejs }}" 
+                                                data-text="{{ template.content_text|escapejs }}">
+                                            {{ template.name }} ({{ template.category|capfirst }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Seleziona un template pre-compilato o scrivi una email personalizzata</div>
+                                </div>
+                                <hr>
+                                {% endif %}
+                                
+                                <!-- Recipients -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <label for="to" class="form-label">Destinatari <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="to" name="to" required 
+                                               placeholder="email1@esempio.it, email2@esempio.it">
+                                        <div class="form-text">Inserisci uno o più indirizzi email separati da virgola</div>
+                                    </div>
+                                </div>
+
+                                <!-- CC/BCC -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="cc" class="form-label">CC (Copia Conoscenza)</label>
+                                        <input type="text" class="form-control" id="cc" name="cc" 
+                                               placeholder="cc@esempio.it">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="bcc" class="form-label">BCC (Copia Nascosta)</label>
+                                        <input type="text" class="form-control" id="bcc" name="bcc" 
+                                               placeholder="bcc@esempio.it">
+                                    </div>
+                                </div>
+
+                                <!-- Subject -->
+                                <div class="mb-3">
+                                    <label for="subject" class="form-label">Oggetto <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="subject" name="subject" required 
+                                           placeholder="Oggetto dell'email...">
+                                </div>
+
+                                <!-- Content Tabs -->
+                                <div class="mb-3">
+                                    <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link active" id="text-tab" data-bs-toggle="tab" 
+                                                    data-bs-target="#text-content" type="button" role="tab">
+                                                <i data-feather="type" class="feather me-1"></i>Testo
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link" id="html-tab" data-bs-toggle="tab" 
+                                                    data-bs-target="#html-content" type="button" role="tab">
+                                                <i data-feather="code" class="feather me-1"></i>HTML
+                                            </button>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="tab-content border border-top-0 p-3" id="contentTabsContent">
+                                        <div class="tab-pane fade show active" id="text-content" role="tabpanel">
+                                            <label for="content_text" class="form-label">Contenuto Testuale <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" id="content_text" name="content_text" rows="12" 
+                                                      placeholder="Scrivi qui il contenuto del messaggio in formato testo..."></textarea>
+                                        </div>
+                                        <div class="tab-pane fade" id="html-content" role="tabpanel">
+                                            <label for="content_html" class="form-label">Contenuto HTML (Opzionale)</label>
+                                            <textarea class="form-control" id="content_html" name="content_html" rows="12" 
+                                                      placeholder="<html><body>Contenuto HTML del messaggio...</body></html>"></textarea>
+                                            <div class="form-text">Versione HTML formattata del messaggio (opzionale)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                    <div>
+                                        <button type="button" class="btn btn-outline-info me-2" onclick="previewEmail()">
+                                            <i data-feather="eye" class="feather me-1"></i>Anteprima
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                                            <i data-feather="save" class="feather me-1"></i>Salva Bozza
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'mail:dashboard' %}" class="btn btn-secondary me-2">Annulla</a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i data-feather="send" class="feather me-1"></i>Invia Email
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-3">
+                    <!-- Email Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="user" class="feather me-1"></i>Il tuo Account</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <p class="mb-2"><strong>{{ config.display_name }}</strong></p>
+                                <p class="text-muted mb-0">{{ config.email_address }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Recipients -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="users" class="feather me-1"></i>Destinatari Rapidi</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRecipient('all-team@azienda.it')">
+                                    Tutto il Team
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRecipient('admin@azienda.it')">
+                                    Amministrazione
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="addRecipient('fornitori@azienda.it')">
+                                    Fornitori
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tips -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="lightbulb" class="feather me-1"></i>Suggerimenti</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled small">
+                                <li>• Usa oggetti chiari e descrittivi</li>
+                                <li>• Controlla sempre i destinatari</li>
+                                <li>• USA CC per copie informative</li>
+                                <li>• USA BCC per liste ampie</li>
+                                <li>• Rileggi prima di inviare</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i data-feather="eye" class="feather me-2"></i>Anteprima Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                <button type="button" class="btn btn-primary" onclick="sendFromPreview()">
+                    <i data-feather="send" class="feather me-1"></i>Invia
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Load template function
+    function loadTemplate() {
+        const select = document.getElementById('template');
+        const selectedOption = select.options[select.selectedIndex];
+        
+        if (selectedOption.value) {
+            // Carica i dati del template
+            const subject = selectedOption.getAttribute('data-subject');
+            const htmlContent = selectedOption.getAttribute('data-html');
+            const textContent = selectedOption.getAttribute('data-text');
+            
+            // Riempie i campi
+            if (subject) document.getElementById('subject').value = subject;
+            if (htmlContent) document.getElementById('content_html').value = htmlContent;
+            if (textContent) document.getElementById('content_text').value = textContent;
+        }
+    }
+
+    // Add recipient function
+    function addRecipient(email) {
+        const toField = document.getElementById('to');
+        const currentValue = toField.value.trim();
+        
+        if (currentValue) {
+            toField.value = currentValue + ', ' + email;
+        } else {
+            toField.value = email;
+        }
+    }
+
+    // Preview email
+    function previewEmail() {
+        const to = document.getElementById('to').value || 'destinatario@esempio.it';
+        const subject = document.getElementById('subject').value || '[Oggetto vuoto]';
+        const textContent = document.getElementById('content_text').value || '';
+        const htmlContent = document.getElementById('content_html').value || '';
+        
+        let previewContent = '<div class="mb-3">' +
+            '<label class="form-label"><strong>Da:</strong></label>' +
+            '<div class="form-control-plaintext border p-2 bg-light">{{ config.display_name }} &lt;{{ config.email_address }}&gt;</div>' +
+        '</div>' +
+        '<div class="mb-3">' +
+            '<label class="form-label"><strong>A:</strong></label>' +
+            '<div class="form-control-plaintext border p-2 bg-light">' + to + '</div>' +
+        '</div>' +
+        '<div class="mb-3">' +
+            '<label class="form-label"><strong>Oggetto:</strong></label>' +
+            '<div class="form-control-plaintext border p-2 bg-light">' + subject + '</div>' +
+        '</div>';
+        
+        if (htmlContent) {
+            previewContent += '<div class="mb-3">' +
+                '<label class="form-label"><strong>Contenuto HTML:</strong></label>' +
+                '<div class="border p-3" style="max-height: 400px; overflow-y: auto;">' + htmlContent + '</div>' +
+            '</div>';
+        }
+        
+        if (textContent) {
+            previewContent += '<div class="mb-3">' +
+                '<label class="form-label"><strong>Contenuto Testuale:</strong></label>' +
+                '<pre class="form-control-plaintext border p-2 bg-light" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">' + textContent + '</pre>' +
+            '</div>';
+        }
+        
+        document.getElementById('previewContent').innerHTML = previewContent;
+        
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        modal.show();
+    }
+
+    // Send from preview
+    function sendFromPreview() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('previewModal'));
+        modal.hide();
+        document.getElementById('composeForm').submit();
+    }
+
+    // Save draft
+    function saveDraft() {
+        alert('Funzionalità di salvataggio bozze da implementare');
+    }
+
+    // Form validation
+    document.getElementById('composeForm').addEventListener('submit', function(e) {
+        const to = document.getElementById('to').value.trim();
+        const subject = document.getElementById('subject').value.trim();
+        const textContent = document.getElementById('content_text').value.trim();
+        const htmlContent = document.getElementById('content_html').value.trim();
+        
+        if (!to) {
+            e.preventDefault();
+            alert('Inserisci almeno un destinatario');
+            document.getElementById('to').focus();
+            return false;
+        }
+        
+        if (!subject) {
+            e.preventDefault();
+            alert('Inserisci un oggetto per l\'email');
+            document.getElementById('subject').focus();
+            return false;
+        }
+        
+        if (!textContent && !htmlContent) {
+            e.preventDefault();
+            alert('Inserisci il contenuto del messaggio');
+            document.getElementById('content_text').focus();
+            return false;
+        }
+        
+        // Conferma invio
+        if (!confirm('Sei sicuro di voler inviare questa email?')) {
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Valutazione Preventivo - {{ preventivo.fornitore.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preventivo-summary {
+        background: linear-gradient(135deg, #e8f5e8 0%, #f0f9ff 100%);
+        border: 1px solid #c3e6cb;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .parametro-card {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+    }
+    .parametro-card:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .parametro-header {
+        display: flex;
+        justify-content-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .tipo-badge {
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    .tipo-importo { background-color: #e7f1ff; color: #0d6efd; }
+    .tipo-numero { background-color: #e8f5e8; color: #198754; }
+    .tipo-stella { background-color: #fff3cd; color: #b45309; }
+    .tipo-percentuale { background-color: #f0e6ff; color: #6610f2; }
+    .tipo-testo { background-color: #f8f9fa; color: #6c757d; }
+    
+    .peso-indicator {
+        background: linear-gradient(45deg, #0d6efd, #0056b3);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+        min-width: 60px;
+        text-align: center;
+    }
+    
+    .star-rating {
+        display: flex;
+        gap: 5px;
+        margin: 10px 0;
+    }
+    .star {
+        font-size: 1.5rem;
+        color: #ddd;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+    .star.active, .star:hover {
+        color: #ffc107;
+    }
+    
+    .value-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-top: 10px;
+        font-weight: bold;
+    }
+    
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(45deg, #28a745, #20c997);
+        transition: width 0.3s ease;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Valutazione Preventivo{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richiesta_detail' preventivo.richiesta.pk %}">{{ preventivo.richiesta.numero }}</a>
+        </li>
+        <li class="breadcrumb-item active">Valutazione</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-8">
+            
+            <!-- Riepilogo Preventivo -->
+            <div class="preventivo-summary">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5><i data-feather="building" class="feather me-2"></i>{{ preventivo.fornitore.nome }}</h5>
+                        <h6 class="text-success">{{ preventivo.richiesta.numero }} - {{ preventivo.richiesta.titolo }}</h6>
+                        <div class="text-muted">{{ preventivo.numero_preventivo_fornitore }}</div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="h4 text-success mb-1">€ {{ preventivo.importo_totale|floatformat:2 }}</div>
+                        <div class="text-muted">{{ preventivo.termini_pagamento }}</div>
+                        <div class="text-muted small">Consegna: {{ preventivo.tempi_consegna }}</div>
+                    </div>
+                </div>
+                
+                {% if preventivo.note_tecniche or preventivo.note_commerciali %}
+                <div class="row mt-3">
+                    {% if preventivo.note_tecniche %}
+                    <div class="col-md-6">
+                        <small class="text-muted">Note Tecniche:</small>
+                        <div class="small">{{ preventivo.note_tecniche|truncatechars:100 }}</div>
+                    </div>
+                    {% endif %}
+                    {% if preventivo.note_commerciali %}
+                    <div class="col-md-6">
+                        <small class="text-muted">Note Commerciali:</small>
+                        <div class="small">{{ preventivo.note_commerciali|truncatechars:100 }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Form Valutazione -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i data-feather="clipboard" class="feather me-2"></i>Valutazione Preventivo</h6>
+                    <div class="text-muted small">Valuta il preventivo secondo i parametri definiti per questa richiesta</div>
+                </div>
+                <div class="card-body">
+                    
+                    {% if not parametri %}
+                        <div class="alert alert-warning">
+                            <i data-feather="alert-triangle" class="feather me-2"></i>
+                            <strong>Nessun parametro di valutazione definito</strong><br>
+                            Non sono stati definiti parametri per valutare questo preventivo.
+                        </div>
+                        <div class="text-center">
+                            <a href="{% url 'preventivi:richiesta_detail' preventivo.richiesta.pk %}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="feather me-2"></i>Torna al Dettaglio
+                            </a>
+                        </div>
+                    {% else %}
+                    
+                    <form method="post" id="valutazione-form">
+                        {% csrf_token %}
+                        
+                        {% for parametro in parametri %}
+                        <div class="parametro-card" data-parametro="{{ parametro.id }}">
+                            <div class="parametro-header">
+                                <div>
+                                    <h6 class="mb-1">{{ parametro.titolo }}</h6>
+                                    {% if parametro.descrizione %}
+                                        <div class="text-muted small">{{ parametro.descrizione }}</div>
+                                    {% endif %}
+                                    <div class="mt-2">
+                                        <span class="tipo-badge tipo-{{ parametro.tipo_valore|lower }}">
+                                            {{ parametro.get_tipo_valore_display }}
+                                        </span>
+                                        <span class="badge bg-light text-dark ms-2">
+                                            {% if parametro.migliore_valore_alto %}
+                                                <i data-feather="trending-up" width="12"></i> Alto è meglio
+                                            {% else %}
+                                                <i data-feather="trending-down" width="12"></i> Basso è meglio
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="peso-indicator">{{ parametro.peso_percentuale }}%</div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-8">
+                                    {% if parametro.tipo_valore == 'IMPORTO' %}
+                                        <label for="parametro_{{ parametro.id }}" class="form-label">Valore in Euro</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">€</span>
+                                            <input type="number" class="form-control" 
+                                                   id="parametro_{{ parametro.id }}" 
+                                                   name="parametro_{{ parametro.id }}"
+                                                   step="0.01" min="0"
+                                                   value="{% if parametro.id in valutazioni_esistenti %}{{ valutazioni_esistenti|get_item:parametro.id.valore_importo }}{% endif %}"
+                                                   placeholder="0.00"
+                                                   onchange="updatePreview({{ parametro.id }}, '{{ parametro.tipo_valore }}')"
+                                                   {% if parametro.obbligatorio %}required{% endif %}>
+                                        </div>
+                                        
+                                    {% elif parametro.tipo_valore == 'NUMERO' %}
+                                        <label for="parametro_{{ parametro.id }}" class="form-label">Valore Numerico</label>
+                                        <input type="number" class="form-control" 
+                                               id="parametro_{{ parametro.id }}" 
+                                               name="parametro_{{ parametro.id }}"
+                                               step="0.01"
+                                               value="{% if parametro.id in valutazioni_esistenti %}{{ valutazioni_esistenti|get_item:parametro.id.valore_numero }}{% endif %}"
+                                               placeholder="Inserisci un numero"
+                                               onchange="updatePreview({{ parametro.id }}, '{{ parametro.tipo_valore }}')"
+                                               {% if parametro.obbligatorio %}required{% endif %}>
+                                        
+                                    {% elif parametro.tipo_valore == 'STELLA' %}
+                                        <label class="form-label">Valutazione a Stelle (1-5)</label>
+                                        <div class="star-rating" data-parametro="{{ parametro.id }}">
+                                            {% for i in "12345" %}
+                                                <span class="star" 
+                                                      data-value="{{ i }}" 
+                                                      onclick="setStarRating({{ parametro.id }}, {{ i }})">
+                                                    ⭐
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                        <input type="hidden" 
+                                               id="parametro_{{ parametro.id }}" 
+                                               name="parametro_{{ parametro.id }}"
+                                               value="{% if parametro.id in valutazioni_esistenti %}{{ valutazioni_esistenti|get_item:parametro.id.valore_stelle }}{% endif %}"
+                                               {% if parametro.obbligatorio %}required{% endif %}>
+                                        
+                                    {% elif parametro.tipo_valore == 'PERCENTUALE' %}
+                                        <label for="parametro_{{ parametro.id }}" class="form-label">Percentuale (0-100%)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" 
+                                                   id="parametro_{{ parametro.id }}" 
+                                                   name="parametro_{{ parametro.id }}"
+                                                   min="0" max="100" step="0.1"
+                                                   value="{% if parametro.id in valutazioni_esistenti %}{{ valutazioni_esistenti|get_item:parametro.id.valore_percentuale }}{% endif %}"
+                                                   placeholder="0"
+                                                   onchange="updatePreview({{ parametro.id }}, '{{ parametro.tipo_valore }}')"
+                                                   {% if parametro.obbligatorio %}required{% endif %}>
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                        <div class="progress-bar-custom mt-2">
+                                            <div class="progress-fill" id="progress_{{ parametro.id }}" style="width: 0%"></div>
+                                        </div>
+                                        
+                                    {% elif parametro.tipo_valore == 'TESTO' %}
+                                        <label for="parametro_{{ parametro.id }}" class="form-label">Valutazione Testuale</label>
+                                        <textarea class="form-control" 
+                                                  id="parametro_{{ parametro.id }}" 
+                                                  name="parametro_{{ parametro.id }}"
+                                                  rows="3"
+                                                  placeholder="Descrivi la valutazione per questo parametro..."
+                                                  onchange="updatePreview({{ parametro.id }}, '{{ parametro.tipo_valore }}')"
+                                                  {% if parametro.obbligatorio %}required{% endif %}>{% if parametro.id in valutazioni_esistenti %}{{ valutazioni_esistenti|get_item:parametro.id.valore_testo }}{% endif %}</textarea>
+                                    {% endif %}
+                                    
+                                    <!-- Note opzionali -->
+                                    <div class="mt-3">
+                                        <label for="note_{{ parametro.id }}" class="form-label">Note (opzionale)</label>
+                                        <textarea class="form-control" 
+                                                  id="note_{{ parametro.id }}" 
+                                                  name="note_{{ parametro.id }}"
+                                                  rows="2"
+                                                  placeholder="Aggiungi note o commenti su questa valutazione...">{% if parametro.id in valutazioni_esistenti %}{{ valutazioni_esistenti|get_item:parametro.id.note_valutazione }}{% endif %}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <div class="value-preview" id="preview_{{ parametro.id }}">
+                                        <div class="text-muted small">Anteprima valore:</div>
+                                        <div class="preview-value">-</div>
+                                    </div>
+                                    
+                                    {% if parametro.valore_minimo or parametro.valore_massimo %}
+                                    <div class="mt-3">
+                                        <div class="text-muted small">Range di normalizzazione:</div>
+                                        <div class="small">
+                                            {% if parametro.valore_minimo %}Min: {{ parametro.valore_minimo }}{% endif %}
+                                            {% if parametro.valore_massimo %}Max: {{ parametro.valore_massimo }}{% endif %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Azioni -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'preventivi:richiesta_detail' preventivo.richiesta.pk %}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="feather me-2"></i>Annulla
+                            </a>
+                            
+                            <button type="submit" class="btn btn-success">
+                                <i data-feather="save" class="feather me-2"></i>Salva Valutazione
+                            </button>
+                        </div>
+                    </form>
+                    
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Initialize existing values
+    {% for parametro in parametri %}
+        {% if parametro.id in valutazioni_esistenti %}
+            {% if parametro.tipo_valore == 'STELLA' %}
+                setStarRating({{ parametro.id }}, {{ valutazioni_esistenti|get_item:parametro.id.valore_stelle }});
+            {% endif %}
+            updatePreview({{ parametro.id }}, '{{ parametro.tipo_valore }}');
+        {% endif %}
+    {% endfor %}
+});
+
+function setStarRating(parametroId, rating) {
+    const container = document.querySelector(`[data-parametro="${parametroId}"] .star-rating`);
+    const hiddenInput = document.getElementById(`parametro_${parametroId}`);
+    const stars = container.querySelectorAll('.star');
+    
+    // Update hidden input
+    hiddenInput.value = rating;
+    
+    // Update star display
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.add('active');
+        } else {
+            star.classList.remove('active');
+        }
+    });
+    
+    // Update preview
+    updatePreview(parametroId, 'STELLA');
+}
+
+function updatePreview(parametroId, tipo) {
+    const input = document.getElementById(`parametro_${parametroId}`);
+    const preview = document.querySelector(`#preview_${parametroId} .preview-value`);
+    
+    if (!input || !preview) return;
+    
+    let displayValue = '-';
+    const value = input.value;
+    
+    if (value) {
+        switch(tipo) {
+            case 'IMPORTO':
+                displayValue = `€ ${parseFloat(value).toLocaleString('it-IT', {minimumFractionDigits: 2})}`;
+                break;
+            case 'NUMERO':
+                displayValue = parseFloat(value).toLocaleString('it-IT');
+                break;
+            case 'STELLA':
+                displayValue = '⭐'.repeat(parseInt(value)) + '☆'.repeat(5 - parseInt(value));
+                break;
+            case 'PERCENTUALE':
+                displayValue = `${value}%`;
+                // Update progress bar
+                const progressBar = document.getElementById(`progress_${parametroId}`);
+                if (progressBar) {
+                    progressBar.style.width = `${value}%`;
+                }
+                break;
+            case 'TESTO':
+                displayValue = value.length > 50 ? value.substring(0, 47) + '...' : value;
+                break;
+        }
+    }
+    
+    preview.textContent = displayValue;
+}
+
+// Form validation
+document.getElementById('valutazione-form').addEventListener('submit', function(e) {
+    const requiredInputs = this.querySelectorAll('input[required], textarea[required]');
+    let isValid = true;
+    
+    requiredInputs.forEach(input => {
+        if (!input.value.trim()) {
+            isValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    if (!isValid) {
+        e.preventDefault();
+        alert('Compila tutti i campi obbligatori prima di salvare la valutazione.');
+    }
+});
+</script>
+{% endblock %}

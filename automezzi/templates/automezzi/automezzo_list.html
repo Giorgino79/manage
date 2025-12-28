@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% block title %}Elenco Automezzi{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item active">Elenco</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0"><i class="fas fa-car"></i> Elenco Automezzi</h2>
+    <a href="{% url 'automezzi:automezzo_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Nuovo automezzo
+    </a>
+  </div>
+
+  <!-- Filtri di ricerca -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-3">
+          <label for="targa" class="form-label">Targa:</label>
+          <input type="text" class="form-control" id="targa" name="targa" 
+                 value="{{ targa_search }}" placeholder="Cerca per targa">
+        </div>
+        <div class="col-md-3">
+          <label for="marca" class="form-label">Marca:</label>
+          <input type="text" class="form-control" id="marca" name="marca" 
+                 value="{{ marca_search }}" placeholder="Cerca per marca">
+        </div>
+        <div class="col-md-2">
+          <label for="attivo" class="form-label">Stato:</label>
+          <select class="form-select" id="attivo" name="attivo">
+            <option value="">-- Tutti --</option>
+            <option value="si" {% if attivo_filter == 'si' %}selected{% endif %}>Attivo</option>
+            <option value="no" {% if attivo_filter == 'no' %}selected{% endif %}>Non attivo</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="disponibile" class="form-label">Disponibilità:</label>
+          <select class="form-select" id="disponibile" name="disponibile">
+            <option value="">-- Tutti --</option>
+            <option value="si" {% if disponibile_filter == 'si' %}selected{% endif %}>Disponibile</option>
+            <option value="no" {% if disponibile_filter == 'no' %}selected{% endif %}>Non disponibile</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <label for="anno_da" class="form-label">Anno da:</label>
+          <input type="number" class="form-control" id="anno_da" name="anno_da" 
+                 value="{{ anno_da }}" placeholder="2000" min="1900" max="2030">
+        </div>
+        <div class="col-md-1">
+          <label for="anno_a" class="form-label">Anno a:</label>
+          <input type="number" class="form-control" id="anno_a" name="anno_a" 
+                 value="{{ anno_a }}" placeholder="2024" min="1900" max="2030">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-outline-primary me-2">
+            <i class="fas fa-search"></i> Cerca
+          </button>
+          <a href="{% url 'automezzi:automezzo_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-times"></i> Pulisci filtri
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tabella automezzi -->
+  <div class="card">
+    <div class="card-body">
+      {% if automezzi %}
+        <div class="table-responsive">
+          <table class="table table-striped table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>N° Mezzo</th>
+                <th>Targa</th>
+                <th>Marca/Modello</th>
+                <th>Anno</th>
+                <th>Km Attuali</th>
+                <th>Stato</th>
+                <th>Disponibilità</th>
+                <th>Assegnato a</th>
+                <th>Revisione</th>
+                <th width="180">Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for automezzo in automezzi %}
+              <tr {% if automezzo.bloccata %}class="table-warning"{% endif %}>
+                <td>
+                  {% if automezzo.numero_mezzo %}
+                    <strong>{{ automezzo.numero_mezzo }}</strong>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <strong>{{ automezzo.targa }}</strong>
+                  {% if automezzo.bloccata %}
+                    <br><small class="text-danger"><i class="fas fa-ban"></i> Bloccato</small>
+                  {% endif %}
+                </td>
+                <td>{{ automezzo.marca }} {{ automezzo.modello }}</td>
+                <td>{{ automezzo.anno_immatricolazione }}</td>
+                <td>{{ automezzo.chilometri_attuali|floatformat:0 }} km</td>
+                <td>
+                  {% if automezzo.attivo %}
+                    <span class="badge bg-success">Attivo</span>
+                  {% else %}
+                    <span class="badge bg-danger">Non attivo</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if automezzo.disponibile %}
+                    <span class="badge bg-success">Disponibile</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Non disponibile</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if automezzo.assegnato_a %}
+                    {{ automezzo.assegnato_a.get_full_name|default:automezzo.assegnato_a.username }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  {% if automezzo.data_revisione %}
+                    {{ automezzo.data_revisione|date:"d/m/Y" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <a href="{% url 'automezzi:automezzo_detail' automezzo.pk %}" 
+                       class="btn btn-outline-primary" title="Dettaglio">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="{% url 'automezzi:automezzo_update' automezzo.pk %}" 
+                       class="btn btn-outline-secondary" title="Modifica">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'automezzi:automezzo_delete' automezzo.pk %}" 
+                       class="btn btn-outline-danger" title="Elimina">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-warning">
+          <i class="fas fa-info-circle"></i> 
+          {% if targa_search or marca_search or attivo_filter or disponibile_filter or anno_da or anno_a %}
+            Nessun automezzo trovato con i filtri applicati.
+          {% else %}
+            Nessun automezzo registrato.
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+  {% if is_paginated %}
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if targa_search %}&targa={{ targa_search }}{% endif %}{% if marca_search %}&marca={{ marca_search }}{% endif %}{% if attivo_filter %}&attivo={{ attivo_filter }}{% endif %}{% if disponibile_filter %}&disponibile={{ disponibile_filter }}{% endif %}{% if anno_da %}&anno_da={{ anno_da }}{% endif %}{% if anno_a %}&anno_a={{ anno_a }}{% endif %}">&laquo; Precedente</a>
+          </li>
+        {% endif %}
+        
+        <li class="page-item active">
+          <span class="page-link">Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if targa_search %}&targa={{ targa_search }}{% endif %}{% if marca_search %}&marca={{ marca_search }}{% endif %}{% if attivo_filter %}&attivo={{ attivo_filter }}{% endif %}{% if disponibile_filter %}&disponibile={{ disponibile_filter }}{% endif %}{% if anno_da %}&anno_da={{ anno_da }}{% endif %}{% if anno_a %}&anno_a={{ anno_a }}{% endif %}">Successiva &raquo;</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

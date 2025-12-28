@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+
+{% block title %}Step 2: Raccolta - {{ richiesta.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.step-indicator { padding: 0.2rem 0.4rem; border-radius: 8px; font-size: 0.65rem; }
+.stat-ultra-compact { padding: 0.3rem; text-align: center; border-radius: 4px; font-size: 0.75rem; }
+.card-ultra-compact { box-shadow: 0 1px 2px rgba(0,0,0,0.1); margin-bottom: 0.3rem; }
+.card-ultra-compact .card-header { padding: 0.25rem 0.4rem; font-size: 0.8rem; }
+.card-ultra-compact .card-body { padding: 0.4rem; }
+.table-xs td { padding: 0.15rem 0.25rem; font-size: 0.75rem; }
+.btn-xs { padding: 0.15rem 0.3rem; font-size: 0.7rem; }
+.badge-xs { font-size: 0.6rem; padding: 0.1rem 0.25rem; }
+.h6-xs { font-size: 0.8rem; margin-bottom: 0.1rem; }
+.parametro-row { border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; margin-bottom: 0.3rem; background: #f8f9fa; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header ultra compatto -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h6 mb-0">
+                <i data-feather="upload" style="width:14px;height:14px;" class="me-1"></i>
+                Step 2: {{ richiesta.numero }}
+            </h1>
+            <span class="step-indicator bg-success text-white">1✓</span>
+            <span class="step-indicator bg-info text-white">2</span>
+            <span class="step-indicator bg-light text-muted">3</span>
+            <div class="stat-ultra-compact bg-primary text-white">{{ preventivi_caricati }}</div>
+            <div class="stat-ultra-compact bg-info text-white">{{ fornitori_totali }}</div>
+            <div class="stat-ultra-compact bg-success text-white">{{ parametri_totali|default:0 }}</div>
+        </div>
+        <div class="d-flex gap-1">
+            {% if preventivi_caricati >= 2 %}
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="finalizza_raccolta" class="btn btn-success btn-xs">
+                        <i data-feather="arrow-right" style="width:12px;height:12px;" class="me-1"></i>Step 3
+                    </button>
+                </form>
+            {% endif %}
+            <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-outline-secondary btn-xs">
+                <i data-feather="arrow-left" style="width:12px;height:12px;" class="me-1"></i>Indietro
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Tabella ultra compatta -->
+        <div class="col-12">
+            <div class="card card-ultra-compact">
+                <div class="card-header bg-primary text-white">
+                    <div class="h6-xs mb-0"><i data-feather="file-text" style="width:12px;height:12px;" class="me-1"></i>Gestione Preventivi ({{ preventivi_caricati }}/{{ fornitori_totali }})</div>
+                </div>
+                <div class="card-body">
+                    {% if fornitori_status %}
+                        <div class="table-responsive">
+                            <table class="table table-xs table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fornitore</th>
+                                        <th>Email</th>
+                                        <th>Preventivo</th>
+                                        <th>Param.</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for status in fornitori_status %}
+                                        <tr>
+                                            <td>{{ status.fornitore_preventivo.fornitore.nome|truncatechars:15 }}</td>
+                                            <td>
+                                                {% if status.fornitore_preventivo.email_inviata %}
+                                                    <span class="badge bg-success badge-xs">✓ {{ status.fornitore_preventivo.data_invio|date:"d/m" }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger badge-xs">✗</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if status.preventivo %}
+                                                    <span class="badge bg-success badge-xs">€{{ status.preventivo.importo_totale|floatformat:0 }}</span>
+                                                    {% if status.preventivo.file_preventivo %}
+                                                        <a href="{{ status.preventivo.file_preventivo.url }}" target="_blank" class="btn btn-outline-info btn-xs ms-1">📄</a>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-secondary badge-xs">⏳</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if status.preventivo %}
+                                                    <span class="badge bg-info badge-xs">{{ status.preventivo.parametri.count }}</span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    {% if not status.preventivo %}
+                                                        <a href="{% url 'preventivi:preventivo_create' richiesta.pk %}?fornitore={{ status.fornitore_preventivo.fornitore.pk }}" 
+                                                           class="btn btn-primary btn-xs">+</a>
+                                                    {% else %}
+                                                        <a href="{% url 'preventivi:preventivo_create' richiesta.pk %}?edit={{ status.preventivo.pk }}" 
+                                                           class="btn btn-outline-primary btn-xs">✏️</a>
+                                                        <button type="button" class="btn btn-outline-info btn-xs" 
+                                                                onclick="showParametriModal({{ status.preventivo.pk }}, '{{ status.preventivo.fornitore.nome }}')">📊</button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if preventivi_caricati == 0 %}
+                            <div class="border-top pt-1 mt-1">
+                                <div class="text-center">
+                                    <a href="{% url 'preventivi:preventivo_create' richiesta.pk %}" class="btn btn-primary btn-xs">
+                                        <i data-feather="plus" style="width:12px;height:12px;" class="me-1"></i>Primo Preventivo
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-2">
+                            <div class="text-muted">Nessun fornitore configurato</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal per gestione parametri -->
+<div class="modal fade" id="parametriModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-list me-2"></i>Parametri di Confronto - <span id="fornitoreNome"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="parametriForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="preventivo_id" name="preventivo_id">
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label">
+                                <i class="fas fa-plus me-1"></i>Aggiungi Parametro
+                            </label>
+                            <button type="button" class="btn btn-sm btn-success" onclick="addParametroRow()">
+                                <i class="fas fa-plus"></i> Nuovo
+                            </button>
+                        </div>
+                        
+                        <div id="parametriContainer">
+                            <!-- I parametri verranno caricati dinamicamente -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                <button type="button" class="btn btn-primary" onclick="saveParametri()">
+                    <i class="fas fa-save me-2"></i>Salva Parametri
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Replace feather icons
+    feather.replace();
+});
+
+function showParametriModal(preventivo_id, fornitore_nome) {
+    document.getElementById('preventivo_id').value = preventivo_id;
+    document.getElementById('fornitoreNome').textContent = fornitore_nome;
+    
+    // Carica parametri esistenti
+    fetch(`/preventivi/preventivi/${preventivo_id}/parametri/`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('parametriContainer');
+            container.innerHTML = '';
+            
+            if (data.parametri && data.parametri.length > 0) {
+                data.parametri.forEach(parametro => {
+                    addParametroRow(parametro.descrizione, parametro.valore, parametro.id);
+                });
+            } else {
+                addParametroRow();
+            }
+        })
+        .catch(() => {
+            addParametroRow();
+        });
+    
+    new bootstrap.Modal(document.getElementById('parametriModal')).show();
+}
+
+function addParametroRow(descrizione = '', valore = '', parametro_id = '') {
+    const container = document.getElementById('parametriContainer');
+    const index = container.children.length;
+    
+    const row = document.createElement('div');
+    row.className = 'parametro-row';
+    row.innerHTML = `
+        <div class="row">
+            <div class="col-md-5">
+                <label class="form-label small">Descrizione</label>
+                <input type="text" class="form-control" name="parametro_descrizione_${index}" 
+                       value="${descrizione}" placeholder="es: Tempo consegna">
+                <input type="hidden" name="parametro_id_${index}" value="${parametro_id}">
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small">Valore</label>
+                <input type="text" class="form-control" name="parametro_valore_${index}" 
+                       value="${valore}" placeholder="es: 15 giorni">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeParametroRow(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(row);
+}
+
+function removeParametroRow(button) {
+    button.closest('.parametro-row').remove();
+}
+
+function saveParametri() {
+    const form = document.getElementById('parametriForm');
+    const formData = new FormData(form);
+    const preventivo_id = document.getElementById('preventivo_id').value;
+    
+    fetch(`/preventivi/preventivi/${preventivo_id}/parametri/save/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Errore nel salvataggio: ' + (data.error || 'Errore sconosciuto'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Errore di comunicazione');
+    });
+}
+</script>
+{% endblock %}

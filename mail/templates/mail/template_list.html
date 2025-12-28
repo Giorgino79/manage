@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Template Email{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="file-text" class="feather me-2"></i>Template Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item active">Template</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'mail:template_create' %}" class="btn btn-primary">
+                        <i data-feather="plus" class="feather me-1"></i>Nuovo Template
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <label for="search" class="form-label">Cerca</label>
+                            <input type="text" class="form-control" id="search" name="search" 
+                                   value="{{ search }}" placeholder="Nome, descrizione o oggetto...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">Categoria</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">Tutte le categorie</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>
+                                    {{ cat|capfirst }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i data-feather="search" class="feather me-1"></i>Filtra
+                            </button>
+                            <a href="{% url 'mail:template_list' %}" class="btn btn-outline-secondary">
+                                <i data-feather="x" class="feather me-1"></i>Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Templates List -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i data-feather="list" class="feather me-2"></i>Template Disponibili
+                        {% if page_obj.paginator.count %}
+                            ({{ page_obj.paginator.count }} totali)
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Template</th>
+                                        <th>Categoria</th>
+                                        <th>Oggetto</th>
+                                        <th>Utilizzi</th>
+                                        <th>Stato</th>
+                                        <th>Creato</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for template in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <div>
+                                                <strong>{{ template.name }}</strong>
+                                                {% if template.description %}
+                                                <br><small class="text-muted">{{ template.description|truncatechars:60 }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ template.category|capfirst }}</span>
+                                        </td>
+                                        <td>
+                                            <code class="text-dark">{{ template.subject|truncatechars:40 }}</code>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ template.usage_count }}</span>
+                                        </td>
+                                        <td>
+                                            {% if template.is_active %}
+                                                <span class="badge bg-success">Attivo</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Disattivo</span>
+                                            {% endif %}
+                                            {% if template.is_system %}
+                                                <br><small class="text-muted">Sistema</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>
+                                                {{ template.created_at|date:"d/m/Y" }}<br>
+                                                {% if template.created_by %}
+                                                    da {{ template.created_by.username }}
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-info" 
+                                                        onclick="previewTemplate('{{ template.id }}')">
+                                                    <i data-feather="eye" class="feather"></i>
+                                                </button>
+                                                {% if template.created_by == request.user or request.user.is_staff %}
+                                                <a href="{% url 'mail:template_edit' template.pk %}" 
+                                                   class="btn btn-outline-primary">
+                                                    <i data-feather="edit" class="feather"></i>
+                                                </a>
+                                                {% endif %}
+                                                <button class="btn btn-outline-success" 
+                                                        onclick="useTemplate('{{ template.slug }}')">
+                                                    <i data-feather="send" class="feather"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if page_obj.has_other_pages %}
+                        <div class="card-footer">
+                            <nav aria-label="Template pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if category %}&category={{ category }}{% endif %}">Prima</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if category %}&category={{ category }}{% endif %}">Precedente</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if category %}&category={{ category }}{% endif %}">Successiva</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if category %}&category={{ category }}{% endif %}">Ultima</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="file-text" class="feather mb-3" style="height: 4rem; width: 4rem; color: #6c757d;"></i>
+                            <h5 class="text-muted">Nessun template trovato</h5>
+                            <p class="text-muted">
+                                {% if search or category %}
+                                    Prova a modificare i filtri di ricerca.
+                                {% else %}
+                                    Crea il tuo primo template email.
+                                {% endif %}
+                            </p>
+                            <a href="{% url 'mail:template_create' %}" class="btn btn-primary">
+                                <i data-feather="plus" class="feather me-1"></i>Nuovo Template
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Preview Modal -->
+<div class="modal fade" id="templatePreviewModal" tabindex="-1" aria-labelledby="templatePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="templatePreviewModalLabel">
+                    <i data-feather="eye" class="feather me-2"></i>Anteprima Template
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Preview template function
+    function previewTemplate(templateId) {
+        const modal = new bootstrap.Modal(document.getElementById('templatePreviewModal'));
+        const content = document.getElementById('previewContent');
+        
+        // Show loading
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Caricamento...</span>
+                </div>
+            </div>
+        `;
+        
+        modal.show();
+        
+        // Load preview
+        fetch(`{% url 'mail:api_template_preview' '00000000-0000-0000-0000-000000000000' %}`.replace('00000000-0000-0000-0000-000000000000', templateId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let html = '<div class="mb-3">' +
+                        '<label class="form-label"><strong>Oggetto:</strong></label>' +
+                        '<div class="form-control-plaintext border p-2 bg-light">' +
+                            data.subject +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="mb-3">' +
+                        '<label class="form-label"><strong>Contenuto HTML:</strong></label>' +
+                        '<div class="border p-3" style="max-height: 400px; overflow-y: auto;">' +
+                            data.html +
+                        '</div>' +
+                    '</div>';
+                    
+                    if (data.text) {
+                        html += '<div class="mb-3">' +
+                            '<label class="form-label"><strong>Contenuto Testuale:</strong></label>' +
+                            '<pre class="form-control-plaintext border p-2 bg-light" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">' + data.text + '</pre>' +
+                        '</div>';
+                    }
+                    
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<div class="alert alert-danger">' +
+                        '<i data-feather="alert-triangle" class="feather me-2"></i>' +
+                        'Errore caricamento anteprima: ' + data.error +
+                    '</div>';
+                    feather.replace();
+                }
+            })
+            .catch(error => {
+                content.innerHTML = '<div class="alert alert-danger">' +
+                    '<i data-feather="alert-triangle" class="feather me-2"></i>' +
+                    'Errore di rete: ' + error.message +
+                '</div>';
+                feather.replace();
+            });
+    }
+
+    // Use template function
+    function useTemplate(templateSlug) {
+        // This could open a compose modal or redirect to a compose page
+        alert('Template "' + templateSlug + '" selezionato. Funzionalità di composizione da implementare.');
+    }
+</script>
+{% endblock %}

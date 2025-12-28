@@ -1,0 +1,399 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Dashboard Scadenze Documenti
+                </h1>
+                <p class="mb-0">Monitoraggio scadenze documenti (SCIA, contratti, certificazioni) per tutti gli stabilimenti</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="h4 mb-1">
+                    <i class="fas fa-calendar-alt me-2"></i>{{ "now"|date:"d/m/Y" }}
+                </div>
+                <div>Aggiornamento in tempo reale</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiche Rapide -->
+    <div class="stats-row">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-danger">{{ scadute.count }}</span>
+                    <div class="stat-label">Scadute</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-warning">{{ questa_settimana.count }}</span>
+                    <div class="stat-label">Questa Settimana</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-info">{{ prossimi_30_giorni.count }}</span>
+                    <div class="stat-label">Prossimi 30 Giorni</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-secondary">
+                        {{ scadute.count|add:questa_settimana.count|add:prossimi_30_giorni.count }}
+                    </span>
+                    <div class="stat-label">Totale</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezioni Scadenze -->
+    <div class="row">
+        <!-- Scadenze Già Scadute -->
+        <div class="col-lg-4">
+            <div class="scadenze-card scadute card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-times-circle me-2"></i>
+                        Documenti Già Scaduti
+                        <span class="badge bg-white text-danger ms-2">{{ scadute.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-3 card-body-scroll">
+                    {% if scadute %}
+                        {% for scadenza in scadute %}
+                            <div class="scadenza-item urgente">
+                                <div class="d-flex align-items-start">
+                                    <div class="timeline-indicator scaduto flex-shrink-0"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-1">{{ scadenza.nome_documento|truncatechars:40 }}</h6>
+                                            <span class="urgenza-badge bg-danger text-white">
+                                                {% if scadenza.giorni_alla_scadenza < 0 %}
+                                                    {% with giorni=scadenza.giorni_alla_scadenza %}
+                                                        {% if giorni < 0 %}{{ giorni|stringformat:"d"|slice:"1:" }}{% else %}{{ giorni }}{% endif %} gg fa
+                                                    {% endwith %}
+                                                {% else %}
+                                                    Scaduto
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <a href="{% url 'stabilimenti:dettaglio' scadenza.stabilimento.pk %}" 
+                                               class="stabilimento-link">
+                                                <i class="fas fa-building me-1"></i>{{ scadenza.stabilimento.nome }}
+                                            </a>
+                                        </div>
+                                        
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-file-alt me-1"></i>{{ scadenza.get_tipo_documento_display }}
+                                        </div>
+                                        
+                                        <div class="small mb-2">
+                                            <i class="fas fa-calendar me-1"></i>{{ scadenza.data_scadenza|date:"d/m/Y" }}
+                                            <span class="mx-2">•</span>
+                                            <i class="fas fa-user me-1"></i>{{ scadenza.caricato_da.get_full_name|default:scadenza.caricato_da.username }}
+                                        </div>
+                                        
+                                        <a href="{% url 'stabilimenti:documenti' stabilimento_pk=scadenza.stabilimento.pk %}" 
+                                           class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-eye me-1"></i>Vedi Documenti
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <h6>Perfetto!</h6>
+                            <p class="mb-0">Nessun documento scaduto</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Scadenze Questa Settimana -->
+        <div class="col-lg-4">
+            <div class="scadenze-card questa-settimana card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Questa Settimana
+                        <span class="badge bg-dark text-warning ms-2">{{ questa_settimana.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-3 card-body-scroll">
+                    {% if questa_settimana %}
+                        {% for scadenza in questa_settimana %}
+                            <div class="scadenza-item attenzione">
+                                <div class="d-flex align-items-start">
+                                    <div class="timeline-indicator urgente flex-shrink-0"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-1">{{ scadenza.nome_documento|truncatechars:40 }}</h6>
+                                            <span class="urgenza-badge bg-warning text-dark">
+                                                {% if scadenza.giorni_alla_scadenza == 0 %}
+                                                    Oggi
+                                                {% elif scadenza.giorni_alla_scadenza == 1 %}
+                                                    Domani
+                                                {% else %}
+                                                    {{ scadenza.giorni_alla_scadenza }} gg
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <a href="{% url 'stabilimenti:dettaglio' scadenza.stabilimento.pk %}" 
+                                               class="stabilimento-link">
+                                                <i class="fas fa-building me-1"></i>{{ scadenza.stabilimento.nome }}
+                                            </a>
+                                        </div>
+                                        
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-file-alt me-1"></i>{{ scadenza.get_tipo_documento_display }}
+                                        </div>
+                                        
+                                        <div class="small mb-2">
+                                            <i class="fas fa-calendar me-1"></i>{{ scadenza.data_scadenza|date:"d/m/Y" }}
+                                            <span class="mx-2">•</span>
+                                            <i class="fas fa-user me-1"></i>{{ scadenza.caricato_da.get_full_name|default:scadenza.caricato_da.username }}
+                                        </div>
+                                        
+                                        <a href="{% url 'stabilimenti:dettaglio_costo' scadenza.pk %}" 
+                                           class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-eye me-1"></i>Dettagli
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-check"></i>
+                            <h6>Tutto OK</h6>
+                            <p class="mb-0">Nessun documento in scadenza urgente</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Prossimi 30 Giorni -->
+        <div class="col-lg-4">
+            <div class="scadenze-card prossimi-giorni card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Prossimi 30 Giorni
+                        <span class="badge bg-white text-info ms-2">{{ prossimi_30_giorni.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body p-3 card-body-scroll">
+                    {% if prossimi_30_giorni %}
+                        {% for scadenza in prossimi_30_giorni %}
+                            <div class="scadenza-item normale">
+                                <div class="d-flex align-items-start">
+                                    <div class="timeline-indicator normale flex-shrink-0"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-1">{{ scadenza.nome_documento|truncatechars:40 }}</h6>
+                                            <span class="urgenza-badge bg-info text-white">
+                                                {{ scadenza.giorni_alla_scadenza }} gg
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <a href="{% url 'stabilimenti:dettaglio' scadenza.stabilimento.pk %}" 
+                                               class="stabilimento-link">
+                                                <i class="fas fa-building me-1"></i>{{ scadenza.stabilimento.nome }}
+                                            </a>
+                                        </div>
+                                        
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-file-alt me-1"></i>{{ scadenza.get_tipo_documento_display }}
+                                        </div>
+                                        
+                                        <div class="small mb-2">
+                                            <i class="fas fa-calendar me-1"></i>{{ scadenza.data_scadenza|date:"d/m/Y" }}
+                                            <span class="mx-2">•</span>
+                                            <i class="fas fa-user me-1"></i>{{ scadenza.caricato_da.get_full_name|default:scadenza.caricato_da.username }}
+                                        </div>
+                                        
+                                        <a href="{% url 'stabilimenti:dettaglio_costo' scadenza.pk %}" 
+                                           class="btn btn-sm btn-outline-info">
+                                            <i class="fas fa-eye me-1"></i>Dettagli
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-plus"></i>
+                            <h6>Programma libero</h6>
+                            <p class="mb-0">Nessun documento in scadenza programmata</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Azioni Rapide -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-tools me-2"></i>Azioni Rapide
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <a href="{% url 'stabilimenti:list' %}" class="btn btn-outline-primary w-100 mb-2">
+                        <i class="fas fa-building me-2"></i>Tutti gli Stabilimenti
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'stabilimenti:costi_list' %}" class="btn btn-outline-info w-100 mb-2">
+                        <i class="fas fa-euro-sign me-2"></i>Tutti i Costi
+                    </a>
+                </div>
+                <div class="col-md-3"><a href="{% url 'stabilimenti:list' %}" class="btn btn-outline-success w-100 mb-2">
+                        <i class="fas fa-plus me-2"></i>Nuovo Costo (Scegli Stabilimento)
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <button onclick="window.print()" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="fas fa-print me-2"></i>Stampa Dashboard
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Informazioni automatismi promemoria -->
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="alert alert-info mb-0 p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-robot me-2"></i>Sistema Promemoria Automatico
+                                </h6>
+                                <p class="mb-0 small">
+                                    I promemoria per documenti in scadenza vengono creati automaticamente 30 giorni prima della scadenza per amministratori e contabili.
+                                    <br>Controlla la sezione <strong>Promemoria</strong> nel menu principale per visualizzare tutte le notifiche attive.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="small text-muted">
+                                    <strong>Comando automatico:</strong><br>
+                                    <code>python manage.py controlla_scadenze_documenti</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Info (only in development) -->
+    {% if debug_info %}
+    <div class="alert alert-warning mt-3">
+        <h6><i class="fas fa-bug me-2"></i>Debug Info</h6>
+        <div class="row">
+            <div class="col-md-3">
+                <strong>Oggi:</strong> {{ debug_info.oggi }}
+            </div>
+            <div class="col-md-3">
+                <strong>Tutte scadenze:</strong> {{ debug_info.tutte_scadenze }}
+            </div>
+            <div class="col-md-3">
+                <strong>Scadenze future:</strong> {{ debug_info.scadenze_future }}
+            </div>
+            <div class="col-md-3">
+                <strong>Visualizzate:</strong> {{ scadute.count|add:questa_settimana.count|add:prossimi_30_giorni.count }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Informazioni -->
+    <div class="alert alert-info mt-3">
+        <h6><i class="fas fa-info-circle me-2"></i>Legenda e Intervalli</h6>
+        <div class="row">
+            <div class="col-md-4">
+                <span class="timeline-indicator scaduto"></span> <strong>Scaduti:</strong> Documenti già scaduti (prima di oggi)
+            </div>
+            <div class="col-md-4">
+                <span class="timeline-indicator urgente"></span> <strong>Urgenti:</strong> Scadono entro 7 giorni (da oggi a +7 giorni)
+            </div>
+            <div class="col-md-4">
+                <span class="timeline-indicator normale"></span> <strong>Programmate:</strong> Scadono tra 8-30 giorni (da +8 a +30 giorni)
+            </div>
+        </div>
+        <div class="mt-2">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                I documenti con scadenze oltre i 30 giorni non vengono mostrati in questa dashboard per mantenere il focus sulle priorità immediate. Questa dashboard monitora SCIA, contratti di derattizzazione, certificazioni e altri documenti con scadenze obbligatorie.
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Evidenzia scadenze urgenti (oggi e domani)
+    document.querySelectorAll('.scadenza-item').forEach(function(item) {
+        const badge = item.querySelector('.urgenza-badge');
+        if (badge && (badge.textContent.includes('Oggi') || badge.textContent.includes('Domani'))) {
+            item.style.animation = 'pulse 2s infinite';
+        }
+    });
+    
+    // Aggiungi animazione CSS per pulse
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Suoni di notifica per scadenze urgenti
+    const scadenzePericolose = document.querySelectorAll('.scadenza-item.urgente').length;
+    if (scadenzePericolose > 0) {
+        console.log(`⚠️ Attenzione: ${scadenzePericolose} scadenze urgenti trovate!`);
+    }
+    
+    // Auto-refresh ogni 10 minuti per dati sempre aggiornati
+    setTimeout(function() {
+        window.location.reload();
+    }, 600000); // 10 minuti
+});
+</script>
+{% endblock %}

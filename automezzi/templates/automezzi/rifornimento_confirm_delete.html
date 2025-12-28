@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Elimina Rifornimento{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:rifornimento_list' %}">Rifornimenti</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:rifornimento_detail' object.pk %}">Dettaglio</a></li>
+        <li class="breadcrumb-item active">Elimina</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+          <h5 class="mb-0"><i class="fas fa-trash"></i> Elimina Rifornimento</h5>
+        </div>
+        <div class="card-body">
+          <p class="lead">Confermi di voler eliminare questo rifornimento per <strong>{{ object.automezzo }}</strong>?</p>
+          <p class="text-danger">Questa operazione è irreversibile.</p>
+          <form method="post">
+            {% csrf_token %}
+            <div class="form-actions mt-4">
+              <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Conferma eliminazione
+              </button>
+              <a href="{% url 'automezzi:rifornimento_list' %}" class="btn btn-light ms-2">
+                Annulla
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+<!-- 
+ALLEGATI BADGE - Badge con contatore allegati
+==============================================
+
+Badge semplice per mostrare conteggio allegati.
+
+Context variables:
+- count: Numero allegati
+- style: Stile badge Bootstrap
+- show_badge: Se mostrare il badge
+- show_zero: Se mostrare anche quando count=0
+
+Usage:
+    {% allegati_badge dipendente %}
+    {% allegati_badge automezzo style="danger" %}
+-->
+
+{% if show_badge %}
+    <span class="badge bg-{{ style }} allegati-badge">
+        <i class="fas fa-paperclip me-1"></i>
+        {{ count }}
+    </span>
+{% endif %}

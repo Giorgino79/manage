@@ -1,0 +1,302 @@
+{% load static %}
+<nav class="sidebar">
+    <!-- Sidebar Header -->
+    <div class="sidebar-header">
+        <a href="{% url 'dipendenti:dashboard' %}" class="sidebar-brand">
+            <div class="brand-icon">M</div>
+            <span>Management</span>
+        </a>
+    </div>
+
+    <!-- User Profile -->
+    <div class="sidebar-user">
+        <div class="user-info">
+            <div class="user-avatar">
+                {% if user.first_name %}{{ user.first_name.0 }}{% else %}{{ user.username.0|upper }}{% endif %}
+            </div>
+            <div class="user-details">
+                <h6>{{ user.first_name|default:user.username }}</h6>
+                <small>{{ user.email|default:"Utente Sistema" }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Menu -->
+    <div class="sidebar-nav">
+        
+        <!-- Dashboard Section -->
+        <div class="sidebar-section">
+            <ul class="nav flex-column nav-sidebar">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'core' and request.resolver_match.url_name == 'dashboard_main' %}active{% endif %}" 
+                       href="{% url 'core:dashboard_main' %}">
+                        <i data-feather="home" class="feather"></i>
+                        Dashboard Principale
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Core System Section -->
+        <div class="sidebar-section">
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                <span><i data-feather="settings" class="feather me-1"></i>Sistema Base</span>
+            </h6>
+            <ul class="nav flex-column nav-sidebar">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'dipendenti' %}active{% endif %}" 
+                       href="{% url 'dipendenti:landing' %}">
+                        <i data-feather="users" class="feather"></i>
+                        Dipendenti
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'mail' %}active{% endif %}"
+                       href="{% url 'mail:inbox' %}">
+                        <i data-feather="mail" class="feather"></i>
+                        <span>Email Inbox</span>
+                        {% if unread_emails_count %}
+                        <span class="badge bg-danger rounded-pill ms-auto">{{ unread_emails_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'core' %}active{% endif %}" 
+                       href="{% url 'core:dashboard_main' %}">
+                        <i data-feather="paperclip" class="feather"></i>
+                        Utilities & Tools
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'admin:index' %}">
+                        <i data-feather="shield" class="feather"></i>
+                        Amministrazione
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Business Modules Section -->
+        <div class="sidebar-section">
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
+                <span><i data-feather="briefcase" class="feather me-1"></i>Moduli Business</span>
+            </h6>
+            <ul class="nav flex-column nav-sidebar">
+                <!-- Anagrafica Module -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'anagrafica' %}active{% endif %}" 
+                       href="{% url 'anagrafica:dashboard' %}">
+                        <i data-feather="book" class="feather"></i>
+                        Anagrafica
+                    </a>
+                </li>
+                <!-- Preventivi Module -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'preventivi' %}active{% endif %}" 
+                       href="{% url 'preventivi:dashboard' %}">
+                        <i data-feather="file-text" class="feather"></i>
+                        Preventivi
+                    </a>
+                </li>
+                <!-- Ordini di Acquisto Module -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'acquisti' %}active{% endif %}" 
+                       href="{% url 'acquisti:dashboard' %}">
+                        <i data-feather="shopping-cart" class="feather"></i>
+                        Ordini di Acquisto
+                    </a>
+                </li>
+                <!-- Fatturazione Passiva Module -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'fatturazione' %}active{% endif %}" 
+                       href="{% url 'fatturazione:dashboard' %}">
+                        <i data-feather="file-invoice" class="feather"></i>
+                        Fatturazione Passiva
+                    </a>
+                </li>
+                <!-- Automezzi Module -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'automezzi' %}active{% endif %}" 
+                       href="{% url 'automezzi:dashboard' %}">
+                        <i data-feather="truck" class="feather"></i>
+                        Automezzi
+                    </a>
+                </li>
+                <!-- Stabilimenti Module -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'stabilimenti' %}active{% endif %}" 
+                       href="{% url 'stabilimenti:list' %}">
+                        <i data-feather="map-pin" class="feather"></i>
+                        Stabilimenti
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+
+        <!-- Quick Actions -->
+        <div class="sidebar-section border-top pt-3 mt-4">
+            <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mb-1 text-muted text-uppercase">
+                <span><i data-feather="zap" class="feather me-1"></i>Azioni Rapide</span>
+            </h6>
+            <div class="px-3">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="openCalculator()">
+                        <i data-feather="calculator" class="feather me-1"></i>
+                        Calcolatrice
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#quickNoteModal">
+                        <i data-feather="edit-3" class="feather me-1"></i>
+                        Nota Rapida
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="sidebar-section border-top pt-3 mt-4">
+            <div class="px-3">
+                <div class="card bg-light border-0">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-2">
+                            <i data-feather="server" class="feather me-1"></i>
+                            Stato Sistema
+                        </h6>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Database</small>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Storage</small>
+                            <span class="badge bg-warning">85%</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Backup</small>
+                            <span class="badge bg-info">Oggi 03:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</nav>
+
+<!-- Quick Note Modal -->
+<div class="modal fade" id="quickNoteModal" tabindex="-1" aria-labelledby="quickNoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quickNoteModalLabel">
+                    <i data-feather="edit-3" class="feather me-2"></i>Nota Rapida
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickNoteForm">
+                    <div class="mb-3">
+                        <label for="noteTitle" class="form-label">Titolo</label>
+                        <input type="text" class="form-control" id="noteTitle" placeholder="Titolo della nota...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="noteContent" class="form-label">Contenuto</label>
+                        <textarea class="form-control" id="noteContent" rows="4" placeholder="Scrivi la tua nota qui..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="" id="noteUrgent">
+                            <label class="form-check-label text-danger" for="noteUrgent">
+                                <i data-feather="alert-triangle" class="feather me-1"></i>Urgente
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveQuickNote()">
+                    <i data-feather="save" class="feather me-1"></i>Salva Nota
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sidebar collapse functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle sidebar submenu arrows
+        const submenuToggles = document.querySelectorAll('[data-bs-toggle="collapse"]');
+        submenuToggles.forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const arrow = this.querySelector('.fa-chevron-right');
+                const isExpanded = this.getAttribute('aria-expanded') === 'true';
+                
+                if (arrow) {
+                    if (isExpanded) {
+                        arrow.style.transform = 'rotate(90deg)';
+                    } else {
+                        arrow.style.transform = 'rotate(0deg)';
+                    }
+                }
+            });
+
+            // Set initial arrow state
+            const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+            const arrow = toggle.querySelector('.fa-chevron-right');
+            if (arrow && isExpanded) {
+                arrow.style.transform = 'rotate(90deg)';
+            }
+        });
+
+        // Quick note functionality
+        window.saveQuickNote = function() {
+            const title = document.getElementById('noteTitle').value;
+            const content = document.getElementById('noteContent').value;
+            const urgent = document.getElementById('noteUrgent').checked;
+
+            if (!title.trim() && !content.trim()) {
+                alert('Inserisci almeno un titolo o contenuto per la nota.');
+                return;
+            }
+
+            // Here you would typically save to localStorage or send to server
+            const note = {
+                id: Date.now(),
+                title: title || 'Nota senza titolo',
+                content: content,
+                urgent: urgent,
+                timestamp: new Date().toISOString()
+            };
+
+            // Save to localStorage for now
+            const notes = JSON.parse(localStorage.getItem('quickNotes') || '[]');
+            notes.unshift(note);
+            localStorage.setItem('quickNotes', JSON.stringify(notes));
+
+            // Clear form
+            document.getElementById('quickNoteForm').reset();
+
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('quickNoteModal'));
+            modal.hide();
+
+            // Show success message
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'message-bubble message-success';
+            alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Nota salvata con successo!';
+            
+            const container = document.querySelector('.main-content');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        };
+
+        // Initialize feather icons when DOM is loaded
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    });
+</script>

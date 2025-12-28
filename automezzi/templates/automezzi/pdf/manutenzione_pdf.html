@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dettaglio Manutenzione - {{ manutenzione.automezzo.targa }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.1;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background: white;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #28a745;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 25px;
+            max-width: 50px;
+        }
+        .company-info {
+            font-size: 7px;
+            color: #666;
+            text-align: right;
+            line-height: 1.0;
+        }
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #28a745;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 9px;
+            color: #666;
+            margin: 1px 0 0 0;
+        }
+        .main-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding: 4px 0;
+            margin: 0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            font-size: 9px;
+            color: #333;
+        }
+        .value {
+            font-size: 9px;
+            color: #666;
+            text-align: right;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .status-completata {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .status-non-completata {
+            font-weight: bold;
+            color: #ffc107;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0.5cm;
+            width: 100%;
+            text-align: center;
+            font-size: 6px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="title">DETTAGLIO MANUTENZIONE</div>
+            <div class="subtitle">{{ manutenzione.automezzo.targa }} - {{ manutenzione.data_prevista|date:"d/m/Y" }}</div>
+        </div>
+        <div>
+            <img src="{{ company_info.logo_url }}" alt="Logo" class="logo">
+            <div class="company-info">
+                {{ company_info.name }}<br>
+                {{ company_info.address }}<br>
+                {{ company_info.phone }} | {{ company_info.email }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card centrale con tutte le informazioni su righe singole -->
+    <div class="main-card">
+        <div class="info-row">
+            <div class="label">Targa</div>
+            <div class="value">{{ manutenzione.automezzo.targa }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Veicolo</div>
+            <div class="value">{{ manutenzione.automezzo.marca }} {{ manutenzione.automezzo.modello }} ({{ manutenzione.automezzo.anno_immatricolazione }})</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Km Attuali</div>
+            <div class="value">{{ manutenzione.automezzo.chilometri_attuali|floatformat:0 }} km</div>
+        </div>
+        {% if manutenzione.automezzo.assegnato_a %}
+        <div class="info-row">
+            <div class="label">Assegnato a</div>
+            <div class="value">{{ manutenzione.automezzo.assegnato_a.get_full_name|default:manutenzione.automezzo.assegnato_a.username }}</div>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <div class="label">Data Apertura</div>
+            <div class="value">{{ manutenzione.data_apertura|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Data Prevista Intervento</div>
+            <div class="value highlight">{{ manutenzione.data_prevista|date:"d/m/Y" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Stato</div>
+            <div class="value highlight">{{ manutenzione.get_stato_display|upper }}</div>
+        </div>
+        {% if manutenzione.fornitore %}
+        <div class="info-row">
+            <div class="label">Fornitore</div>
+            <div class="value">{{ manutenzione.fornitore.nome }}</div>
+        </div>
+        {% endif %}
+        {% if manutenzione.luogo %}
+        <div class="info-row">
+            <div class="label">Luogo</div>
+            <div class="value">{{ manutenzione.luogo }}</div>
+        </div>
+        {% endif %}
+        {% if manutenzione.costo %}
+        <div class="info-row">
+            <div class="label">Costo</div>
+            <div class="value highlight">€ {{ manutenzione.costo }}</div>
+        </div>
+        {% endif %}
+        {% if manutenzione.seguito_da %}
+        <div class="info-row">
+            <div class="label">Seguita da</div>
+            <div class="value">{{ manutenzione.seguito_da.get_full_name|default:manutenzione.seguito_da.username }}</div>
+        </div>
+        {% endif %}
+        {% if manutenzione.responsabile %}
+        <div class="info-row">
+            <div class="label">Responsabile</div>
+            <div class="value">{{ manutenzione.responsabile.get_full_name|default:manutenzione.responsabile.username }}</div>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <div class="label">Allegati</div>
+            <div class="value">{% if manutenzione.allegati %}✓ Presente{% else %}✗ Assente{% endif %}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Descrizione</div>
+            <div class="value">{{ manutenzione.descrizione|truncatewords:20 }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Controlli Standard</div>
+            <div class="value">Olio, Pneumatici, Luci, Freni, Batteria, Cinghie, Sospensioni</div>
+        </div>
+        {% if manutenzione.completata %}
+        <div class="info-row">
+            <div class="label">Prossimi Controlli</div>
+            <div class="value">Generale: 6 mesi - Olio: 3 mesi/5000km{% if manutenzione.costo|floatformat:0|add:0 > 500 %} - Conservare fatture{% endif %}</div>
+        </div>
+        {% else %}
+        <div class="info-row">
+            <div class="label">Azioni da Fare</div>
+            <div class="value">Verificare officina, confermare costo, programmare{% if manutenzione.costo|floatformat:0|add:0 > 1000 %} - Valutare quotazioni{% endif %}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Documento generato il {{ today|date:"d/m/Y H:i" }} dal sistema gestionale {{ company_info.name }}
+    </div>
+</body>
+</html>

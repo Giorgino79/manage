@@ -1,0 +1,303 @@
+<!-- 
+ALLEGATI SECTION - Sezione completa allegati per pagine dettaglio
+================================================================
+
+Sezione completa con statistiche, filtri e visualizzazione griglia/lista.
+Utilizzata nelle pagine di dettaglio degli oggetti per gestione completa allegati.
+
+Context variables:
+- object: Oggetto principale
+- allegati: QuerySet allegati
+- stats: Statistiche allegati
+- show_grid/show_stats/show_filters/show_search: Opzioni visualizzazione
+- columns: Numero colonne per griglia
+
+Usage:
+    {% allegati_section dipendente %}
+    {% allegati_section automezzo show_grid=True columns=3 %}
+-->
+
+{% load allegati_tags %}
+
+<div class="allegati-section" id="allegatiSection" 
+     data-object-id="{{ object_id }}" data-content-type="{{ content_type_id }}">
+
+    <!-- Header Sezione -->
+    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+        <div class="section-title">
+            <h4 class="mb-1">
+                <i class="fas fa-folder-open text-primary me-2"></i>
+                Allegati
+                {% if allegati %}
+                    <span class="badge bg-primary ms-2">{{ allegati|length }}</span>
+                {% endif %}
+            </h4>
+            <p class="text-muted mb-0">Gestione documenti e file collegati</p>
+        </div>
+
+        <div class="section-actions">
+            <div class="btn-group" role="group">
+                <!-- Toggle Vista -->
+                <input type="radio" class="btn-check" name="allegatoView" id="allegatoListView" 
+                       {% if not show_grid %}checked{% endif %}>
+                <label class="btn btn-sm btn-outline-secondary" for="allegatoListView" title="Vista Lista">
+                    <i class="fas fa-list"></i>
+                </label>
+
+                <input type="radio" class="btn-check" name="allegatoView" id="allegatoGridView"
+                       {% if show_grid %}checked{% endif %}>
+                <label class="btn btn-sm btn-outline-secondary" for="allegatoGridView" title="Vista Griglia">
+                    <i class="fas fa-th-large"></i>
+                </label>
+            </div>
+
+            <!-- Pulsante Aggiungi -->
+            <button type="button" class="btn btn-primary btn-sm ms-2 allegato-add-btn"
+                    data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                    data-action="create" data-object-id="{{ object_id }}" 
+                    data-content-type-id="{{ content_type_id }}">
+                <i class="fas fa-plus me-1"></i>
+                Aggiungi Allegato
+            </button>
+        </div>
+    </div>
+
+    <!-- Statistiche -->
+    {% if show_stats and stats %}
+        <div class="allegati-stats mb-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="stat-card border rounded p-3 text-center">
+                        <div class="stat-value h4 mb-1 text-primary">{{ stats.totale|default:0 }}</div>
+                        <div class="stat-label text-muted small">Totale Allegati</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card border rounded p-3 text-center">
+                        <div class="stat-value h4 mb-1 text-info">{{ stats.per_categoria.documenti|default:0 }}</div>
+                        <div class="stat-label text-muted small">Documenti</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card border rounded p-3 text-center">
+                        <div class="stat-value h4 mb-1 text-success">{{ stats.per_categoria.foto|default:0 }}</div>
+                        <div class="stat-label text-muted small">Foto</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card border rounded p-3 text-center">
+                        <div class="stat-value h4 mb-1 text-warning">{{ stats.per_categoria.note|default:0 }}</div>
+                        <div class="stat-label text-muted small">Note</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Filtri e Ricerca -->
+    {% if show_filters or show_search %}
+        <div class="allegati-filters mb-4">
+            <div class="row">
+                {% if show_search %}
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" id="allegatoSearch" 
+                                   placeholder="Cerca allegati...">
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if show_filters %}
+                    <div class="col-md-6">
+                        <div class="row">
+                            <div class="col-6">
+                                <select class="form-select" id="allegatoTypeFilter">
+                                    <option value="">Tutti i tipi</option>
+                                    <option value="doc_">📄 Documenti</option>
+                                    <option value="email_">📧 Comunicazioni</option>
+                                    <option value="foto_">📷 Foto</option>
+                                    <option value="video">🎥 Video</option>
+                                    <option value="nota_">📝 Note</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select class="form-select" id="allegatoSortFilter">
+                                    <option value="-creato_il">Più recenti</option>
+                                    <option value="creato_il">Più vecchi</option>
+                                    <option value="titolo">A-Z</option>
+                                    <option value="-titolo">Z-A</option>
+                                    <option value="tipo_allegato">Per tipo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Lista/Griglia Allegati -->
+    <div class="allegati-container">
+        {% if allegati %}
+            <!-- Vista Lista -->
+            <div class="allegati-list-view" {% if show_grid %}style="display: none;"{% endif %}>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="50">Tipo</th>
+                                <th>Titolo</th>
+                                <th>Categoria</th>
+                                <th>Dimensione</th>
+                                <th>Data</th>
+                                <th width="120">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for allegato in allegati %}
+                                <tr>
+                                    <td>
+                                        <i class="{% allegato_icon allegato.tipo_allegato %} text-{% allegato_color allegato.tipo_allegato %}"></i>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium">{{ allegato.titolo }}</div>
+                                        {% if allegato.descrizione %}
+                                            <small class="text-muted">{{ allegato.descrizione|truncatechars:60 }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% allegato_color allegato.tipo_allegato %}">
+                                            {{ allegato.get_tipo_allegato_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if allegato.dimensione_file %}
+                                            <span class="text-muted">{{ allegato.dimensione_file|filesize_human }}</span>
+                                        {% else %}
+                                            <small class="text-muted">—</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>{{ allegato.creato_il|date:"d/m/Y" }}</div>
+                                        <small class="text-muted">{{ allegato.creato_il|date:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            {% if allegato.file %}
+                                                <a href="{{ allegato.file.url }}" target="_blank" 
+                                                   class="btn btn-sm btn-outline-primary" title="Visualizza">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary allegato-edit-btn"
+                                                    data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                                                    data-action="edit" data-allegato-id="{{ allegato.id }}"
+                                                    title="Modifica">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger allegato-delete-btn"
+                                                    data-allegato-id="{{ allegato.id }}"
+                                                    data-allegato-title="{{ allegato.titolo }}"
+                                                    title="Elimina">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Vista Griglia -->
+            <div class="allegati-grid-view" {% if not show_grid %}style="display: none;"{% endif %}>
+                <div class="row">
+                    {% for allegato in allegati %}
+                        <div class="col-md-{% if columns == 3 %}4{% elif columns == 4 %}3{% else %}6{% endif %} mb-3">
+                            <div class="card allegato-card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="allegato-icon me-3">
+                                            <i class="{% allegato_icon allegato.tipo_allegato %} fa-2x text-{% allegato_color allegato.tipo_allegato %}"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title mb-1">{{ allegato.titolo|truncatechars:25 }}</h6>
+                                            <p class="card-text">
+                                                <small class="text-muted">{{ allegato.get_tipo_allegato_display }}</small><br>
+                                                {% if allegato.dimensione_file %}
+                                                    <small class="text-muted">{{ allegato.dimensione_file|filesize_human }}</small><br>
+                                                {% endif %}
+                                                <small class="text-muted">{{ allegato.creato_il|date:"d/m/Y" }}</small>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="btn-group w-100" role="group">
+                                        {% if allegato.file %}
+                                            <a href="{{ allegato.file.url }}" target="_blank" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-outline-secondary allegato-edit-btn"
+                                                data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                                                data-action="edit" data-allegato-id="{{ allegato.id }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger allegato-delete-btn"
+                                                data-allegato-id="{{ allegato.id }}"
+                                                data-allegato-title="{{ allegato.titolo }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <!-- Stato Vuoto -->
+            <div class="empty-state text-center py-5">
+                <i class="fas fa-folder-open fa-4x text-muted mb-3"></i>
+                <h5 class="text-muted mb-2">Nessun allegato trovato</h5>
+                <p class="text-muted mb-3">
+                    Non ci sono ancora allegati associati a questo elemento.
+                </p>
+                <button type="button" class="btn btn-primary allegato-add-btn"
+                        data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                        data-action="create" data-object-id="{{ object_id }}" 
+                        data-content-type-id="{{ content_type_id }}">
+                    <i class="fas fa-plus me-2"></i>
+                    Aggiungi il primo allegato
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- JavaScript per gestione vista -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle vista lista/griglia
+    document.querySelectorAll('input[name="allegatoView"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const listView = document.querySelector('.allegati-list-view');
+            const gridView = document.querySelector('.allegati-grid-view');
+            
+            if (this.id === 'allegatoListView') {
+                listView.style.display = 'block';
+                gridView.style.display = 'none';
+            } else {
+                listView.style.display = 'none';
+                gridView.style.display = 'block';
+            }
+        });
+    });
+});
+</script>

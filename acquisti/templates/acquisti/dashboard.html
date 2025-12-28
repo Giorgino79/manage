@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load acquisti_extras %}
+
+{% block title %}Dashboard Ordini di Acquisto{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .table-section {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .search-form {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .btn-action {
+        padding: 4px 8px;
+        font-size: 0.85rem;
+    }
+    .table-responsive {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .badge-status {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header con statistiche -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-shopping-cart me-2"></i>Dashboard Ordini di Acquisto
+        </h1>
+        <a href="{% url 'acquisti:crea_ordine' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nuovo Ordine
+        </a>
+    </div>
+
+    <!-- Statistiche rapide -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-1">Da Ricevere</h6>
+                        <h2 class="mb-0">{{ stats.totale_da_ricevere }}</h2>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-1">Ricevuti Oggi</h6>
+                        <h2 class="mb-0">{{ stats.totale_ricevuti_oggi }}</h2>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-1">Ordini Mese</h6>
+                        <h2 class="mb-0">{{ stats.totale_ordini_mese }}</h2>
+                    </div>
+                    <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Colonna sinistra: Ordini da ricevere -->
+        <div class="col-lg-6">
+            <div class="table-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Ordini da Ricevere ({{ ordini_da_ricevere.count }})
+                    </h5>
+                </div>
+                
+                {% if ordini_da_ricevere %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ordine</th>
+                                <th>Fornitore</th>
+                                <th>Importo</th>
+                                <th>Giorni</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ordine in ordini_da_ricevere %}
+                            <tr id="ordine-{{ ordine.pk }}">
+                                <td>
+                                    <a href="{% url 'acquisti:dettaglio_ordine' ordine.pk %}" class="text-decoration-none">
+                                        {{ ordine.numero_ordine }}
+                                        {% if ordine|has_allegati %}
+                                        <i class="fas fa-paperclip text-info ms-1" title="{{ ordine|count_allegati }} allegati"></i>
+                                        {% endif %}
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ ordine.data_ordine|date:"d/m/Y" }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ ordine.fornitore.nome }}</strong>
+                                    {% if ordine.titolo_display %}
+                                    <br><small class="text-muted">{{ ordine.titolo_display|truncatechars:30 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>€{{ ordine.importo_totale|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% with giorni=ordine.get_giorni_dalla_creazione %}
+                                    <span class="badge {% if giorni > 7 %}bg-danger{% elif giorni > 3 %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ giorni }} gg
+                                    </span>
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-success btn-action segna-ricevuto" 
+                                            data-ordine-id="{{ ordine.pk }}"
+                                            title="Segna come ricevuto">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>Nessun ordine in attesa di ricevimento</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Colonna destra: Ordini ricevuti con ricerca -->
+        <div class="col-lg-6">
+            <div class="table-section">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        Ordini Ricevuti
+                    </h5>
+                </div>
+
+                <!-- Form di ricerca -->
+                <form method="get" class="search-form">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            {{ form_ricerca.fornitore }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form_ricerca.titolo }}
+                        </div>
+                        <div class="col-md-2">
+                            {{ form_ricerca.stato }}
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% if current_filters %}
+                    <div class="mt-2">
+                        <a href="{% url 'acquisti:dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-times"></i> Pulisci filtri
+                        </a>
+                    </div>
+                    {% endif %}
+                </form>
+
+                {% if ordini_ricevuti %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Ordine</th>
+                                <th>Fornitore</th>
+                                <th>Stato</th>
+                                <th>Importo</th>
+                                <th>Ricevuto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ordine in ordini_ricevuti %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'acquisti:dettaglio_ordine' ordine.pk %}" class="text-decoration-none">
+                                        {{ ordine.numero_ordine }}
+                                        {% if ordine|has_allegati %}
+                                        <i class="fas fa-paperclip text-info ms-1" title="{{ ordine|count_allegati }} allegati"></i>
+                                        {% endif %}
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ ordine.data_ordine|date:"d/m/Y" }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ ordine.fornitore.nome }}</strong>
+                                    {% if ordine.titolo_display %}
+                                    <br><small class="text-muted">{{ ordine.titolo_display|truncatechars:25 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ ordine.get_stato_css_class }} badge-status">
+                                        {{ ordine.get_stato_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>€{{ ordine.importo_totale|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    {% if ordine.data_ricevimento %}
+                                    {{ ordine.data_ricevimento|date:"d/m/Y" }}
+                                    <br><small class="text-muted">{{ ordine.ricevuto_da.get_full_name }}</small>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginazione -->
+                {% if ordini_ricevuti.has_other_pages %}
+                <nav aria-label="Paginazione ordini ricevuti">
+                    <ul class="pagination pagination-sm justify-content-center">
+                        {% if ordini_ricevuti.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ ordini_ricevuti.previous_page_number }}{% for key, value in current_filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {{ ordini_ricevuti.number }} di {{ ordini_ricevuti.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if ordini_ricevuti.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ ordini_ricevuti.next_page_number }}{% for key, value in current_filters.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    {% if current_filters %}
+                    <i class="fas fa-search fa-3x mb-3"></i>
+                    <p>Nessun ordine trovato con i filtri selezionati</p>
+                    {% else %}
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>Nessun ordine ricevuto</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Gestione segna come ricevuto con AJAX
+    $('.segna-ricevuto').click(function() {
+        const btn = $(this);
+        const ordineId = btn.data('ordine-id');
+        const row = $('#ordine-' + ordineId);
+        
+        if (!confirm('Sei sicuro di voler segnare questo ordine come RICEVUTO?')) {
+            return;
+        }
+        
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+        
+        $.ajax({
+            url: `{% url 'acquisti:segna_ricevuto_ajax' 0 %}`.replace('0', ordineId),
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val() || '{{ csrf_token }}'
+            },
+            success: function(data) {
+                if (data.success) {
+                    // Mostra messaggio di successo
+                    showMessage('success', data.message);
+                    
+                    // Rimuovi la riga dalla tabella con animazione
+                    row.fadeOut(500, function() {
+                        $(this).remove();
+                        
+                        // Aggiorna il contatore
+                        const counter = $('.table-section h5:contains("Ordini da Ricevere")');
+                        const currentCount = parseInt(counter.text().match(/\((\d+)\)/)[1]);
+                        counter.html(counter.html().replace(/\(\d+\)/, `(${currentCount - 1})`));
+                    });
+                } else {
+                    showMessage('error', data.error || 'Errore durante l\'operazione');
+                    btn.prop('disabled', false).html('<i class="fas fa-check"></i>');
+                }
+            },
+            error: function() {
+                showMessage('error', 'Errore di comunicazione con il server');
+                btn.prop('disabled', false).html('<i class="fas fa-check"></i>');
+            }
+        });
+    });
+    
+    // Funzione per mostrare messaggi
+    function showMessage(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+        
+        const alert = $(`
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <i class="${icon} me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `);
+        
+        $('.container-fluid').prepend(alert);
+        
+        // Auto-dismiss dopo 5 secondi
+        setTimeout(() => {
+            alert.fadeOut();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

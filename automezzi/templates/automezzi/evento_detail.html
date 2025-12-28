@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Dettaglio Evento{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:evento_list' %}">Eventi</a></li>
+        <li class="breadcrumb-item active">{{ evento.titolo }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0 text-primary"><i class="fas fa-exclamation-triangle"></i> {{ evento.get_tipo_display }}</h4>
+          <a href="{% url 'automezzi:evento_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Torna all'elenco</a>
+        </div>
+        <div class="card-body">
+          <dl class="row">
+            <dt class="col-sm-4">Automezzo:</dt>
+            <dd class="col-sm-8">{{ evento.automezzo }}</dd>
+            <dt class="col-sm-4">Tipo evento:</dt>
+            <dd class="col-sm-8">
+              <span class="badge bg-warning">{{ evento.get_tipo_display }}</span>
+            </dd>
+            <dt class="col-sm-4">Data evento:</dt>
+            <dd class="col-sm-8">{{ evento.data_evento|date:"d/m/Y" }}</dd>
+            <dt class="col-sm-4">Descrizione:</dt>
+            <dd class="col-sm-8">{{ evento.descrizione|default:"—" }}</dd>
+            <dt class="col-sm-4">Costo:</dt>
+            <dd class="col-sm-8">
+              {% if evento.costo %}
+                €{{ evento.costo }}
+              {% else %}
+                —
+              {% endif %}
+            </dd>
+            <dt class="col-sm-4">Dipendente coinvolto:</dt>
+            <dd class="col-sm-8">{{ evento.dipendente_coinvolto|default:"—" }}</dd>
+            <dt class="col-sm-4">Stato:</dt>
+            <dd class="col-sm-8">
+              {% if evento.risolto %}
+                <span class="badge bg-success">Risolto</span>
+              {% else %}
+                <span class="badge bg-danger">Non risolto</span>
+              {% endif %}
+            </dd>
+            {% if evento.file_allegato %}
+            <dt class="col-sm-4">Allegato:</dt>
+            <dd class="col-sm-8">
+              <a href="{{ evento.file_allegato.url }}" class="btn btn-outline-info btn-sm" target="_blank">
+                <i class="fas fa-file-alt me-2"></i>Visualizza allegato
+              </a>
+            </dd>
+            {% endif %}
+          </dl>
+        </div>
+        <div class="card-footer text-end">
+          <a href="{% url 'automezzi:evento_update' evento.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Modifica</a>
+          <a href="{% url 'automezzi:evento_delete' evento.pk %}" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i> Elimina</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

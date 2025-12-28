@@ -1,0 +1,184 @@
+<!-- 
+ALLEGATI WIDGET - Widget principale allegati per sidebar/sezioni
+=================================================================
+
+Widget riutilizzabile per mostrare allegati in sidebar, card o sezioni compatte.
+Supporta filtri, limitazioni e diversi tipi di visualizzazione.
+
+Context variables:
+- object: Oggetto principale
+- allegati: Lista allegati da mostrare
+- allegati_count: Conteggio totale
+- can_add/can_edit/can_delete: Permessi
+- widget_type: 'sidebar', 'compact', 'full'
+- content_type_id, object_id: Per URL generation
+
+Usage:
+    {% allegati_widget dipendente %}
+    {% allegati_widget automezzo widget_type="compact" %}
+-->
+
+{% load allegati_tags %}
+
+<div class="allegati-widget" data-widget-type="{{ widget_type }}" 
+     data-object-id="{{ object_id }}" data-content-type="{{ content_type_id }}">
+    
+    <!-- Header Widget -->
+    <div class="allegati-widget-header d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">
+            <i class="fas fa-paperclip text-muted"></i>
+            Allegati
+            {% if allegati_count > 0 %}
+                <span class="badge bg-{% allegato_color "doc_" %} ms-1">{{ allegati_count }}</span>
+            {% endif %}
+        </h6>
+        
+        {% if can_add and show_add_button %}
+            <button type="button" class="btn btn-sm btn-outline-primary allegato-add-btn"
+                    data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                    data-action="create" data-object-id="{{ object_id }}" 
+                    data-content-type-id="{{ content_type_id }}">
+                <i class="fas fa-plus fa-sm"></i>
+            </button>
+        {% endif %}
+    </div>
+
+    <!-- Lista Allegati -->
+    <div class="allegati-widget-body">
+        {% if allegati %}
+            <div class="allegati-list">
+                {% for allegato in allegati %}
+                    <div class="allegato-item d-flex align-items-center py-2 border-bottom">
+                        <!-- Icona Tipo -->
+                        <div class="allegato-icon me-2">
+                            <i class="{% allegato_icon allegato.tipo_allegato %} text-{% allegato_color allegato.tipo_allegato %}"></i>
+                        </div>
+
+                        <!-- Info Allegato -->
+                        <div class="allegato-info flex-grow-1">
+                            <div class="allegato-title">
+                                {% if allegato.file %}
+                                    <a href="{{ allegato.file.url }}" target="_blank" 
+                                       class="text-decoration-none fw-medium">
+                                        {{ allegato.titolo|truncatechars:30 }}
+                                    </a>
+                                {% elif allegato.url_esterno %}
+                                    <a href="{{ allegato.url_esterno }}" target="_blank" 
+                                       class="text-decoration-none fw-medium">
+                                        {{ allegato.titolo|truncatechars:30 }}
+                                    </a>
+                                {% else %}
+                                    <span class="fw-medium">{{ allegato.titolo|truncatechars:30 }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="allegato-meta">
+                                <small class="text-muted">
+                                    {{ allegato.get_tipo_allegato_display|truncatechars:20 }}
+                                    {% if allegato.dimensione_file %}
+                                        • {{ allegato.dimensione_file|filesize_human }}
+                                    {% endif %}
+                                    • {{ allegato.creato_il|date:"d/m/Y" }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Azioni -->
+                        <div class="allegato-actions ms-2">
+                            <div class="btn-group" role="group">
+                                {% if allegato.file %}
+                                    <a href="{{ allegato.file.url }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-secondary" title="Visualizza">
+                                        <i class="fas fa-eye fa-xs"></i>
+                                    </a>
+                                {% endif %}
+                                
+                                {% if can_edit %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary allegato-edit-btn"
+                                            data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                                            data-action="edit" data-allegato-id="{{ allegato.id }}"
+                                            title="Modifica">
+                                        <i class="fas fa-edit fa-xs"></i>
+                                    </button>
+                                {% endif %}
+                                
+                                {% if can_delete %}
+                                    <button type="button" class="btn btn-sm btn-outline-danger allegato-delete-btn"
+                                            data-allegato-id="{{ allegato.id }}"
+                                            data-allegato-title="{{ allegato.titolo }}"
+                                            title="Elimina">
+                                        <i class="fas fa-trash fa-xs"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Show More Link -->
+            {% if has_more %}
+                <div class="text-center mt-2">
+                    <a href="#" class="btn btn-sm btn-link allegati-show-all"
+                       data-object-id="{{ object_id }}" data-content-type-id="{{ content_type_id }}">
+                        Vedi tutti ({{ allegati_count }})
+                    </a>
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- Stato Vuoto -->
+            <div class="text-center text-muted py-3">
+                <i class="fas fa-folder-open fa-2x mb-2"></i>
+                <p class="mb-0">Nessun allegato</p>
+                {% if can_add and show_add_button %}
+                    <small>
+                        <a href="#" class="allegato-add-btn text-decoration-none"
+                           data-bs-toggle="modal" data-bs-target="#allegatoModal"
+                           data-action="create" data-object-id="{{ object_id }}" 
+                           data-content-type-id="{{ content_type_id }}">
+                            Aggiungi il primo allegato
+                        </a>
+                    </small>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    {% if widget_type == "full" and allegati_count > 0 %}
+        <div class="allegati-widget-footer mt-2 pt-2 border-top">
+            <div class="row text-center">
+                <div class="col">
+                    <small class="text-muted">
+                        <i class="fas fa-paperclip"></i>
+                        {{ allegati_count }} allegat{{ allegati_count|pluralize:"o,i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- CSS aggiuntivo per widget -->
+<style>
+.allegati-widget .allegato-item:hover {
+    background-color: rgba(0,123,255,.05);
+}
+
+.allegati-widget .allegato-item:last-child {
+    border-bottom: none !important;
+}
+
+.allegati-widget .btn-group .btn {
+    border-radius: 0;
+}
+
+.allegati-widget .btn-group .btn:first-child {
+    border-top-left-radius: .25rem;
+    border-bottom-left-radius: .25rem;
+}
+
+.allegati-widget .btn-group .btn:last-child {
+    border-top-right-radius: .25rem;
+    border-bottom-right-radius: .25rem;
+}
+</style>

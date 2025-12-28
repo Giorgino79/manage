@@ -1,0 +1,687 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top shadow">
+    <!-- Mobile toggle button -->
+    <button class="navbar-toggler d-lg-none ms-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Brand/Logo -->
+    <div class="navbar-brand d-flex align-items-center me-0 px-3">
+        <i class="fas fa-chart-line me-2 fs-4"></i>
+        <span class="fw-bold">Management</span>
+    </div>
+    
+    <!-- Global search (desktop only) -->
+    <div class="d-none d-md-flex col-lg-4 col-xl-5">
+        <form class="d-flex w-100" method="get" action="#" style="display: none;"># TODO: Implementare ricerca globale
+            <div class="input-group">
+                <input class="form-control border-0" 
+                       type="search" 
+                       name="q" 
+                       placeholder="Cerca ovunque nel sistema..." 
+                       aria-label="Ricerca globale"
+                       value="{{ request.GET.q }}"
+                       id="globalSearchInput">
+                <button class="btn btn-outline-light" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Right side navigation -->
+    <div class="navbar-nav ms-auto d-flex flex-row">
+        <!-- Date and time (desktop only) -->
+        <div class="d-none d-xl-flex align-items-center me-3">
+            <small class="text-white-50">
+                <i class="fas fa-calendar me-1"></i>
+                <span id="currentDate">--</span>
+                <i class="fas fa-clock ms-3 me-1"></i>
+                <span id="currentTime">--:--:--</span>
+            </small>
+        </div>
+        
+        <!-- Mobile search toggle -->
+        <div class="nav-item d-md-none">
+            <a class="nav-link px-3" href="#" data-bs-toggle="collapse" data-bs-target="#mobileSearch" aria-expanded="false" aria-label="Toggle search">
+                <i class="fas fa-search"></i>
+            </a>
+        </div>
+        
+        <!-- Tools dropdown -->
+        <div class="nav-item dropdown">
+            <a class="nav-link px-3 dropdown-toggle" href="#" id="toolsDropdown" role="button" 
+               data-bs-toggle="dropdown" aria-expanded="false" title="Strumenti">
+                <i class="fas fa-tools"></i>
+                <span class="d-none d-lg-inline ms-1">Tools</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="toolsDropdown">
+                <li><h6 class="dropdown-header"><i class="fas fa-cog me-2"></i>Sistema</h6></li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'admin:index' %}">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Pannello Admin
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-database me-2"></i>
+                        Backup Dati
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Report Sistema
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                
+                <li><h6 class="dropdown-header"><i class="fas fa-calculator me-2"></i>Utilità</h6></li>
+                <li>
+                    <a class="dropdown-item" href="#" onclick="openCalculator()">
+                        <i class="fas fa-calculator me-2"></i>
+                        Calcolatrice
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Calendario
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-file-export me-2"></i>
+                        Export/Import
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                
+                <li><h6 class="dropdown-header"><i class="fas fa-envelope me-2"></i>Comunicazioni</h6></li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'core:chat' %}">
+                        <i class="fas fa-comments me-2"></i>
+                        Chat e Messaggi
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'core:promemoria_list' %}">
+                        <i class="fas fa-tasks me-2"></i>
+                        Promemoria
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'core:pdf_demo' %}">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        Generatore PDF
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'core:excel_demo' %}">
+                        <i class="fas fa-file-excel me-2"></i>
+                        Generatore Excel
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Messages and Tasks quick access -->
+        <div class="nav-item">
+            <a class="nav-link px-3 position-relative" href="{% url 'core:chat' %}" title="Chat">
+                <i class="fas fa-comments"></i>
+                <span id="messages-badge" class="notification-badge" style="display: none;"></span>
+            </a>
+        </div>
+        
+        <div class="nav-item">
+            <a class="nav-link px-3 position-relative" href="{% url 'core:promemoria_list' %}" title="Promemoria">
+                <i class="fas fa-tasks"></i>
+                <span id="tasks-badge" class="notification-badge" style="display: none;"></span>
+            </a>
+        </div>
+        
+        <!-- Notifications dropdown -->
+        <div class="nav-item dropdown">
+            <a class="nav-link px-3 position-relative" href="#" id="notificationsDropdown" role="button" 
+               data-bs-toggle="dropdown" aria-expanded="false" title="Notifiche">
+                <i class="fas fa-bell"></i>
+                <span id="notifications-badge" class="notification-badge" style="display: none;"></span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="notificationsDropdown" style="width: 320px;">
+                <li><h6 class="dropdown-header">
+                    <i class="fas fa-bell me-2"></i>Centro Notifiche
+                    <span class="badge bg-primary ms-2" id="total-notifications">0</span>
+                </h6></li>
+                
+                <!-- Messaggi non letti -->
+                <li id="unread-messages-section" style="display: none;">
+                    <a class="dropdown-item py-3" href="{% url 'core:chat' %}">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-envelope text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-medium">
+                                    <span id="unread-messages-count">0</span> messaggi non letti
+                                </div>
+                                <div class="small text-muted">Nuovi messaggi nella chat</div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                
+                <!-- Promemoria scaduti -->
+                <li id="overdue-tasks-section" style="display: none;">
+                    <a class="dropdown-item py-3" href="{% url 'core:promemoria_list' %}">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-medium">
+                                    <span id="overdue-tasks-count">0</span> promemoria scaduti
+                                </div>
+                                <div class="small text-muted">Richiedono attenzione immediata</div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                
+                <!-- Promemoria attivi -->
+                <li id="active-tasks-section" style="display: none;">
+                    <a class="dropdown-item py-3" href="{% url 'core:promemoria_list' %}">
+                        <div class="d-flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-tasks text-warning"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-medium">
+                                    <span id="active-tasks-count">0</span> promemoria attivi
+                                </div>
+                                <div class="small text-muted">In corso o da completare</div>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                
+                <li id="no-notifications" class="text-center py-4" style="display: none;">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <div class="fw-medium">Tutto a posto!</div>
+                    <div class="small text-muted">Nessuna notifica pendente</div>
+                </li>
+                
+                <li><hr class="dropdown-divider"></li>
+                <li class="text-center">
+                    <a class="dropdown-item small" href="{% url 'core:dashboard_main' %}">
+                        <i class="fas fa-tachometer-alt me-1"></i>Vai alla Dashboard
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- User dropdown -->
+        <div class="nav-item dropdown">
+            <a class="nav-link px-3 dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" 
+               data-bs-toggle="dropdown" aria-expanded="false" title="Account">
+                {% if user.first_name or user.last_name %}
+                    <div class="user-avatar bg-secondary d-flex align-items-center justify-content-center text-white fw-bold me-2">
+                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                    </div>
+                {% else %}
+                    <i class="fas fa-user-circle me-2"></i>
+                {% endif %}
+                <span class="d-none d-lg-inline">
+                    {% if user.get_full_name %}
+                        {{ user.get_full_name }}
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                <li><h6 class="dropdown-header">
+                    <i class="fas fa-user me-2"></i>
+                    {% if user.get_full_name %}
+                        {{ user.get_full_name }}
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </h6></li>
+                <li>
+                    <div class="dropdown-item-text small text-muted">
+                        <i class="fas fa-envelope me-2"></i>{{ user.email|default:"Nessuna email" }}
+                    </div>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-user-edit me-2"></i>
+                        Modifica Profilo
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-cog me-2"></i>
+                        Impostazioni
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-key me-2"></i>
+                        Cambia Password
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Aiuto
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fas fa-life-ring me-2"></i>
+                        Supporto
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                
+                <li>
+                    <form method="post" action="{% url 'admin:logout' %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="fas fa-sign-out-alt me-2"></i>
+                            Disconnetti
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Mobile search collapse -->
+<div class="collapse d-md-none" id="mobileSearch">
+    <div class="card card-body border-0 shadow-sm">
+        <form class="d-flex" method="get" action="#" style="display: none;"><!-- TODO: Implementare ricerca globale -->
+            <div class="input-group">
+                <input class="form-control" 
+                       type="search" 
+                       name="q" 
+                       placeholder="Cerca..." 
+                       aria-label="Ricerca mobile"
+                       value="{{ request.GET.q }}"
+                       id="mobileSearchInput">
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Calculator Modal -->
+<div class="modal fade" id="calculatorModal" tabindex="-1" aria-labelledby="calculatorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="calculatorModalLabel">
+                    <i class="fas fa-calculator me-2"></i>Calcolatrice
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="calculator">
+                    <div class="calculator-display" id="calculatorDisplay">0</div>
+                    <div class="calculator-buttons">
+                        <button type="button" class="calculator-button" onclick="clearCalculator()">C</button>
+                        <button type="button" class="calculator-button" onclick="deleteLast()">⌫</button>
+                        <button type="button" class="calculator-button operator" onclick="inputOperator('/')">/</button>
+                        <button type="button" class="calculator-button operator" onclick="inputOperator('*')">×</button>
+                        
+                        <button type="button" class="calculator-button" onclick="inputNumber('7')">7</button>
+                        <button type="button" class="calculator-button" onclick="inputNumber('8')">8</button>
+                        <button type="button" class="calculator-button" onclick="inputNumber('9')">9</button>
+                        <button type="button" class="calculator-button operator" onclick="inputOperator('-')">-</button>
+                        
+                        <button type="button" class="calculator-button" onclick="inputNumber('4')">4</button>
+                        <button type="button" class="calculator-button" onclick="inputNumber('5')">5</button>
+                        <button type="button" class="calculator-button" onclick="inputNumber('6')">6</button>
+                        <button type="button" class="calculator-button operator" onclick="inputOperator('+')">+</button>
+                        
+                        <button type="button" class="calculator-button" onclick="inputNumber('1')">1</button>
+                        <button type="button" class="calculator-button" onclick="inputNumber('2')">2</button>
+                        <button type="button" class="calculator-button" onclick="inputNumber('3')">3</button>
+                        <button type="button" class="calculator-button equals" onclick="calculate()" rowspan="2">=</button>
+                        
+                        <button type="button" class="calculator-button" onclick="inputNumber('0')" style="grid-column: span 2;">0</button>
+                        <button type="button" class="calculator-button" onclick="inputDecimal()">.</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Calculator Styles */
+.calculator {
+    background: #ffffff;
+    border-radius: 0;
+    overflow: hidden;
+}
+
+.calculator-display {
+    background: #343a40;
+    color: #ffffff;
+    padding: 1.5rem 1rem;
+    font-size: 2rem;
+    text-align: right;
+    font-family: 'Courier New', monospace;
+    min-height: 70px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.calculator-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: #dee2e6;
+    padding: 0;
+}
+
+.calculator-button {
+    background: #ffffff;
+    border: none;
+    padding: 1.25rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calculator-button:hover {
+    background: #f8f9fa;
+    transform: scale(0.95);
+}
+
+.calculator-button:active {
+    transform: scale(0.9);
+}
+
+.calculator-button.operator {
+    background: #0d6efd;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.calculator-button.operator:hover {
+    background: #0b5ed7;
+}
+
+.calculator-button.equals {
+    background: #28a745;
+    color: #ffffff;
+    grid-row: span 2;
+    font-weight: 700;
+}
+
+.calculator-button.equals:hover {
+    background: #218838;
+}
+
+/* Stile per il button 0 che occupa 2 colonne */
+.calculator-button[onclick="inputNumber('0')"] {
+    grid-column: span 2;
+}
+
+/* Stile per i button C e ⌫ */
+.calculator-button[onclick="clearCalculator()"],
+.calculator-button[onclick="deleteLast()"] {
+    background: #dc3545;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.calculator-button[onclick="clearCalculator()"]:hover,
+.calculator-button[onclick="deleteLast()"]:hover {
+    background: #c82333;
+}
+</style>
+
+<script>
+    // Calculator functionality
+    let calculatorDisplay = '0';
+    let previousValue = null;
+    let operation = null;
+    let waitingForNewValue = false;
+
+    function updateDisplay() {
+        document.getElementById('calculatorDisplay').textContent = calculatorDisplay;
+    }
+
+    function inputNumber(num) {
+        if (waitingForNewValue) {
+            calculatorDisplay = num;
+            waitingForNewValue = false;
+        } else {
+            calculatorDisplay = calculatorDisplay === '0' ? num : calculatorDisplay + num;
+        }
+        updateDisplay();
+    }
+
+    function inputOperator(nextOperation) {
+        const inputValue = parseFloat(calculatorDisplay);
+        
+        if (previousValue === null) {
+            previousValue = inputValue;
+        } else if (operation) {
+            const currentValue = previousValue || 0;
+            const newValue = performCalculation[operation](currentValue, inputValue);
+            
+            calculatorDisplay = String(newValue);
+            previousValue = newValue;
+            updateDisplay();
+        }
+        
+        waitingForNewValue = true;
+        operation = nextOperation;
+    }
+
+    function inputDecimal() {
+        if (waitingForNewValue) {
+            calculatorDisplay = '0.';
+            waitingForNewValue = false;
+        } else if (calculatorDisplay.indexOf('.') === -1) {
+            calculatorDisplay += '.';
+        }
+        updateDisplay();
+    }
+
+    function clearCalculator() {
+        calculatorDisplay = '0';
+        previousValue = null;
+        operation = null;
+        waitingForNewValue = false;
+        updateDisplay();
+    }
+
+    function deleteLast() {
+        if (calculatorDisplay.length > 1) {
+            calculatorDisplay = calculatorDisplay.slice(0, -1);
+        } else {
+            calculatorDisplay = '0';
+        }
+        updateDisplay();
+    }
+
+    function calculate() {
+        const inputValue = parseFloat(calculatorDisplay);
+        
+        if (previousValue !== null && operation) {
+            const newValue = performCalculation[operation](previousValue, inputValue);
+            calculatorDisplay = String(newValue);
+            previousValue = null;
+            operation = null;
+            waitingForNewValue = true;
+            updateDisplay();
+        }
+    }
+
+    const performCalculation = {
+        '/': (firstValue, secondValue) => firstValue / secondValue,
+        '*': (firstValue, secondValue) => firstValue * secondValue,
+        '+': (firstValue, secondValue) => firstValue + secondValue,
+        '-': (firstValue, secondValue) => firstValue - secondValue,
+    };
+
+    function openCalculator() {
+        const calculatorModal = new bootstrap.Modal(document.getElementById('calculatorModal'));
+        calculatorModal.show();
+    }
+
+    // Keyboard support for calculator
+    document.addEventListener('keydown', function(event) {
+        if (document.getElementById('calculatorModal').classList.contains('show')) {
+            const key = event.key;
+            
+            if ('0123456789'.includes(key)) {
+                inputNumber(key);
+            } else if ('+-*/'.includes(key)) {
+                inputOperator(key === '*' ? '*' : key);
+            } else if (key === 'Enter' || key === '=') {
+                calculate();
+            } else if (key === '.') {
+                inputDecimal();
+            } else if (key === 'Escape') {
+                clearCalculator();
+            } else if (key === 'Backspace') {
+                deleteLast();
+            }
+        }
+    });
+
+    // Update notifications and badges
+    function updateNotifications() {
+        {% if user.is_authenticated %}
+        fetch('/api/notifications/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Update message badge
+            const messagesBadge = document.getElementById('messages-badge');
+            const unreadCount = data.unread_messages || 0;
+            if (unreadCount > 0) {
+                messagesBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                messagesBadge.style.display = 'inline';
+                document.getElementById('unread-messages-count').textContent = unreadCount;
+                document.getElementById('unread-messages-section').style.display = 'block';
+            } else {
+                messagesBadge.style.display = 'none';
+                document.getElementById('unread-messages-section').style.display = 'none';
+            }
+
+            // Update tasks badge
+            const tasksBadge = document.getElementById('tasks-badge');
+            const overdueCount = data.overdue_tasks || 0;
+            const activeCount = data.active_tasks || 0;
+            
+            if (overdueCount > 0) {
+                tasksBadge.textContent = overdueCount > 9 ? '9+' : overdueCount;
+                tasksBadge.style.display = 'inline';
+                tasksBadge.className = 'notification-badge bg-danger';
+            } else if (activeCount > 0) {
+                tasksBadge.textContent = activeCount > 9 ? '9+' : activeCount;
+                tasksBadge.style.display = 'inline';
+                tasksBadge.className = 'notification-badge bg-warning';
+            } else {
+                tasksBadge.style.display = 'none';
+            }
+
+            // Update overdue tasks section
+            if (overdueCount > 0) {
+                document.getElementById('overdue-tasks-count').textContent = overdueCount;
+                document.getElementById('overdue-tasks-section').style.display = 'block';
+            } else {
+                document.getElementById('overdue-tasks-section').style.display = 'none';
+            }
+
+            // Update active tasks section
+            if (activeCount > 0) {
+                document.getElementById('active-tasks-count').textContent = activeCount;
+                document.getElementById('active-tasks-section').style.display = 'block';
+            } else {
+                document.getElementById('active-tasks-section').style.display = 'none';
+            }
+
+            // Update main notifications badge
+            const totalNotifications = unreadCount + overdueCount;
+            const notificationsBadge = document.getElementById('notifications-badge');
+            const totalNotificationsSpan = document.getElementById('total-notifications');
+            
+            if (totalNotifications > 0) {
+                notificationsBadge.textContent = totalNotifications > 9 ? '9+' : totalNotifications;
+                notificationsBadge.style.display = 'inline';
+                totalNotificationsSpan.textContent = totalNotifications;
+                document.getElementById('no-notifications').style.display = 'none';
+            } else {
+                notificationsBadge.style.display = 'none';
+                totalNotificationsSpan.textContent = '0';
+                
+                // Show "no notifications" only if no active tasks either
+                if (activeCount === 0) {
+                    document.getElementById('no-notifications').style.display = 'block';
+                }
+            }
+        })
+        .catch(error => {
+            console.log('Notifications update error:', error);
+            // Fallback: hide badges on error
+            document.getElementById('messages-badge').style.display = 'none';
+            document.getElementById('tasks-badge').style.display = 'none';
+            document.getElementById('notifications-badge').style.display = 'none';
+        });
+        {% endif %}
+    }
+
+    // Update time and date
+    function updateDateTime() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+        const timeStr = now.toLocaleTimeString('it-IT');
+        
+        const dateElement = document.getElementById('currentDate');
+        const timeElement = document.getElementById('currentTime');
+        
+        if (dateElement) dateElement.textContent = dateStr;
+        if (timeElement) timeElement.textContent = timeStr;
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateDateTime();
+        updateNotifications();
+        
+        // Update every minute
+        setInterval(updateDateTime, 60000);
+        // Update notifications every 30 seconds
+        setInterval(updateNotifications, 30000);
+    });
+</script>

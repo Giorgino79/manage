@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Coda Email - Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-clock"></i> Coda Email</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Email</a></li>
+                            <li class="breadcrumb-item active">Coda</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="btn-group">
+                    <a href="{% url 'mail:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Torna alla Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Statistiche Coda -->
+            <div class="row mb-4">
+                <div class="col-md-2">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h5 class="text-primary">{{ stats.total }}</h5>
+                            <small class="text-muted">Totale</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <h5>{{ stats.pending }}</h5>
+                            <small>In Attesa</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5>{{ stats.processing }}</h5>
+                            <small>Elaborazione</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5>{{ stats.sent }}</h5>
+                            <small>Inviati</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h5>{{ stats.failed }}</h5>
+                            <small>Falliti</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista Coda -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Email in Coda
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Stato</th>
+                                        <th>Oggetto</th>
+                                        <th>Destinatari</th>
+                                        <th>Priorità</th>
+                                        <th>Programmato</th>
+                                        <th>Tentativi</th>
+                                        <th>Azioni</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in page_obj %}
+                                    <tr>
+                                        <td>
+                                            {% if item.status == 'pending' %}
+                                                <span class="badge bg-warning">In Attesa</span>
+                                            {% elif item.status == 'processing' %}
+                                                <span class="badge bg-info">Elaborazione</span>
+                                            {% elif item.status == 'sent' %}
+                                                <span class="badge bg-success">Inviato</span>
+                                            {% elif item.status == 'failed' %}
+                                                <span class="badge bg-danger">Fallito</span>
+                                            {% elif item.status == 'cancelled' %}
+                                                <span class="badge bg-secondary">Annullato</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">{{ item.subject|truncatechars:50 }}</div>
+                                            {% if item.error_message %}
+                                                <small class="text-danger">{{ item.error_message|truncatechars:100 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>
+                                                {% for email in item.to_addresses %}
+                                                    {{ email }}{% if not forloop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if item.priority <= 2 %}
+                                                <span class="badge bg-danger">Alta</span>
+                                            {% elif item.priority <= 4 %}
+                                                <span class="badge bg-warning">Media</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Bassa</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ item.scheduled_at|date:"d/m/Y H:i" }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {{ item.attempt_count }} / {{ item.max_attempts }}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                {% if item.status == 'failed' %}
+                                                    <button class="btn btn-outline-warning btn-sm" 
+                                                            onclick="retryEmail('{{ item.id }}')">
+                                                        <i class="fas fa-redo"></i>
+                                                    </button>
+                                                {% endif %}
+                                                <button class="btn btn-outline-info btn-sm" 
+                                                        onclick="showDetails('{{ item.id }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginazione -->
+                        {% if page_obj.has_other_pages %}
+                        <nav aria-label="Paginazione coda">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">Prima</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Precedente</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Successiva</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Ultima</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nessuna email in coda</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function retryEmail(queueId) {
+        if (confirm('Vuoi riprovare ad inviare questa email?')) {
+            fetch(`/mail/api/retry/${queueId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Email rimessa in coda con successo!');
+                    location.reload();
+                } else {
+                    alert('Errore: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Errore di connessione: ' + error);
+            });
+        }
+    }
+
+    function showDetails(queueId) {
+        // TODO: Implementare modal con dettagli
+        alert('Dettagli per ID: ' + queueId);
+    }
+    
+    // Auto-refresh ogni 30 secondi
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            location.reload();
+        }
+    }, 30000);
+</script>
+{% endblock %}

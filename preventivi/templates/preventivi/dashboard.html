@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Preventivi{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card { border: none; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-radius: 4px; }
+.stat-number { font-size: 1.2rem; font-weight: 600; }
+.table-xs td { padding: 0.2rem 0.3rem; font-size: 0.75rem; }
+.btn-xs { padding: 0.15rem 0.3rem; font-size: 0.7rem; }
+.card-xs { padding: 0.25rem 0.5rem; }
+.card-xs-body { padding: 0.5rem; }
+.h6-xs { font-size: 0.8rem; margin-bottom: 0.25rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header ultra compatto -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div class="d-flex align-items-center gap-3">
+            <h1 class="h6 mb-0">
+                <i data-feather="file-text" style="width:16px;height:16px;" class="me-1"></i>Preventivi
+            </h1>
+            <div class="d-flex gap-2">
+                <div class="card stat-card bg-primary text-white text-center">
+                    <div class="card-xs">
+                        <div class="stat-number">{{ stats.totale_richieste }}</div>
+                        <small style="font-size:0.6rem;">Totali</small>
+                    </div>
+                </div>
+                <div class="card stat-card bg-warning text-white text-center">
+                    <div class="card-xs">
+                        <div class="stat-number">{{ stats.richieste_attive }}</div>
+                        <small style="font-size:0.6rem;">Attive</small>
+                    </div>
+                </div>
+                <div class="card stat-card bg-info text-white text-center">
+                    <div class="card-xs">
+                        <div class="stat-number">{{ stats.in_attesa_approvazione }}</div>
+                        <small style="font-size:0.6rem;">Da App.</small>
+                    </div>
+                </div>
+                <div class="card stat-card bg-success text-white text-center">
+                    <div class="card-xs">
+                        <div class="stat-number">{{ stats.approvate_questo_mese }}</div>
+                        <small style="font-size:0.6rem;">Mese</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <a href="{% url 'preventivi:richiesta_create' %}" class="btn btn-primary btn-xs">
+            <i data-feather="plus" style="width:12px;height:12px;" class="me-1"></i>Nuova
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Lista ultra compatta -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-xs d-flex justify-content-between align-items-center">
+                    <div class="h6-xs mb-0">Richieste Recenti</div>
+                    <a href="{% url 'preventivi:richieste_list' %}" class="btn btn-outline-primary btn-xs">Tutte</a>
+                </div>
+                <div class="card-xs-body">
+                    {% if richieste_recenti %}
+                    <div class="table-responsive">
+                        <table class="table table-xs mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Richiesta</th>
+                                    <th>Richiedente</th>
+                                    <th>Stato</th>
+                                    <th>Data</th>
+                                    <th>Az.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for richiesta in richieste_recenti %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ richiesta.numero }}</div>
+                                        <small class="text-muted">{{ richiesta.titolo|truncatechars:20 }}</small>
+                                    </td>
+                                    <td>{{ richiesta.richiedente.get_full_name|default:richiesta.richiedente.username|truncatechars:15 }}</td>
+                                    <td>
+                                        {% if richiesta.stato == 'CREATO' %}
+                                            <span class="badge bg-secondary badge-xs">Creato</span>
+                                        {% elif richiesta.stato == 'INVIATO_FORNITORI' %}
+                                            <span class="badge bg-info badge-xs">Inviato</span>
+                                        {% elif richiesta.stato == 'PREVENTIVI_RACCOLTI' %}
+                                            <span class="badge bg-warning badge-xs">Raccolti</span>
+                                        {% elif richiesta.stato == 'IN_VALUTAZIONE' %}
+                                            <span class="badge bg-warning badge-xs">In Valutazione</span>
+                                        {% elif richiesta.stato == 'APPROVATO' %}
+                                            <span class="badge bg-success badge-xs">Approvato</span>
+                                        {% elif richiesta.stato == 'ANNULLATO' %}
+                                            <span class="badge bg-danger badge-xs">Annullato</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark badge-xs">{{ richiesta.get_stato_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ richiesta.data_richiesta|date:"d/m" }}</td>
+                                    <td>
+                                        <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-outline-primary btn-xs">👁️</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-2 text-muted">Nessuna richiesta</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar compatta -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-xs">
+                    <div class="h6-xs mb-0">Azioni</div>
+                </div>
+                <div class="card-xs-body">
+                    <div class="d-grid gap-1">
+                        <a href="{% url 'preventivi:richieste_list' %}" class="btn btn-outline-primary btn-xs">
+                            📋 Tutte
+                        </a>
+                        <a href="{% url 'preventivi:richieste_list' %}?stato=IN_VALUTAZIONE" class="btn btn-outline-warning btn-xs">
+                            🕐 Da Valutare
+                        </a>
+                        <a href="{% url 'preventivi:richieste_list' %}?stato=APPROVATO" class="btn btn-outline-success btn-xs">
+                            ✅ Approvate
+                        </a>
+                        <a href="http://127.0.0.1:8001/acquisti/" target="_blank" class="btn btn-outline-info btn-xs">
+                            🛒 Ordini
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Urgenti compatti -->
+            {% if priorita_urgenti %}
+            <div class="card mt-1">
+                <div class="card-xs bg-danger text-white">
+                    <div class="h6-xs mb-0">🔥 Urgenti</div>
+                </div>
+                <div class="card-xs-body">
+                    {% for richiesta in priorita_urgenti %}
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="fw-bold">{{ richiesta.numero }}</small>
+                        <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-danger btn-xs">Vai</a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    feather.replace();
+});
+</script>
+{% endblock %}

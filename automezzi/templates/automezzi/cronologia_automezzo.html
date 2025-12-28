@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block title %}Cronologia Automezzo{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item active">Cronologia</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Form di ricerca -->
+  <div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+      <h5 class="mb-0"><i class="fas fa-search me-2"></i>Ricerca Cronologia</h5>
+    </div>
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-4">
+          <label for="targa" class="form-label">Targa Automezzo:</label>
+          <input type="text" class="form-control" id="targa" name="targa" 
+                 value="{{ targa_search }}" placeholder="Inserisci targa (es. AB123CD)" required>
+        </div>
+        <div class="col-md-3">
+          <label for="data_da" class="form-label">Data da:</label>
+          <input type="date" class="form-control" id="data_da" name="data_da" value="{{ data_da }}">
+        </div>
+        <div class="col-md-3">
+          <label for="data_a" class="form-label">Data a:</label>
+          <input type="date" class="form-control" id="data_a" name="data_a" value="{{ data_a }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-dark w-100">
+            <i class="fas fa-search me-2"></i>Cerca
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if error %}
+    <!-- Messaggio di errore -->
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+    </div>
+  
+  {% elif automezzo %}
+    <!-- Header informazioni automezzo -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-0">
+              <i class="fas fa-car me-2"></i>{{ automezzo.targa }} - {{ automezzo.marca }} {{ automezzo.modello }}
+            </h5>
+            <small>Anno: {{ automezzo.anno_immatricolazione }} | Km: {{ automezzo.chilometri_attuali|floatformat:0 }}</small>
+          </div>
+          <div class="text-end">
+            <div class="badge bg-light text-dark fs-6">{{ totale_records }} record{{ totale_records|pluralize:"s" }}</div>
+            {% if automezzo.attivo %}
+              <span class="badge bg-success">Attivo</span>
+            {% else %}
+              <span class="badge bg-danger">Non attivo</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legenda colori -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h6 class="mb-3"><i class="fas fa-palette me-2"></i>Legenda:</h6>
+        <div class="row">
+          <div class="col-md-4">
+            <div class="d-flex align-items-center">
+              <div class="bg-info rounded me-2" style="width: 20px; height: 20px;"></div>
+              <span><i class="fas fa-gas-pump me-1"></i>Rifornimenti</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-center">
+              <div class="bg-success rounded me-2" style="width: 20px; height: 20px;"></div>
+              <span><i class="fas fa-tools me-1"></i>Manutenzioni</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="d-flex align-items-center">
+              <div class="bg-warning rounded me-2" style="width: 20px; height: 20px;"></div>
+              <span><i class="fas fa-exclamation-triangle me-1"></i>Eventi</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if cronologia %}
+      <!-- Tabella cronologia -->
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th width="100">Data</th>
+                  <th width="120">Tipo</th>
+                  <th>Descrizione</th>
+                  <th width="100">Costo</th>
+                  <th width="120">Stato</th>
+                  <th width="80">PDF</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in cronologia %}
+                <tr class="{{ record.colore }}">
+                  <td>
+                    <strong>{{ record.data|date:"d/m/Y" }}</strong>
+                  </td>
+                  <td>
+                    <i class="{{ record.icona }} me-2"></i>
+                    <span class="text-capitalize">{{ record.tipo }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ record.descrizione }}</strong>
+                    {% if record.dettagli %}
+                      <br><small class="text-muted">{{ record.dettagli }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if record.tipo == 'rifornimento' %}
+                      <strong>€{{ record.oggetto.costo_totale }}</strong>
+                    {% elif record.tipo == 'manutenzione' %}
+                      <strong>€{{ record.oggetto.costo }}</strong>
+                    {% elif record.tipo == 'evento' %}
+                      {% if record.oggetto.costo %}
+                        <strong>€{{ record.oggetto.costo }}</strong>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if record.stato %}
+                      {% if record.tipo == 'evento' %}
+                        {% if record.oggetto.risolto %}
+                          <span class="badge bg-success">{{ record.stato }}</span>
+                        {% else %}
+                          <span class="badge bg-danger">{{ record.stato }}</span>
+                        {% endif %}
+                      {% elif record.tipo == 'manutenzione' %}
+                        {% if record.oggetto.completata %}
+                          <span class="badge bg-success">{{ record.stato }}</span>
+                        {% else %}
+                          <span class="badge bg-warning text-dark">{{ record.stato }}</span>
+                        {% endif %}
+                      {% endif %}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if record.tipo == 'rifornimento' %}
+                      <a href="{% url 'automezzi:rifornimento_pdf' record.oggetto.pk %}" class="btn btn-sm btn-danger" title="Scarica PDF" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                      </a>
+                    {% elif record.tipo == 'evento' %}
+                      <a href="{% url 'automezzi:evento_pdf' record.oggetto.pk %}" class="btn btn-sm btn-danger" title="Scarica PDF" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                      </a>
+                    {% elif record.tipo == 'manutenzione' %}
+                      <a href="{% url 'automezzi:manutenzione_pdf' record.oggetto.pk %}" class="btn btn-sm btn-danger" title="Scarica PDF" target="_blank">
+                        <i class="fas fa-file-pdf"></i>
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    {% else %}
+      <!-- Nessun record trovato -->
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        {% if data_da or data_a %}
+          Nessun record trovato per {{ automezzo.targa }} nel periodo specificato.
+        {% else %}
+          Nessun record trovato per {{ automezzo.targa }}.
+        {% endif %}
+      </div>
+    {% endif %}
+
+  {% endif %}
+
+  <!-- Torna alla dashboard -->
+  <div class="mt-4">
+    <a href="{% url 'automezzi:dashboard' %}" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-2"></i>Torna alla Dashboard
+    </a>
+  </div>
+
+</div>
+{% endblock %}

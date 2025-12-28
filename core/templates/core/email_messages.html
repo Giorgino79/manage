@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .email-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    .email-header {
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .email-body {
+        background: white;
+        padding: 20px;
+        border-radius: 6px;
+        line-height: 1.6;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .email-field {
+        margin-bottom: 8px;
+    }
+    .email-field strong {
+        color: #495057;
+        margin-right: 10px;
+    }
+    .email-content {
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+    .highlight {
+        background-color: #fff3cd;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    .btn-preview {
+        margin: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-envelope mr-2"></i>
+                        {{ page_title }}
+                    </h4>
+                    <div>
+                        <button class="btn btn-sm btn-primary btn-preview" onclick="toggleTemplate('richiesta')">
+                            <i class="fas fa-file-alt"></i> Richiesta Preventivo
+                        </button>
+                        <button class="btn btn-sm btn-success btn-preview" onclick="toggleTemplate('conferma')">
+                            <i class="fas fa-check-circle"></i> Conferma Ordine
+                        </button>
+                        <button class="btn btn-sm btn-info btn-preview" onclick="toggleTemplate('generico')">
+                            <i class="fas fa-envelope"></i> Email Generica
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Anteprima Email Richiesta Preventivo -->
+                    <div id="template-richiesta" class="email-template">
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            Anteprima Email - Richiesta Preventivo
+                        </h5>
+                        
+                        <div class="email-preview">
+                            <div class="email-header">
+                                <div class="email-field">
+                                    <strong>Da:</strong> {{ operatore.email }}
+                                </div>
+                                <div class="email-field">
+                                    <strong>A:</strong> {{ fornitore.email }}
+                                </div>
+                                <div class="email-field">
+                                    <strong>Oggetto:</strong> 
+                                    <span class="highlight">
+                                        Richiesta Preventivo {{ richiesta.numero }} - {{ richiesta.titolo }}
+                                    </span>
+                                </div>
+                                <div class="email-field">
+                                    <strong>Data:</strong> {{ data_invio|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+                            
+                            <div class="email-body">
+                                <div class="email-content">
+                                    <p><strong>Gentile Fornitore {{ fornitore.nome }},</strong></p>
+                                    
+                                    <p>Vi richiediamo di fornire un preventivo per:</p>
+                                    
+                                    <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0;">
+                                        <p><strong>NUMERO RICHIESTA:</strong> {{ richiesta.numero }}</p>
+                                        <p><strong>TITOLO:</strong> {{ richiesta.titolo }}</p>
+                                        <p><strong>DESCRIZIONE:</strong><br>{{ richiesta.descrizione }}</p>
+                                    </div>
+                                    
+                                    <p style="color: #dc3545;"><strong>SCADENZA PREVENTIVI:</strong> {{ scadenza|date:"d/m/Y" }}</p>
+                                    
+                                    <p>Vi preghiamo di inoltrare il vostro preventivo entro la data di scadenza indicata.</p>
+                                    
+                                    <p>Per eventuali chiarimenti potete contattare:</p>
+                                    <p><strong>{{ operatore.get_full_name }}</strong> - {{ operatore.email }}</p>
+                                    
+                                    <p>Cordiali saluti,<br>
+                                    <strong>Team Gestione Preventivi</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anteprima Email Conferma Ordine -->
+                    <div id="template-conferma" class="email-template" style="display: none;">
+                        <h5 class="text-success mb-3">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Anteprima Email - Conferma Ordine
+                        </h5>
+                        
+                        <div class="email-preview">
+                            <div class="email-header">
+                                <div class="email-field">
+                                    <strong>Da:</strong> {{ operatore.email }}
+                                </div>
+                                <div class="email-field">
+                                    <strong>A:</strong> {{ fornitore.email }}
+                                </div>
+                                <div class="email-field">
+                                    <strong>Oggetto:</strong> 
+                                    <span class="highlight">
+                                        Conferma Ordine ORD-001 - Gara {{ richiesta.numero }}
+                                    </span>
+                                </div>
+                                <div class="email-field">
+                                    <strong>Data:</strong> {{ data_invio|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+                            
+                            <div class="email-body">
+                                <div class="email-content">
+                                    <p><strong>Gentile {{ fornitore.nome }},</strong></p>
+                                    
+                                    <p>siamo lieti di comunicarLe che la Sua offerta per la gara "{{ richiesta.titolo }}" è stata <span style="color: #28a745; font-weight: bold;">ACCETTATA</span>.</p>
+                                    
+                                    <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                                        <p><strong>DETTAGLI ORDINE:</strong></p>
+                                        <p><strong>Numero Ordine:</strong> ORD-001</p>
+                                        <p><strong>Gara di riferimento:</strong> {{ richiesta.numero }}</p>
+                                        <p><strong>Importo aggiudicato:</strong> €2.500,00</p>
+                                        <p><strong>Vostro preventivo n.:</strong> PREV-FOR-001</p>
+                                    </div>
+                                    
+                                    <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                                        <p><strong>CONDIZIONI COMMERCIALI:</strong></p>
+                                        <p><strong>Pagamento:</strong> 30 giorni d.f.</p>
+                                        <p><strong>Consegna:</strong> 15 giorni lavorativi</p>
+                                        <p><strong>Garanzia:</strong> 24 mesi</p>
+                                    </div>
+                                    
+                                    <p>A breve riceverà l'ordine di acquisto ufficiale per procedere con la fornitura.</p>
+                                    
+                                    <p>Cordiali saluti,<br>
+                                    <strong>Il Team Acquisti</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anteprima Email Generica -->
+                    <div id="template-generico" class="email-template" style="display: none;">
+                        <h5 class="text-info mb-3">
+                            <i class="fas fa-envelope mr-2"></i>
+                            Anteprima Email - Template Generico
+                        </h5>
+                        
+                        <div class="email-preview">
+                            <div class="email-header">
+                                <div class="email-field">
+                                    <strong>Da:</strong> {{ operatore.email }}
+                                </div>
+                                <div class="email-field">
+                                    <strong>A:</strong> {{ fornitore.email }}
+                                </div>
+                                <div class="email-field">
+                                    <strong>Oggetto:</strong> 
+                                    <span class="highlight">
+                                        Comunicazione - Sistema Gestionale
+                                    </span>
+                                </div>
+                                <div class="email-field">
+                                    <strong>Data:</strong> {{ data_invio|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+                            
+                            <div class="email-body">
+                                <div class="email-content">
+                                    <p><strong>Gentile {{ fornitore.nome }},</strong></p>
+                                    
+                                    <p>Vi contattamo dal nostro sistema di gestione per comunicarvi importanti aggiornamenti.</p>
+                                    
+                                    <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                                        <p><strong>CONTENUTO DEL MESSAGGIO:</strong></p>
+                                        <p>Questo è un esempio di email generica che può essere utilizzata per comunicazioni varie con i fornitori.</p>
+                                        <p>Il contenuto può essere personalizzato in base alle esigenze specifiche.</p>
+                                    </div>
+                                    
+                                    <p>Per ulteriori informazioni o chiarimenti, non esitate a contattarci.</p>
+                                    
+                                    <p>Cordiali saluti,<br>
+                                    <strong>{{ operatore.get_full_name }}</strong><br>
+                                    <em>{{ operatore.email }}</em></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Tecniche -->
+                    <div class="mt-4">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle mr-2"></i>Informazioni Template</h6>
+                            <p class="mb-2"><strong>Template disponibili:</strong></p>
+                            <ul class="mb-2">
+                                <li><strong>Richiesta Preventivo:</strong> Utilizzato per l'invio delle gare ai fornitori</li>
+                                <li><strong>Conferma Ordine:</strong> Inviato al fornitore vincitore della gara</li>
+                                <li><strong>Email Generica:</strong> Per comunicazioni varie</li>
+                            </ul>
+                            <p class="mb-0">
+                                <small class="text-muted">
+                                    I template sono personalizzabili e supportano variabili dinamiche come nome fornitore, 
+                                    dati richiesta, informazioni ordine, etc.
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleTemplate(templateName) {
+    // Nascondi tutti i template
+    document.querySelectorAll('.email-template').forEach(function(template) {
+        template.style.display = 'none';
+    });
+    
+    // Rimuovi classe attiva da tutti i bottoni
+    document.querySelectorAll('.btn-preview').forEach(function(btn) {
+        btn.classList.remove('btn-primary', 'btn-success', 'btn-info');
+        btn.classList.add('btn-outline-secondary');
+    });
+    
+    // Mostra il template selezionato
+    const selectedTemplate = document.getElementById('template-' + templateName);
+    if (selectedTemplate) {
+        selectedTemplate.style.display = 'block';
+    }
+    
+    // Attiva il bottone corrispondente
+    const activeBtn = event.target.closest('button');
+    activeBtn.classList.remove('btn-outline-secondary');
+    
+    if (templateName === 'richiesta') {
+        activeBtn.classList.add('btn-primary');
+    } else if (templateName === 'conferma') {
+        activeBtn.classList.add('btn-success');
+    } else if (templateName === 'generico') {
+        activeBtn.classList.add('btn-info');
+    }
+}
+
+// Attiva il primo template al caricamento
+document.addEventListener('DOMContentLoaded', function() {
+    toggleTemplate('richiesta');
+});
+</script>
+{% endblock %}

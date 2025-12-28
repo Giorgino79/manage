@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+{% load dipendenti_tags %}
+
+{% block title %}Dashboard - Management System{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header text-center mb-4">
+    <div class="container">
+        <h1 class="dashboard-title">
+            <i class="fas fa-tachometer-alt me-2"></i>
+            Dashboard Management
+        </h1>
+        <p class="dashboard-subtitle mb-0">
+            Benvenuto {{ user.nome_completo }} - {{ user.get_livello_display }}
+        </p>
+    </div>
+</div>
+
+<!-- Personal Notifications -->
+{% if notifiche %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="card-title mb-0 text-dark">
+                    <i class="fas fa-bell me-2"></i>
+                    Notifiche Personali
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for notifica in notifiche %}
+                    <div class="alert alert-{{ notifica.tipo }} d-flex align-items-center" role="alert">
+                        <i class="{{ notifica.icona }} me-2"></i>
+                        {{ notifica.messaggio }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="stats-number">{{ stats.totale_dipendenti }}</p>
+                    <p class="stats-label">Dipendenti Attivi</p>
+                </div>
+                <div class="align-self-center">
+                    <i class="fas fa-users text-primary fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="stats-number">{{ stats.nuovi_questa_settimana }}</p>
+                    <p class="stats-label">Nuovi Questa Settimana</p>
+                </div>
+                <div class="align-self-center">
+                    <i class="fas fa-user-plus text-success fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="stats-number">{{ stats.documenti_in_scadenza }}</p>
+                    <p class="stats-label">Documenti in Scadenza</p>
+                </div>
+                <div class="align-self-center">
+                    <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="stats-number">
+                        {% if stats.ultimo_accesso_sistema %}
+                            {{ stats.ultimo_accesso_sistema.ultimo_accesso|date:"d/m" }}
+                        {% else %}
+                            --
+                        {% endif %}
+                    </p>
+                    <p class="stats-label">Ultimo Accesso Sistema</p>
+                </div>
+                <div class="align-self-center">
+                    <i class="fas fa-clock text-info fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="row">
+    <!-- Personal Info Card -->
+    <div class="col-lg-4 mb-4">
+        <div class="card card-primary h-100">
+            <div class="card-header">
+                <i class="fas fa-user me-2"></i>
+                Le Mie Informazioni
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    {% if user.foto_profilo %}
+                        <img src="{{ user.foto_profilo.url }}" 
+                             alt="Foto Profilo" 
+                             class="rounded-circle border border-primary"
+                             style="width: 80px; height: 80px; object-fit: cover;">
+                    {% else %}
+                        <div class="user-avatar bg-primary d-inline-flex align-items-center justify-content-center text-white fw-bold"
+                             style="width: 80px; height: 80px; font-size: 2rem;">
+                            {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h5 class="text-center">{{ user.nome_completo }}</h5>
+                <p class="text-center text-muted">{{ user.get_livello_display }}</p>
+                
+                <hr>
+                
+                <div class="info-grid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Username:</strong></div>
+                        <div class="col-sm-6">{{ user.username }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Email:</strong></div>
+                        <div class="col-sm-6">{{ user.email|default:"Non specificata" }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Telefono:</strong></div>
+                        <div class="col-sm-6">{{ user.telefono|default:"Non specificato" }}</div>
+                    </div>
+                    {% if user.anni_servizio %}
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Anni di Servizio:</strong></div>
+                        <div class="col-sm-6">{{ user.anni_servizio }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-2">
+                        <div class="col-sm-6"><strong>Ultimo Accesso:</strong></div>
+                        <div class="col-sm-6">
+                            {% if user.ultimo_accesso %}
+                                {{ user.ultimo_accesso|date:"d/m/Y H:i" }}
+                            {% else %}
+                                Primo accesso
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid mt-3">
+                    <a href="{% url 'dipendenti:mio_profilo' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>
+                        Modifica Profilo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-lg-4 mb-4">
+        <div class="card card-success h-100">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>
+                Azioni Rapide
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if user|ha_permesso:"supervisore" %}
+                        <a href="{% url 'dipendenti:lista' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-users me-2"></i>
+                            Gestione Dipendenti
+                        </a>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-outline-success" onclick="openCalculator()">
+                        <i class="fas fa-calculator me-2"></i>
+                        Calcolatrice
+                    </button>
+                    
+                    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#quickNoteModal">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Nota Rapida
+                    </button>
+                    
+                    <a href="#" class="btn btn-outline-warning">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        I Miei Report
+                    </a>
+                    
+                    <hr class="my-3">
+                    
+                    <h6>Moduli Disponibili</h6>
+                    
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-book me-2"></i>Anagrafica</span>
+                            <span class="badge bg-secondary">Presto</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-box me-2"></i>Magazzino</span>
+                            <span class="badge bg-secondary">Presto</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-shopping-cart me-2"></i>Acquisti</span>
+                            <span class="badge bg-secondary">Presto</span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-dollar-sign me-2"></i>Vendite</span>
+                            <span class="badge bg-secondary">Presto</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log / System Info -->
+    <div class="col-lg-4 mb-4">
+        <div class="card card-info h-100">
+            <div class="card-header">
+                <i class="fas fa-list me-2"></i>
+                {% if user.is_amministratore %}
+                    Attività Recenti
+                {% else %}
+                    Informazioni Sistema
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if user.is_amministratore and attivita_recenti %}
+                    <div class="activity-list" style="max-height: 400px; overflow-y: auto;">
+                        {% for activity in attivita_recenti %}
+                            <div class="activity-item d-flex mb-3 pb-2 border-bottom">
+                                <div class="activity-icon me-3">
+                                    {% if activity.azione == 'login' %}
+                                        <i class="fas fa-sign-in-alt text-success"></i>
+                                    {% elif activity.azione == 'logout' %}
+                                        <i class="fas fa-sign-out-alt text-muted"></i>
+                                    {% elif activity.azione == 'modifica' %}
+                                        <i class="fas fa-edit text-warning"></i>
+                                    {% elif activity.azione == 'creazione' %}
+                                        <i class="fas fa-plus text-primary"></i>
+                                    {% else %}
+                                        <i class="fas fa-circle text-info"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">{{ activity.dipendente.nome_completo }}</div>
+                                    <div class="activity-description small text-muted">
+                                        {{ activity.get_azione_display }} 
+                                        {% if activity.eseguita_da and activity.eseguita_da != activity.dipendente %}
+                                            (da {{ activity.eseguita_da.nome_completo }})
+                                        {% endif %}
+                                    </div>
+                                    <div class="activity-time small text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ activity.timestamp|timesince }} fa
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <!-- System Information for non-admin users -->
+                    <div class="system-info">
+                        <div class="info-item d-flex justify-content-between mb-3">
+                            <span><i class="fas fa-server me-2"></i>Sistema</span>
+                            <span class="badge bg-success">Online</span>
+                        </div>
+                        <div class="info-item d-flex justify-content-between mb-3">
+                            <span><i class="fas fa-database me-2"></i>Database</span>
+                            <span class="badge bg-success">Connesso</span>
+                        </div>
+                        <div class="info-item d-flex justify-content-between mb-3">
+                            <span><i class="fas fa-shield-alt me-2"></i>Sicurezza</span>
+                            <span class="badge bg-success">Attiva</span>
+                        </div>
+                        <div class="info-item d-flex justify-content-between mb-3">
+                            <span><i class="fas fa-backup me-2"></i>Ultimo Backup</span>
+                            <span class="badge bg-info">Oggi 03:00</span>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="help-section">
+                            <h6><i class="fas fa-question-circle me-2"></i>Serve Aiuto?</h6>
+                            <p class="small text-muted mb-2">
+                                Consulta la documentazione o contatta il supporto tecnico.
+                            </p>
+                            <div class="d-grid gap-2">
+                                <a href="#" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-book me-1"></i>
+                                    Documentazione
+                                </a>
+                                <a href="#" class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-life-ring me-1"></i>
+                                    Supporto
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Message for new users -->
+{% if not user.ultimo_accesso %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-rocket me-2"></i>
+                    Benvenuto nel Management System!
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <p class="mb-3">
+                            Questo è il tuo primo accesso al sistema. Ecco alcune cose che puoi fare per iniziare:
+                        </p>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Completa il tuo profilo personale</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Familiarizza con la dashboard e i menu</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Esplora i moduli disponibili per il tuo livello</li>
+                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Consulta la documentazione per maggiori informazioni</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="fas fa-user-astronaut fa-4x text-primary mb-3"></i>
+                        <div class="d-grid">
+                            <a href="{% url 'dipendenti:mio_profilo' %}" class="btn btn-primary">
+                                <i class="fas fa-user-edit me-2"></i>
+                                Completa Profilo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Dashboard enhancements
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate stats cards
+        const statsCards = document.querySelectorAll('.stats-card');
+        statsCards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // Auto-refresh stats every 5 minutes
+        setInterval(function() {
+            // You can add AJAX call here to refresh stats
+            console.log('Stats refresh (placeholder)');
+        }, 300000); // 5 minutes
+        
+        // Add hover effects to action buttons
+        const actionButtons = document.querySelectorAll('.card-body .btn');
+        actionButtons.forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        // Live clock in dashboard title
+        function updateDashboardTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('it-IT');
+            
+            // Add time to subtitle if not present
+            const subtitle = document.querySelector('.dashboard-subtitle');
+            if (subtitle && !subtitle.textContent.includes('|')) {
+                subtitle.textContent += ` | ${timeString}`;
+            } else if (subtitle) {
+                // Update existing time
+                const parts = subtitle.textContent.split('|');
+                if (parts.length > 1) {
+                    subtitle.textContent = parts[0] + ' | ' + timeString;
+                }
+            }
+        }
+        
+        updateDashboardTime();
+        setInterval(updateDashboardTime, 1000);
+    });
+</script>
+{% endblock %}

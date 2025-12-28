@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Management System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .priority-preview {
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        padding: 10px;
+        margin-top: 10px;
+    }
+    .priority-alta { background-color: #fee; border-left: 4px solid #dc3545; }
+    .priority-media { background-color: #fff8e1; border-left: 4px solid #ffc107; }
+    .priority-bassa { background-color: #e8f5e8; border-left: 4px solid #28a745; }
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 25px;
+        margin-bottom: 20px;
+    }
+    .section-title {
+        color: #495057;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .user-select-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 15px;
+        background: #f8f9fa;
+    }
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="form-container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-plus-circle"></i> {{ title }}</h1>
+            <a href="{% url 'core:promemoria_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Torna alla lista
+            </a>
+        </div>
+
+        <!-- Form -->
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <!-- Sezione dettagli principali -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-info-circle text-primary"></i> Dettagli Promemoria
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="id_titolo" class="form-label required-field">Titolo</label>
+                            <input type="text" class="form-control" id="id_titolo" name="titolo" 
+                                   value="{% if promemoria %}{{ promemoria.titolo }}{% endif %}"
+                                   placeholder="Inserisci un titolo chiaro e descrittivo..."
+                                   maxlength="200" required>
+                            <div class="invalid-feedback">
+                                Il titolo è obbligatorio.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="id_priorita" class="form-label">Priorità</label>
+                            <select class="form-select" id="id_priorita" name="priorita">
+                                <option value="bassa" {% if promemoria.priorita == 'bassa' %}selected{% endif %}>
+                                    🟢 Bassa
+                                </option>
+                                <option value="media" {% if not promemoria or promemoria.priorita == 'media' %}selected{% endif %}>
+                                    🟡 Media
+                                </option>
+                                <option value="alta" {% if promemoria.priorita == 'alta' %}selected{% endif %}>
+                                    🔴 Alta
+                                </option>
+                            </select>
+                            <div id="priority-preview" class="priority-preview priority-media">
+                                <small><i class="fas fa-eye"></i> <strong>Anteprima priorità:</strong> Media</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="id_descrizione" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="id_descrizione" name="descrizione" rows="4"
+                              placeholder="Aggiungi una descrizione dettagliata del promemoria (opzionale)...">{% if promemoria %}{{ promemoria.descrizione }}{% endif %}</textarea>
+                    <div class="form-text">
+                        <i class="fas fa-lightbulb"></i> Fornisci tutti i dettagli necessari per completare il compito.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sezione timing e assegnazione -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-calendar-alt text-success"></i> Timing e Assegnazione
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="id_data_scadenza" class="form-label">Data Scadenza</label>
+                            <input type="date" class="form-control" id="id_data_scadenza" name="data_scadenza"
+                                   value="{% if promemoria.data_scadenza %}{{ promemoria.data_scadenza|date:'Y-m-d' }}{% endif %}"
+                                   min="{% now 'Y-m-d' %}">
+                            <div class="form-text">
+                                <i class="fas fa-clock"></i> Lascia vuoto se non hai una scadenza specifica.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="id_assegnato_a" class="form-label required-field">Assegnato a</label>
+                            <select class="form-select" id="id_assegnato_a" name="assegnato_a" required>
+                                {% for utente in utenti %}
+                                <option value="{{ utente.id }}" 
+                                        {% if promemoria and promemoria.assegnato_a.id == utente.id %}selected
+                                        {% elif not promemoria and utente == request.user %}selected{% endif %}>
+                                    {% if utente.first_name %}
+                                        {{ utente.first_name }} {{ utente.last_name }}
+                                    {% else %}
+                                        {{ utente.username }}
+                                    {% endif %}
+                                    {% if utente == request.user %} (Tu){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="invalid-feedback">
+                                Seleziona un utente a cui assegnare il promemoria.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Anteprima utente selezionato -->
+                <div class="user-select-card" id="user-preview">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-user-circle fa-2x text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-1" id="selected-user-name">
+                                {% if promemoria %}
+                                    {% if promemoria.assegnato_a.first_name %}
+                                        {{ promemoria.assegnato_a.first_name }} {{ promemoria.assegnato_a.last_name }}
+                                    {% else %}
+                                        {{ promemoria.assegnato_a.username }}
+                                    {% endif %}
+                                {% else %}
+                                    {{ request.user.first_name }} {{ request.user.last_name }}
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted" id="selected-user-email">
+                                {% if promemoria %}
+                                    {{ promemoria.assegnato_a.email }}
+                                {% else %}
+                                    {{ request.user.email }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if promemoria %}
+            <!-- Sezione informazioni aggiuntive per modifica -->
+            <div class="form-section">
+                <h4 class="section-title">
+                    <i class="fas fa-info text-info"></i> Informazioni
+                </h4>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <i class="fas fa-calendar-plus fa-2x text-muted mb-2"></i>
+                            <h6>Creato</h6>
+                            <p class="mb-0">{{ promemoria.data_creazione|date:"d/m/Y H:i" }}</p>
+                            <small class="text-muted">
+                                da {{ promemoria.creato_da.first_name|default:promemoria.creato_da.username }}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <i class="fas fa-{% if promemoria.completato %}check-circle text-success{% else %}clock text-warning{% endif %} fa-2x mb-2"></i>
+                            <h6>Stato</h6>
+                            <p class="mb-0">
+                                {% if promemoria.completato %}
+                                    <span class="badge bg-success">Completato</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">In corso</span>
+                                {% endif %}
+                            </p>
+                            {% if promemoria.completato and promemoria.data_completamento %}
+                            <small class="text-muted">
+                                il {{ promemoria.data_completamento|date:"d/m/Y H:i" }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="text-center p-3 bg-light rounded">
+                            <i class="fas fa-{% if promemoria.is_overdue %}exclamation-triangle text-danger{% elif promemoria.data_scadenza %}calendar-check text-info{% else %}calendar text-muted{% endif %} fa-2x mb-2"></i>
+                            <h6>Scadenza</h6>
+                            {% if promemoria.data_scadenza %}
+                                <p class="mb-0">{{ promemoria.data_scadenza|date:"d/m/Y" }}</p>
+                                {% if promemoria.is_overdue %}
+                                    <small class="text-danger">
+                                        <i class="fas fa-exclamation-triangle"></i> Scaduto
+                                    </small>
+                                {% endif %}
+                            {% else %}
+                                <p class="mb-0 text-muted">Nessuna scadenza</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Pulsanti azione -->
+            <div class="form-section">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{% url 'core:promemoria_list' %}" class="btn btn-outline-secondary me-md-2">
+                        <i class="fas fa-times"></i> Annulla
+                    </a>
+                    
+                    {% if promemoria %}
+                        <a href="{% url 'core:promemoria_toggle' promemoria.id %}" 
+                           class="btn btn-outline-{% if promemoria.completato %}warning{% else %}success{% endif %} me-md-2">
+                            {% if promemoria.completato %}
+                                <i class="fas fa-undo"></i> Riapri
+                            {% else %}
+                                <i class="fas fa-check"></i> Completa
+                            {% endif %}
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salva Modifiche
+                        </button>
+                    {% else %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crea Promemoria
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Validazione form Bootstrap
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        });
+    });
+    
+    // Preview priorità dinamica
+    $('#id_priorita').on('change', function() {
+        const priorita = $(this).val();
+        const preview = $('#priority-preview');
+        
+        preview.removeClass('priority-alta priority-media priority-bassa');
+        preview.addClass('priority-' + priorita);
+        
+        const prioritaText = $(this).find('option:selected').text().replace(/[🟢🟡🔴]\s/, '');
+        preview.find('strong').next().text(prioritaText);
+    });
+    
+    // Preview utente assegnato
+    $('#id_assegnato_a').on('change', function() {
+        const selectedOption = $(this).find('option:selected');
+        const userName = selectedOption.text();
+        
+        $('#selected-user-name').text(userName);
+        
+        // Simula email utente (in produzione dovresti avere dati reali)
+        const userEmail = 'user@management.it';
+        $('#selected-user-email').text(userEmail);
+    });
+    
+    // Contatore caratteri per titolo
+    $('#id_titolo').on('input', function() {
+        const maxLength = 200;
+        const currentLength = $(this).val().length;
+        const remaining = maxLength - currentLength;
+        
+        // Trova o crea contatore
+        let counter = $(this).next('.char-counter');
+        if (counter.length === 0) {
+            counter = $('<small class="char-counter text-muted"></small>');
+            $(this).after(counter);
+        }
+        
+        counter.text(`${remaining} caratteri rimanenti`);
+        
+        if (remaining < 20) {
+            counter.removeClass('text-muted').addClass('text-warning');
+        } else {
+            counter.removeClass('text-warning').addClass('text-muted');
+        }
+    });
+    
+    // Auto-resize textarea
+    $('#id_descrizione').on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+    
+    // Suggerimenti data scadenza
+    $('#id_data_scadenza').on('focus', function() {
+        // Aggiungi suggerimenti rapidi
+        if ($(this).next('.date-suggestions').length === 0) {
+            const suggestions = $(`
+                <div class="date-suggestions mt-1">
+                    <small class="text-muted">
+                        <strong>Suggerimenti:</strong>
+                        <a href="#" class="badge bg-light text-dark ms-1" data-days="1">Domani</a>
+                        <a href="#" class="badge bg-light text-dark ms-1" data-days="7">Tra 1 settimana</a>
+                        <a href="#" class="badge bg-light text-dark ms-1" data-days="30">Tra 1 mese</a>
+                    </small>
+                </div>
+            `);
+            $(this).after(suggestions);
+        }
+    });
+    
+    // Gestione clic suggerimenti data
+    $(document).on('click', '.date-suggestions a', function(e) {
+        e.preventDefault();
+        const days = parseInt($(this).data('days'));
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + days);
+        
+        const formattedDate = targetDate.toISOString().split('T')[0];
+        $('#id_data_scadenza').val(formattedDate);
+    });
+    
+    // Keyboard shortcuts
+    $(document).on('keydown', function(e) {
+        // Ctrl+S per salvare
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            $('form').submit();
+        }
+        
+        // Esc per tornare alla lista
+        if (e.key === 'Escape') {
+            if (!$('input, textarea, select').is(':focus')) {
+                window.location.href = "{% url 'core:promemoria_list' %}";
+            }
+        }
+    });
+    
+    // Focus automatico sul titolo
+    $('#id_titolo').focus();
+});
+</script>
+{% endblock %}

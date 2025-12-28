@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dettaglio Rifornimento - {{ rifornimento.automezzo.targa }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.1;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background: white;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #007bff;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 25px;
+            max-width: 25px;
+        }
+        .company-info {
+            font-size: 7px;
+            color: #666;
+            text-align: right;
+            line-height: 1.0;
+        }
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #007bff;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 9px;
+            color: #666;
+            margin: 1px 0 0 0;
+        }
+        .main-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding: 4px 0;
+            margin: 0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            font-size: 9px;
+            color: #333;
+        }
+        .value {
+            font-size: 9px;
+            color: #666;
+            text-align: right;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0.5cm;
+            width: 100%;
+            text-align: center;
+            font-size: 6px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="title">DETTAGLIO RIFORNIMENTO</div>
+            <div class="subtitle">{{ rifornimento.automezzo.targa }} - {{ rifornimento.data|date:"d/m/Y" }}</div>
+        </div>
+        <div>
+            <img src="{{ company_info.logo_url }}" alt="Logo" class="logo">
+            <div class="company-info">
+                {{ company_info.name }}<br>
+                {{ company_info.address }}<br>
+                {{ company_info.phone }} | {{ company_info.email }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card centrale con tutte le informazioni su righe singole -->
+    <div class="main-card">
+        <div class="info-row">
+            <div class="label">Targa</div>
+            <div class="value">{{ rifornimento.automezzo.targa }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Veicolo</div>
+            <div class="value">{{ rifornimento.automezzo.marca }} {{ rifornimento.automezzo.modello }} ({{ rifornimento.automezzo.anno_immatricolazione }})</div>
+        </div>
+        {% if rifornimento.automezzo.assegnato_a %}
+        <div class="info-row">
+            <div class="label">Assegnato a</div>
+            <div class="value">{{ rifornimento.automezzo.assegnato_a.get_full_name|default:rifornimento.automezzo.assegnato_a.username }}</div>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <div class="label">Data Rifornimento</div>
+            <div class="value highlight">{{ rifornimento.data|date:"d/m/Y" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Litri</div>
+            <div class="value highlight">{{ rifornimento.litri }} L</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Costo Totale</div>
+            <div class="value highlight">€ {{ rifornimento.costo_totale }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Prezzo per Litro</div>
+            <div class="value">€ {% widthratio rifornimento.costo_totale rifornimento.litri 1 %}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Chilometri</div>
+            <div class="value">{{ rifornimento.chilometri|floatformat:0 }} km</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Scontrino Allegato</div>
+            <div class="value">{% if rifornimento.scontrino %}✓ Presente{% else %}✗ Assente{% endif %}</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Documento generato il {{ today|date:"d/m/Y H:i" }} dal sistema gestionale {{ company_info.name }}
+    </div>
+</body>
+</html>

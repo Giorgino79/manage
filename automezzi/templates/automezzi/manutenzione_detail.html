@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% block title %}Dettaglio Manutenzione{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:dashboard' %}">Automezzi</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'automezzi:manutenzione_list' %}">Manutenzioni</a></li>
+        <li class="breadcrumb-item active">Dettaglio</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+  <!-- Header con torna indietro -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <h2><i class="fas fa-tools text-success"></i> Dettaglio Manutenzione - {{ manutenzione.automezzo.targa }}</h2>
+        <a href="{% url 'automezzi:manutenzione_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Torna all'elenco</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tre card affiancate -->
+  <div class="row mb-4">
+    <!-- Card 1: Dettaglio Manutenzione -->
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-info-circle"></i> Dettaglio Manutenzione</h5>
+        </div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-6">Automezzo:</dt>
+            <dd class="col-6">
+              <strong>{{ manutenzione.automezzo.targa }}</strong><br>
+              <small class="text-muted">{{ manutenzione.automezzo.marca }} {{ manutenzione.automezzo.modello }}</small>
+            </dd>
+            
+            <dt class="col-6">Stato:</dt>
+            <dd class="col-6">
+              {% if manutenzione.stato == 'aperta' %}
+                <span class="badge bg-info">Aperta</span>
+              {% elif manutenzione.stato == 'in_corso' %}
+                <span class="badge bg-warning text-dark">In Corso</span>
+              {% elif manutenzione.stato == 'terminata' %}
+                <span class="badge bg-success">Terminata</span>
+              {% endif %}
+            </dd>
+            
+            <dt class="col-6">Apertura:</dt>
+            <dd class="col-6"><small>{{ manutenzione.data_apertura|date:"d/m/Y H:i" }}</small></dd>
+            
+            <dt class="col-6">Prevista:</dt>
+            <dd class="col-6"><small>{{ manutenzione.data_prevista|date:"d/m/Y" }}</small></dd>
+            
+            <dt class="col-6">Seguita da:</dt>
+            <dd class="col-6">
+              {% if manutenzione.seguito_da %}
+                <small>{{ manutenzione.seguito_da.get_full_name|default:manutenzione.seguito_da.username }}</small>
+              {% else %}
+                <small class="text-muted">—</small>
+              {% endif %}
+            </dd>
+            
+            <dt class="col-6">Responsabile:</dt>
+            <dd class="col-6">
+              {% if manutenzione.responsabile %}
+                <small>{{ manutenzione.responsabile.get_full_name|default:manutenzione.responsabile.username }}</small>
+              {% else %}
+                <small class="text-muted">—</small>
+              {% endif %}
+            </dd>
+            
+            {% if manutenzione.fornitore %}
+            <dt class="col-6">Fornitore:</dt>
+            <dd class="col-6"><small>{{ manutenzione.fornitore.nome }}</small></dd>
+            {% endif %}
+            
+            {% if manutenzione.luogo %}
+            <dt class="col-6">Luogo:</dt>
+            <dd class="col-6"><small>{{ manutenzione.luogo }}</small></dd>
+            {% endif %}
+          </dl>
+          
+          <div class="mt-3">
+            <strong>Descrizione:</strong><br>
+            <p class="mb-0 small">{{ manutenzione.descrizione }}</p>
+          </div>
+        </div>
+        <div class="card-footer text-center">
+          {% if manutenzione.stato == 'aperta' %}
+          <a href="{% url 'automezzi:manutenzione_prendi_carico' manutenzione.pk %}" class="btn btn-success btn-sm">
+            <i class="fas fa-handshake"></i> Prendi in Carico
+          </a>
+          {% endif %}
+          <a href="{% url 'automezzi:manutenzione_update' manutenzione.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Modifica</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Consegna Mezzo -->
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0"><i class="fas fa-handshake"></i> Consegna Mezzo</h5>
+        </div>
+        <div class="card-body">
+          {% if manutenzione.data_inizio_manutenzione %}
+            <dl class="row mb-0">
+              <dt class="col-6">Inizio Lavori:</dt>
+              <dd class="col-6"><small>{{ manutenzione.data_inizio_manutenzione|date:"d/m/Y H:i" }}</small></dd>
+            </dl>
+            
+            {% if manutenzione.note_responsabile %}
+            <div class="mt-3">
+              <strong>Note Consegna:</strong><br>
+              <p class="mb-0 small">{{ manutenzione.note_responsabile }}</p>
+            </div>
+            {% endif %}
+            
+            {% if manutenzione.foglio_accettazione %}
+            <div class="mt-3">
+              <a href="{{ manutenzione.foglio_accettazione.url }}" class="btn btn-outline-success btn-sm w-100" target="_blank">
+                <i class="fas fa-file-alt"></i> Foglio Accettazione
+              </a>
+            </div>
+            {% endif %}
+          {% else %}
+            <div class="text-center text-muted">
+              <i class="fas fa-clock fa-2x mb-2"></i>
+              <p>Mezzo non ancora consegnato</p>
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          {% if manutenzione.stato == 'aperta' %}
+          <small class="text-muted">In attesa di presa in carico</small>
+          {% elif manutenzione.stato == 'in_corso' %}
+          <span class="badge bg-warning text-dark">Lavori in corso</span>
+          {% elif manutenzione.stato == 'terminata' %}
+          <span class="badge bg-success">Lavori completati</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Totali Pratica -->
+    <div class="col-lg-4">
+      <div class="card h-100">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0"><i class="fas fa-calculator"></i> Totali Pratica</h5>
+        </div>
+        <div class="card-body">
+          {% if manutenzione.stato == 'terminata' %}
+            <dl class="row mb-0">
+              <dt class="col-6">Costo:</dt>
+              <dd class="col-6">
+                {% if manutenzione.costo %}
+                  <strong class="text-success">€{{ manutenzione.costo }}</strong>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </dd>
+              
+              {% if manutenzione.data_completamento %}
+              <dt class="col-6">Completata:</dt>
+              <dd class="col-6"><small>{{ manutenzione.data_completamento|date:"d/m/Y H:i" }}</small></dd>
+              {% endif %}
+            </dl>
+            
+            {% if manutenzione.note_finali %}
+            <div class="mt-3">
+              <strong>Note Finali:</strong><br>
+              <p class="mb-0 small">{{ manutenzione.note_finali }}</p>
+            </div>
+            {% endif %}
+            
+            {% if manutenzione.fattura_fornitore %}
+            <div class="mt-3">
+              <a href="{{ manutenzione.fattura_fornitore.url }}" class="btn btn-outline-success btn-sm w-100" target="_blank">
+                <i class="fas fa-file-invoice"></i> Fattura Fornitore
+              </a>
+            </div>
+            {% endif %}
+          {% else %}
+            <div class="text-center text-muted">
+              <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+              <p>Manutenzione non ancora completata</p>
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          {% if manutenzione.stato == 'in_corso' %}
+          <a href="{% url 'automezzi:manutenzione_completa' manutenzione.pk %}" class="btn btn-success btn-sm">
+            <i class="fas fa-check"></i> Completa Manutenzione
+          </a>
+          {% elif manutenzione.stato == 'terminata' %}
+          <span class="badge bg-success">Pratica Completata</span>
+          {% else %}
+          <small class="text-muted">In attesa di inizio lavori</small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4: Allegati (larga quanto le tre sopra) -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-secondary text-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-paperclip"></i> Allegati</h5>
+            <a href="{% url 'automezzi:allegato_manutenzione_create' manutenzione.pk %}" class="btn btn-light btn-sm">
+              <i class="fas fa-plus"></i> Aggiungi Allegato
+            </a>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <!-- Allegati principali -->
+            {% if manutenzione.allegati %}
+            <div class="col-md-3 mb-3">
+              <div class="card border-primary">
+                <div class="card-body text-center">
+                  <i class="fas fa-file-alt fa-2x text-primary mb-2"></i>
+                  <h6 class="card-title">Allegati Iniziali</h6>
+                  <a href="{{ manutenzione.allegati.url }}" class="btn btn-outline-primary btn-sm" target="_blank">
+                    <i class="fas fa-eye"></i> Visualizza
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if manutenzione.foglio_accettazione %}
+            <div class="col-md-3 mb-3">
+              <div class="card border-warning">
+                <div class="card-body text-center">
+                  <i class="fas fa-handshake fa-2x text-warning mb-2"></i>
+                  <h6 class="card-title">Foglio Accettazione</h6>
+                  <a href="{{ manutenzione.foglio_accettazione.url }}" class="btn btn-outline-warning btn-sm" target="_blank">
+                    <i class="fas fa-eye"></i> Visualizza
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            
+            {% if manutenzione.fattura_fornitore %}
+            <div class="col-md-3 mb-3">
+              <div class="card border-success">
+                <div class="card-body text-center">
+                  <i class="fas fa-file-invoice fa-2x text-success mb-2"></i>
+                  <h6 class="card-title">Fattura Fornitore</h6>
+                  <a href="{{ manutenzione.fattura_fornitore.url }}" class="btn btn-outline-success btn-sm" target="_blank">
+                    <i class="fas fa-eye"></i> Visualizza
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            
+            <!-- Allegati aggiuntivi -->
+            {% for allegato in manutenzione.allegati_aggiuntivi.all %}
+            <div class="col-md-3 mb-3">
+              <div class="card border-info">
+                <div class="card-body text-center">
+                  <i class="fas fa-paperclip fa-2x text-info mb-2"></i>
+                  <h6 class="card-title">{{ allegato.nome }}</h6>
+                  <small class="text-muted d-block mb-2">{{ allegato.data_upload|date:"d/m/Y" }}</small>
+                  <a href="{{ allegato.file.url }}" class="btn btn-outline-info btn-sm" target="_blank">
+                    <i class="fas fa-eye"></i> Visualizza
+                  </a>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          
+          {% if not manutenzione.allegati and not manutenzione.foglio_accettazione and not manutenzione.fattura_fornitore and not manutenzione.allegati_aggiuntivi.all %}
+          <div class="text-center text-muted">
+            <i class="fas fa-folder-open fa-3x mb-3"></i>
+            <p>Nessun allegato presente</p>
+          </div>
+          {% endif %}
+        </div>
+        <div class="card-footer text-center">
+          <a href="{% url 'automezzi:manutenzione_pdf' manutenzione.pk %}" class="btn btn-outline-secondary">
+            <i class="fas fa-file-pdf"></i> Genera PDF
+          </a>
+          <a href="{% url 'automezzi:manutenzione_delete' manutenzione.pk %}" class="btn btn-outline-danger ms-2">
+            <i class="fas fa-trash"></i> Elimina
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

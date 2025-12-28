@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lista Richieste Preventivi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-card {
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+    }
+    .table-responsive {
+        border-radius: 12px;
+        border: 1px solid #e9ecef;
+    }
+    .table thead th {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+    }
+    .priority-badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+    .action-btn {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Lista Richieste Preventivi{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item active">Lista Richieste</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header con azioni -->
+<div class="row align-items-center mb-4">
+    <div class="col">
+        <h4 class="mb-0">
+            <i data-feather="list" class="feather me-2"></i>
+            Richieste Preventivi
+        </h4>
+        <p class="text-muted mb-0">Gestisci tutte le richieste di preventivo</p>
+    </div>
+    <div class="col-auto">
+        <a href="{% url 'preventivi:richiesta_create' %}" class="btn btn-primary">
+            <i data-feather="plus-circle" class="feather me-2"></i>
+            Nuova Richiesta
+        </a>
+    </div>
+</div>
+
+<!-- Filtri -->
+<div class="card filter-card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">Ricerca</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       value="{{ current_filters.search|default:'' }}" 
+                       placeholder="Numero, titolo...">
+            </div>
+            
+            <div class="col-md-2">
+                <label for="stato" class="form-label">Stato</label>
+                <select class="form-select" id="stato" name="stato">
+                    <option value="">Tutti</option>
+                    <option value="CREATO" {% if current_filters.stato == 'CREATO' %}selected{% endif %}>Creato</option>
+                    <option value="INVIATO_FORNITORI" {% if current_filters.stato == 'INVIATO_FORNITORI' %}selected{% endif %}>Inviato ai fornitori</option>
+                    <option value="PREVENTIVI_RACCOLTI" {% if current_filters.stato == 'PREVENTIVI_RACCOLTI' %}selected{% endif %}>Preventivi raccolti</option>
+                    <option value="IN_VALUTAZIONE" {% if current_filters.stato == 'IN_VALUTAZIONE' %}selected{% endif %}>In valutazione</option>
+                    <option value="APPROVATO" {% if current_filters.stato == 'APPROVATO' %}selected{% endif %}>Approvato</option>
+                    <option value="ANNULLATO" {% if current_filters.stato == 'ANNULLATO' %}selected{% endif %}>Annullato</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="priorita" class="form-label">Priorità</label>
+                <select class="form-select" id="priorita" name="priorita">
+                    <option value="">Tutte</option>
+                    <option value="BASSA" {% if current_filters.priorita == 'BASSA' %}selected{% endif %}>Bassa</option>
+                    <option value="NORMALE" {% if current_filters.priorita == 'NORMALE' %}selected{% endif %}>Normale</option>
+                    <option value="ALTA" {% if current_filters.priorita == 'ALTA' %}selected{% endif %}>Alta</option>
+                    <option value="URGENTE" {% if current_filters.priorita == 'URGENTE' %}selected{% endif %}>Urgente</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="richiedente" class="form-label">Richiedente</label>
+                <select class="form-select" id="richiedente" name="richiedente">
+                    <option value="">Tutti</option>
+                    {% for richiedente in richiedenti %}
+                        <option value="{{ richiedente.id }}" {% if current_filters.richiedente == richiedente.id|stringformat:"s" %}selected{% endif %}>
+                            {{ richiedente.get_full_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="order_by" class="form-label">Ordina per</label>
+                <select class="form-select" id="order_by" name="order_by">
+                    <option value="-data_richiesta" {% if current_filters.order_by == '-data_richiesta' %}selected{% endif %}>Più recenti</option>
+                    <option value="data_richiesta" {% if current_filters.order_by == 'data_richiesta' %}selected{% endif %}>Più vecchi</option>
+                    <option value="data_scadenza" {% if current_filters.order_by == 'data_scadenza' %}selected{% endif %}>Scadenza crescente</option>
+                    <option value="-data_scadenza" {% if current_filters.order_by == '-data_scadenza' %}selected{% endif %}>Scadenza decrescente</option>
+                    <option value="numero" {% if current_filters.order_by == 'numero' %}selected{% endif %}>Numero crescente</option>
+                    <option value="-numero" {% if current_filters.order_by == '-numero' %}selected{% endif %}>Numero decrescente</option>
+                </select>
+            </div>
+            
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i data-feather="search" width="16"></i>
+                    </button>
+                    <a href="{% url 'preventivi:richieste_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i data-feather="x" width="16"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabella richieste -->
+<div class="card">
+    <div class="card-body p-0">
+        {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Numero</th>
+                            <th>Titolo</th>
+                            <th>Richiedente</th>
+                            <th>Stato</th>
+                            <th>Priorità</th>
+                            <th>Data Richiesta</th>
+                            <th>Scadenza</th>
+                            <th>Fornitori</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for richiesta in page_obj %}
+                            <tr>
+                                <td>
+                                    <strong>{{ richiesta.numero }}</strong>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">{{ richiesta.titolo|truncatechars:30 }}</div>
+                                    <small class="text-muted">{{ richiesta.descrizione|truncatechars:50 }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i data-feather="user" width="16" class="me-1"></i>
+                                        {{ richiesta.richiedente.get_full_name|default:richiesta.richiedente.username }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge status-badge
+                                        {% if richiesta.stato == 'CREATO' %}bg-secondary
+                                        {% elif richiesta.stato == 'INVIATO_FORNITORI' %}bg-info
+                                        {% elif richiesta.stato == 'PREVENTIVI_RACCOLTI' %}bg-warning
+                                        {% elif richiesta.stato == 'IN_VALUTAZIONE' %}bg-primary
+                                        {% elif richiesta.stato == 'APPROVATO' %}bg-success
+                                        {% elif richiesta.stato == 'ANNULLATO' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ richiesta.get_stato_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if richiesta.priorita != 'NORMALE' %}
+                                        <span class="badge priority-badge 
+                                            {% if richiesta.priorita == 'URGENTE' %}bg-danger
+                                            {% elif richiesta.priorita == 'ALTA' %}bg-warning text-dark
+                                            {% elif richiesta.priorita == 'BASSA' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ richiesta.get_priorita_display }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted small">Normale</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ richiesta.data_richiesta|date:"d/m/Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <small>{{ richiesta.data_scadenza|date:"d/m/Y" }}</small>
+                                        {% if richiesta.is_scaduto %}
+                                            <i data-feather="alert-triangle" width="16" class="text-danger ms-1" title="Scaduto"></i>
+                                        {% elif richiesta.giorni_rimanenti <= 3 %}
+                                            <i data-feather="clock" width="16" class="text-warning ms-1" title="{{ richiesta.giorni_rimanenti }} giorni rimanenti"></i>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-light text-dark">{{ richiesta.fornitori_totali }}</span>
+                                        {% if richiesta.fornitori_risposto > 0 %}
+                                            <small class="text-success ms-1">({{ richiesta.fornitori_risposto }} risposte)</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group" aria-label="Azioni">
+                                        <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" 
+                                           class="btn btn-outline-primary action-btn" 
+                                           title="Visualizza dettagli">
+                                            <i data-feather="eye" width="14"></i>
+                                        </a>
+                                        {% if richiesta.stato == 'RICHIESTO' and user == richiesta.operatore or user.groups.all|length > 0 %}
+                                            <a href="{% url 'preventivi:preventivo_create' richiesta.pk %}" 
+                                               class="btn btn-outline-success action-btn" 
+                                               title="Inserisci preventivo">
+                                                <i data-feather="plus" width="14"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if richiesta.stato == 'COMPLETATO' and user == richiesta.approvatore or user.groups.all|length > 0 %}
+                                            <a href="{% url 'preventivi:richiesta_approva' richiesta.pk %}" 
+                                               class="btn btn-outline-warning action-btn" 
+                                               title="Approva richiesta">
+                                                <i data-feather="check" width="14"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginazione -->
+            {% if page_obj.has_other_pages %}
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }} 
+                            ({{ page_obj.paginator.count }} risultati totali)
+                        </div>
+                        
+                        <nav aria-label="Paginazione">
+                            <ul class="pagination pagination-sm mb-0">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                                            <i data-feather="chevrons-left" width="16"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                                            <i data-feather="chevron-left" width="16"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_obj.number }}</span>
+                                </li>
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                            <i data-feather="chevron-right" width="16"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                                            <i data-feather="chevrons-right" width="16"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i data-feather="search" width="64" height="64" class="text-muted mb-3"></i>
+                <h5 class="text-muted">Nessuna richiesta trovata</h5>
+                <p class="text-muted">Non ci sono richieste che corrispondono ai criteri di ricerca.</p>
+                <a href="{% url 'preventivi:richiesta_create' %}" class="btn btn-primary">
+                    <i data-feather="plus-circle" class="feather me-2"></i>
+                    Crea Prima Richiesta
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Auto-submit form on select change (optional)
+    const selects = document.querySelectorAll('.filter-card select');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            // Uncomment to auto-submit on change
+            // this.form.submit();
+        });
+    });
+});
+</script>
+{% endblock %}

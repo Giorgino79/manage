@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">
+                    <i class="fas fa-chart-line me-3"></i>Dashboard Utenze Generali
+                </h1>
+                <p class="mb-0 opacity-75">Panoramica completa delle utenze di tutti gli stabilimenti</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="h3 mb-1">
+                    {% if stats_generali.totale_anno %}
+                        € {{ stats_generali.totale_anno|floatformat:0|intcomma }}
+                    {% else %}
+                        € 0
+                    {% endif %}
+                </div>
+                <div class="opacity-75">Spesa Totale {{ anno_corrente }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="stats-card text-center">
+            <div class="stats-number text-success">
+                {% if stats_generali.totale_anno %}
+                    € {{ stats_generali.totale_anno|floatformat:0|intcomma }}
+                {% else %}
+                    € 0
+                {% endif %}
+            </div>
+            <div class="stats-label">Totale {{ anno_corrente }}</div>
+        </div>
+        
+        <div class="stats-card text-center">
+            <div class="stats-number text-info">
+                {% if stats_generali.media_mensile %}
+                    € {{ stats_generali.media_mensile|floatformat:0|intcomma }}
+                {% else %}
+                    € 0
+                {% endif %}
+            </div>
+            <div class="stats-label">Media Mensile</div>
+        </div>
+        
+        <div class="stats-card text-center">
+            <div class="stats-number text-primary">{{ stats_generali.count_fatture|default:0 }}</div>
+            <div class="stats-label">Fatture Pagate</div>
+        </div>
+        
+        <div class="stats-card text-center">
+            <div class="stats-number text-warning">{{ scadenze_urgenti|default:0 }}</div>
+            <div class="stats-label">Scadenze Urgenti</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Costi per Stabilimento -->
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-building me-2"></i>Costi per Stabilimento ({{ anno_corrente }})</h5>
+                    <span class="badge bg-primary">{{ costi_per_stabilimento|length }} stabilimenti</span>
+                </div>
+                
+                {% if costi_per_stabilimento %}
+                    {% for stabilimento, costo in costi_per_stabilimento.items %}
+                        <div class="stabilimento-card">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>{{ stabilimento.nome }}</strong>
+                                    <small class="text-muted d-block">{{ stabilimento.codice_stabilimento }} - {{ stabilimento.citta }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h6 mb-0">€ {{ costo|floatformat:0|intcomma }}</div>
+                                    <small class="text-muted">
+                                        {% widthratio costo stats_generali.totale_anno 100 as percentuale %}
+                                        {{ percentuale|floatformat:1 }}% del totale
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="progress-custom">
+                                {% widthratio costo stats_generali.totale_anno 100 as width %}
+                                <div class="progress-bar-custom" style="width: {{ width }}%"></div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{% url 'stabilimenti:utenze_stabilimento' stabilimento_pk=stabilimento.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Dettagli
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nessun dato disponibile per l'anno corrente</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Ripartizione per Tipo Utenza -->
+            {% if stats_per_tipo %}
+                <div class="chart-container">
+                    <h5 class="mb-3"><i class="fas fa-chart-pie me-2"></i>Ripartizione per Tipo Utenza</h5>
+                    {% for tipo, importo in stats_per_tipo.items %}
+                        <div class="utenza-type-card {% if 'Energia' in tipo %}energia{% elif 'Gas' in tipo %}gas{% elif 'Acqua' in tipo %}acqua{% elif 'Telefonia' in tipo %}telefonia{% elif 'Rifiuti' in tipo %}rifiuti{% else %}utilities{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ tipo }}</h6>
+                                    <small class="text-muted">
+                                        {% widthratio importo stats_generali.totale_anno 100 as percentuale %}
+                                        {{ percentuale|floatformat:1 }}% del totale
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="h5 mb-0">€ {{ importo|floatformat:0|intcomma }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Prossime Scadenze -->
+            {% if prossime_scadenze %}
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6><i class="fas fa-clock me-2"></i>Prossime Scadenze</h6>
+                        <span class="badge bg-warning">{{ prossime_scadenze|length }} scadenze</span>
+                    </div>
+                    
+                    {% for scadenza in prossime_scadenze %}
+                        <div class="scadenza-item {% if scadenza.giorni_alla_scadenza <= 7 %}urgente{% elif scadenza.giorni_alla_scadenza <= 15 %}attenzione{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold small">{{ scadenza.get_causale_display }}</div>
+                                    <div class="text-muted small">{{ scadenza.stabilimento.nome }}</div>
+                                    <div class="text-muted small">{{ scadenza.fornitore.nome }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="small">{{ scadenza.data_scadenza_servizio|date:"d/m" }}</div>
+                                    <div class="small">
+                                        {% if scadenza.giorni_alla_scadenza <= 7 %}
+                                            <span class="text-danger fw-bold">{{ scadenza.giorni_alla_scadenza }} gg</span>
+                                        {% elif scadenza.giorni_alla_scadenza <= 15 %}
+                                            <span class="text-warning fw-bold">{{ scadenza.giorni_alla_scadenza }} gg</span>
+                                        {% else %}
+                                            <span class="text-muted">{{ scadenza.giorni_alla_scadenza }} gg</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'stabilimenti:scadenze' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-calendar me-2"></i>Vedi tutte le scadenze
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Azioni Rapide -->
+            <div class="chart-container">
+                <h6><i class="fas fa-tools me-2"></i>Azioni Rapide</h6>
+                <div class="action-buttons">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'stabilimenti:ricerca_utenze' %}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Ricerca Avanzata Utenze
+                        </a>
+                        <a href="{% url 'stabilimenti:scadenze' %}" class="btn btn-warning">
+                            <i class="fas fa-calendar-exclamation me-2"></i>Gestisci Scadenze
+                        </a>
+                        <a href="{% url 'stabilimenti:costi_list' %}" class="btn btn-info">
+                            <i class="fas fa-euro-sign me-2"></i>Tutti i Costi
+                        </a>
+                        <a href="{% url 'stabilimenti:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-building me-2"></i>Gestisci Stabilimenti
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiche Rapide -->
+            <div class="chart-container">
+                <h6><i class="fas fa-info-circle me-2"></i>Informazioni</h6>
+                <div class="small text-muted">
+                    <div class="mb-2">
+                        <i class="fas fa-building me-2"></i>
+                        <strong>{{ costi_per_stabilimento|length }}</strong> stabilimenti con utenze attive
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-plug me-2"></i>
+                        <strong>{{ stats_per_tipo|length }}</strong> tipologie di utenze utilizzate
+                    </div>
+                    <div class="mb-2">
+                        <i class="fas fa-calendar me-2"></i>
+                        Ultimo aggiornamento: {{ anno_corrente }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animazione progressbar
+    const progressBars = document.querySelectorAll('.progress-bar-custom');
+    progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = width;
+        }, 300);
+    });
+    
+    // Evidenzia scadenze urgenti
+    document.querySelectorAll('.scadenza-item.urgente').forEach(function(item) {
+        item.style.animation = 'pulse 2s infinite';
+    });
+    
+    // Tooltip per informazioni aggiuntive
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

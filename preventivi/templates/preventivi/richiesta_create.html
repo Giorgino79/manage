@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Nuova Richiesta Preventivo{% endblock %}
+
+{% block extra_css %}
+<style>
+.step-xs { padding: 0.2rem 0.4rem; border-radius: 8px; font-size: 0.65rem; margin: 0 0.3rem; display: inline-block; }
+.step-xs.active { background-color: #0d6efd; color: white; }
+.step-xs.completed { background-color: #28a745; color: white; }
+.step-xs.pending { background-color: #e9ecef; color: #6c757d; }
+.wizard-xs { background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-radius: 6px; padding: 0.75rem; margin: 0; }
+.form-section-xs { background: #f8f9fa; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem; }
+.fornitore-xs { border: 1px solid #e9ecef; border-radius: 4px; padding: 0.4rem; margin: 0.2rem 0; cursor: pointer; }
+.fornitore-xs:hover { border-color: #0d6efd; }
+.fornitore-xs.selected { border-color: #0d6efd; background-color: #e7f1ff; }
+.form-label-xs { font-size: 0.75rem; margin-bottom: 0.2rem; font-weight: 600; }
+.form-control-xs { padding: 0.25rem 0.4rem; font-size: 0.75rem; }
+.btn-xs { padding: 0.15rem 0.3rem; font-size: 0.7rem; }
+.h6-xs { font-size: 0.8rem; margin-bottom: 0.25rem; }
+.text-xs { font-size: 0.7rem; }
+.alert-xs { padding: 0.2rem 0.3rem; font-size: 0.65rem; }
+.badge-xs { font-size: 0.6rem; padding: 0.1rem 0.25rem; }
+</style>
+{% endblock %}
+
+{% block page_title %}
+    {% if step == 1 %}Nuova Richiesta Preventivo - Dati Base
+    {% elif step == 2 %}Nuova Richiesta Preventivo - Selezione Fornitori
+    {% elif step == 3 %}Nuova Richiesta Preventivo - Parametri Valutazione
+    {% endif %}
+{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item active">Nuova Richiesta</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header compatto -->
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div class="d-flex align-items-center gap-2">
+            <h1 class="h6 mb-0">
+                <i data-feather="plus-circle" style="width:14px;height:14px;" class="me-1"></i>
+                Nuova Richiesta
+            </h1>
+            <span class="step-xs {% if step == 1 %}active{% elif step > 1 %}completed{% else %}pending{% endif %}">1</span>
+            <span class="step-xs {% if step == 2 %}active{% elif step > 2 %}completed{% else %}pending{% endif %}">2</span>
+            <span class="text-xs text-muted">
+                {% if step == 1 %}Dati Base{% elif step == 2 %}Selezione Fornitori{% endif %}
+            </span>
+        </div>
+        <a href="{% url 'preventivi:richieste_list' %}" class="btn btn-outline-secondary btn-xs">
+            <i data-feather="arrow-left" style="width:12px;height:12px;" class="me-1"></i>Annulla
+        </a>
+    </div>
+
+    <div class="wizard-xs">
+            
+        <!-- STEP 1: Dati Base -->
+        {% if step == 1 %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-section-xs">
+                            <div class="h6-xs">📝 Informazioni Generali</div>
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.titolo.label }}</label>
+                                {{ form.titolo }}
+                                {% if form.titolo.errors %}
+                                    <div class="text-danger text-xs">{{ form.titolo.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.descrizione.label }}</label>
+                                {{ form.descrizione }}
+                                {% if form.descrizione.errors %}
+                                    <div class="text-danger text-xs">{{ form.descrizione.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Sezione Asset Collegato -->
+                        <div class="form-section-xs">
+                            <div class="h6-xs">🚗🏢 Asset Collegato</div>
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.asset_collegato.label }}</label>
+                                {{ form.asset_collegato }}
+                                {% if form.asset_collegato.help_text %}
+                                    <small class="form-text text-muted text-xs">{{ form.asset_collegato.help_text }}</small>
+                                {% endif %}
+                                {% if form.asset_collegato.errors %}
+                                    <div class="text-danger text-xs">{{ form.asset_collegato.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="form-check">
+                                {{ form.auto_attach_documents }}
+                                <label class="form-check-label text-xs" for="{{ form.auto_attach_documents.id_for_label }}">
+                                    {{ form.auto_attach_documents.label }}
+                                </label>
+                                {% if form.auto_attach_documents.help_text %}
+                                    <small class="form-text text-muted text-xs d-block">{{ form.auto_attach_documents.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-section-xs">
+                            <div class="h6-xs">⚙️ Dettagli</div>
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.priorita.label }}</label>
+                                {{ form.priorita }}
+                                {% if form.priorita.errors %}
+                                    <div class="text-danger text-xs">{{ form.priorita.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.data_scadenza.label }}</label>
+                                {{ form.data_scadenza }}
+                                {% if form.data_scadenza.errors %}
+                                    <div class="text-danger text-xs">{{ form.data_scadenza.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.budget_massimo.label }}</label>
+                                {{ form.budget_massimo }}
+                                {% if form.budget_massimo.errors %}
+                                    <div class="text-danger text-xs">{{ form.budget_massimo.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            {% if form.approvatore %}
+                            <div class="mb-2">
+                                <label class="form-label-xs">{{ form.approvatore.label }}</label>
+                                {{ form.approvatore }}
+                                {% if form.approvatore.errors %}
+                                    <div class="text-danger text-xs">{{ form.approvatore.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-section-xs">
+                            <div class="h6-xs">💭 Note Interne</div>
+                            {{ form.note_interne }}
+                            {% if form.note_interne.errors %}
+                                <div class="text-danger text-xs">{{ form.note_interne.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="d-grid w-100 gap-1">
+                            <button type="submit" name="continue_to_fornitori" class="btn btn-primary btn-xs">
+                                <i data-feather="arrow-right" style="width:12px;height:12px;" class="me-1"></i>Avanti ai Fornitori
+                            </button>
+                            <button type="submit" class="btn btn-success btn-xs">
+                                <i data-feather="save" style="width:12px;height:12px;" class="me-1"></i>Salva e Termina
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Debug errors -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-xs mt-2">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+            </form>
+                
+        <!-- STEP 2: Selezione Fornitori -->
+        {% elif step == 2 %}
+            <form method="post" id="step2-form">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-section-xs">
+                            <div class="h6-xs">📋 Riepilogo</div>
+                            <div class="text-xs">
+                                <strong>{{ step1_data.titolo }}</strong><br>
+                                <small class="text-muted">{{ step1_data.descrizione|truncatechars:60 }}</small><br>
+                                <span class="badge bg-info badge-xs">{{ step1_data.priorita }}</span>
+                                <span class="badge bg-warning badge-xs">{{ step1_data.data_scadenza }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-section-xs">
+                            <div class="h6-xs d-flex justify-content-between align-items-center">
+                                🏢 Fornitori
+                                <span class="text-xs text-muted"><span id="selected-count">0</span> sel. (min.2)</span>
+                            </div>
+                            <div style="max-height: 8rem; overflow-y: auto;">
+                                <div class="row">
+                                {% for fornitore in fornitori %}
+                                    <div class="col-6">
+                                        <div class="fornitore-xs" onclick="toggleFornitore({{ fornitore.id }}, this)">
+                                            <input type="checkbox" name="fornitori" value="{{ fornitore.id }}" 
+                                                   id="fornitore_{{ fornitore.id }}" class="form-check-input me-1" 
+                                                   onchange="updateSelectedCount()">
+                                            <label for="fornitore_{{ fornitore.id }}" class="form-check-label text-xs">
+                                                <div class="fw-bold">{{ fornitore.nome|truncatechars:12 }}</div>
+                                                <div class="text-muted">{{ fornitore.categoria|truncatechars:8 }}</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <div class="col-12 text-center text-xs text-muted">Nessun fornitore</div>
+                                {% endfor %}
+                                </div>
+                            </div>
+                            <div id="selection-error" class="text-xs text-warning mt-1" style="display: none;">
+                                ⚠️ Min. 2 fornitori
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <a href="{% url 'preventivi:richiesta_create' %}" class="btn btn-outline-secondary btn-xs">
+                            <i data-feather="arrow-left" style="width:12px;height:12px;" class="me-1"></i>Indietro
+                        </a>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button type="submit" name="step2_submit" class="btn btn-success btn-xs" id="step2-next">
+                            <i data-feather="check" style="width:12px;height:12px;" class="me-1"></i>Crea Richiesta
+                        </button>
+                    </div>
+                </div>
+            </form>
+                
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Set minimum date to today
+    const dateInput = document.getElementById('data_scadenza');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
+    }
+    
+});
+
+{% if step == 2 %}
+function toggleFornitore(id, card) {
+    const checkbox = card.querySelector('input[type="checkbox"]');
+    checkbox.checked = !checkbox.checked;
+    
+    if (checkbox.checked) {
+        card.classList.add('selected');
+    } else {
+        card.classList.remove('selected');
+    }
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const selected = document.querySelectorAll('input[name="fornitori"]:checked');
+    const count = selected.length;
+    document.getElementById('selected-count').textContent = count;
+    
+    const errorDiv = document.getElementById('selection-error');
+    const nextBtn = document.getElementById('step2-next');
+    
+    if (count < 2) {
+        errorDiv.style.display = 'block';
+        nextBtn.disabled = true;
+    } else {
+        errorDiv.style.display = 'none';
+        nextBtn.disabled = false;
+    }
+}
+
+// Initialize count on page load
+updateSelectedCount();
+{% endif %}
+
+</script>
+{% endblock %}

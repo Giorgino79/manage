@@ -1,0 +1,26 @@
+<!-- User Badge Component -->
+<div class="user-badge d-inline-flex align-items-center">
+    {% if user %}
+        <span class="badge bg-{{ level_color }} me-1">
+            {% if full_name != 'N/A' %}
+                {{ full_name }}
+            {% else %}
+                {{ user.username }}
+            {% endif %}
+        </span>
+        
+        {% if show_level %}
+            <small class="badge bg-{{ level_color }} bg-opacity-25 text-{{ level_color }} me-1">
+                {{ user|livello_display }}
+            </small>
+        {% endif %}
+        
+        {% if show_status %}
+            <small class="badge bg-{{ status_color }} bg-opacity-25 text-{{ status_color }}">
+                {{ user|stato_display }}
+            </small>
+        {% endif %}
+    {% else %}
+        <span class="badge bg-secondary">Utente non disponibile</span>
+    {% endif %}
+</div>

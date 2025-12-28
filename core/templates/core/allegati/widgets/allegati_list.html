@@ -1,0 +1,53 @@
+<!-- 
+ALLEGATI LIST - Lista semplice allegati
+========================================
+
+Lista minimalista degli allegati per utilizzo in componenti compatti.
+Template molto leggero per inclusioni rapide.
+
+Context variables:
+- object: Oggetto principale
+- allegati: Lista allegati
+
+Usage:
+    {% allegati_list dipendente %}
+    {% allegati_list automezzo limit=5 %}
+-->
+
+{% load allegati_tags %}
+
+{% if allegati %}
+    <ul class="allegati-simple-list list-unstyled mb-0">
+        {% for allegato in allegati %}
+            <li class="allegato-simple-item d-flex align-items-center py-1">
+                <i class="{% allegato_icon allegato.tipo_allegato %} text-{% allegato_color allegato.tipo_allegato %} me-2 flex-shrink-0"></i>
+                
+                <div class="allegato-simple-content flex-grow-1 min-w-0">
+                    {% if allegato.file %}
+                        <a href="{{ allegato.file.url }}" target="_blank" 
+                           class="text-decoration-none d-block text-truncate">
+                            {{ allegato.titolo }}
+                        </a>
+                    {% elif allegato.url_esterno %}
+                        <a href="{{ allegato.url_esterno }}" target="_blank" 
+                           class="text-decoration-none d-block text-truncate">
+                            {{ allegato.titolo }}
+                        </a>
+                    {% else %}
+                        <span class="d-block text-truncate">{{ allegato.titolo }}</span>
+                    {% endif %}
+                    
+                    <small class="text-muted">
+                        {{ allegato.get_tipo_allegato_display|truncatechars:20 }}
+                        • {{ allegato.creato_il|date:"d/m/Y" }}
+                    </small>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted mb-0">
+        <i class="fas fa-folder-open me-1"></i>
+        Nessun allegato
+    </p>
+{% endif %}

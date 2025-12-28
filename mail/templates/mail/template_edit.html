@@ -1,0 +1,470 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modifica Template - {{ template.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i data-feather="edit" class="feather me-2"></i>Modifica Template</h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'dipendenti:dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:dashboard' %}">Sistema Email</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'mail:template_list' %}">Template</a></li>
+                            <li class="breadcrumb-item active">{{ template.name|truncatechars:30 }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'mail:template_list' %}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="feather me-1"></i>Torna alla Lista
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Template Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i data-feather="edit-3" class="feather me-2"></i>Modifica Template: {{ template.name }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" id="templateForm">
+                                {% csrf_token %}
+                                
+                                <!-- Basic Information -->
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <label for="name" class="form-label">Nome Template <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="name" name="name" 
+                                               value="{{ template.name }}" required>
+                                        <div class="form-text">Nome identificativo del template</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="category" class="form-label">Categoria <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="category" name="category" required>
+                                            {% for value, label in categories %}
+                                            <option value="{{ value }}" {% if value == template.category %}selected{% endif %}>
+                                                {{ label }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Descrizione</label>
+                                    <textarea class="form-control" id="description" name="description" rows="2" 
+                                              placeholder="Breve descrizione del template...">{{ template.description }}</textarea>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="subject" class="form-label">Oggetto Email <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="subject" name="subject" 
+                                           value="{{ template.subject }}" required 
+                                           placeholder="Oggetto del messaggio email...">
+                                    <div class="form-text">Puoi usare variabili come {{cliente}} o {{data}}</div>
+                                </div>
+
+                                <!-- Content -->
+                                <div class="mb-3">
+                                    <label for="content_html" class="form-label">Contenuto HTML <span class="text-danger">*</span></label>
+                                    <textarea class="form-control" id="content_html" name="content_html" rows="12" required
+                                              placeholder="Contenuto HTML del template...">{{ template.content_html }}</textarea>
+                                    <div class="form-text">
+                                        <small>
+                                            <i data-feather="info" class="feather me-1"></i>
+                                            Usa {{variabile}} per inserire contenuto dinamico. 
+                                            <a href="#" onclick="insertVariable('cliente')">{{cliente}}</a>, 
+                                            <a href="#" onclick="insertVariable('data')">{{data}}</a>, 
+                                            <a href="#" onclick="insertVariable('oggetto')">{{oggetto}}</a>
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="content_text" class="form-label">Contenuto Testuale (Fallback)</label>
+                                    <textarea class="form-control" id="content_text" name="content_text" rows="8" 
+                                              placeholder="Versione testuale del template (opzionale)...">{{ template.content_text }}</textarea>
+                                    <div class="form-text">Versione solo testo per client che non supportano HTML</div>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                    <div>
+                                        <button type="button" class="btn btn-outline-info me-2" onclick="previewTemplate()">
+                                            <i data-feather="eye" class="feather me-1"></i>Anteprima
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning" onclick="testTemplate()">
+                                            <i data-feather="send" class="feather me-1"></i>Test Email
+                                        </button>
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'mail:template_list' %}" class="btn btn-secondary me-2">Annulla</a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i data-feather="save" class="feather me-1"></i>Salva Modifiche
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Template Info -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="info" class="feather me-1"></i>Informazioni Template</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>ID:</strong></div>
+                                <div class="col-6"><small class="text-muted">{{ template.id }}</small></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Slug:</strong></div>
+                                <div class="col-6"><code class="small">{{ template.slug }}</code></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Utilizzi:</strong></div>
+                                <div class="col-6"><span class="badge bg-info">{{ template.usage_count }}</span></div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Stato:</strong></div>
+                                <div class="col-6">
+                                    {% if template.is_active %}
+                                        <span class="badge bg-success">Attivo</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Disattivo</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if template.is_system %}
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Tipo:</strong></div>
+                                <div class="col-6"><span class="badge bg-secondary">Sistema</span></div>
+                            </div>
+                            {% endif %}
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Creato:</strong></div>
+                                <div class="col-6"><small>{{ template.created_at|date:"d/m/Y H:i" }}</small></div>
+                            </div>
+                            {% if template.created_by %}
+                            <div class="row mb-2">
+                                <div class="col-6"><strong>Creato da:</strong></div>
+                                <div class="col-6"><small>{{ template.created_by.username }}</small></div>
+                            </div>
+                            {% endif %}
+                            <div class="row">
+                                <div class="col-6"><strong>Aggiornato:</strong></div>
+                                <div class="col-6"><small>{{ template.updated_at|date:"d/m/Y H:i" }}</small></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Variables Help -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i data-feather="code" class="feather me-1"></i>Variabili Disponibili</h6>
+                        </div>
+                        <div class="card-body">
+                            <p><small class="text-muted">Clicca per inserire nel template:</small></p>
+                            
+                            <h6 class="h6">Generali:</h6>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('azienda')">
+                                    {{azienda}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('data')">
+                                    {{data}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('utente')">
+                                    {{utente}}
+                                </button>
+                            </div>
+
+                            <h6 class="h6">Cliente/Fornitore:</h6>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('cliente')">
+                                    {{cliente}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('email')">
+                                    {{email}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('telefono')">
+                                    {{telefono}}
+                                </button>
+                            </div>
+
+                            <h6 class="h6">Documenti:</h6>
+                            <div class="mb-3">
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('numero')">
+                                    {{numero}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('oggetto')">
+                                    {{oggetto}}
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="insertVariable('scadenza')">
+                                    {{scadenza}}
+                                </button>
+                            </div>
+
+                            {% if template.available_variables %}
+                            <hr>
+                            <h6 class="h6">Variabili Template:</h6>
+                            <div class="mb-3">
+                                {% for var in template.available_variables %}
+                                <button class="btn btn-sm btn-outline-info me-1 mb-1" onclick="insertVariable('{{ var }}')">
+                                    {{{{ var }}}}
+                                </button>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">
+                    <i data-feather="eye" class="feather me-2"></i>Anteprima Template
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Email Modal -->
+<div class="modal fade" id="testModal" tabindex="-1" aria-labelledby="testModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="testModalLabel">
+                    <i data-feather="send" class="feather me-2"></i>Test Email Template
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="testEmailForm">
+                    <div class="mb-3">
+                        <label for="testEmail" class="form-label">Email Destinatario <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="testEmail" required 
+                               placeholder="test@esempio.it">
+                        <div class="form-text">Inserisci l'email dove inviare il test</div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i data-feather="info" class="feather me-1"></i>
+                            Verrà inviata una email di prova usando i contenuti attuali del template con dati di esempio.
+                        </small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="sendTestEmail()">
+                    <i data-feather="send" class="feather me-1"></i>Invia Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize feather icons
+    feather.replace();
+
+    // Insert variable function
+    function insertVariable(variable) {
+        const htmlField = document.getElementById('content_html');
+        const textField = document.getElementById('content_text');
+        const subjectField = document.getElementById('subject');
+        
+        const variableText = '{{' + variable + '}}';
+        
+        // Get currently focused field
+        const activeElement = document.activeElement;
+        let targetField;
+        
+        if (activeElement === htmlField || activeElement === textField || activeElement === subjectField) {
+            targetField = activeElement;
+        } else {
+            targetField = htmlField; // Default to HTML field
+        }
+        
+        // Insert at cursor position
+        const start = targetField.selectionStart;
+        const end = targetField.selectionEnd;
+        const text = targetField.value;
+        
+        targetField.value = text.substring(0, start) + variableText + text.substring(end);
+        
+        // Move cursor after inserted variable
+        targetField.selectionStart = targetField.selectionEnd = start + variableText.length;
+        targetField.focus();
+    }
+
+    // Preview template
+    function previewTemplate() {
+        const subject = document.getElementById('subject').value || '[Oggetto vuoto]';
+        const html = document.getElementById('content_html').value || '<p>Contenuto HTML vuoto</p>';
+        const text = document.getElementById('content_text').value || '';
+        
+        // Simple variable replacement for preview
+        const sampleData = {
+            azienda: 'Azienda di Esempio',
+            cliente: 'Cliente di Prova',
+            data: new Date().toLocaleDateString('it-IT'),
+            oggetto: 'Oggetto di esempio',
+            utente: '{{ user.first_name|default:user.username }}',
+            email: 'cliente@esempio.it',
+            telefono: '+39 123 456 7890',
+            numero: 'DOC-001',
+            scadenza: new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString('it-IT')
+        };
+        
+        let previewSubject = subject;
+        let previewHtml = html;
+        let previewText = text;
+        
+        // Replace variables
+        Object.keys(sampleData).forEach(key => {
+            const regex = new RegExp('{{\\\\s*' + key + '\\\\s*}}', 'g');
+            previewSubject = previewSubject.replace(regex, sampleData[key]);
+            previewHtml = previewHtml.replace(regex, sampleData[key]);
+            previewText = previewText.replace(regex, sampleData[key]);
+        });
+        
+        let content = '<div class="mb-3">' +
+            '<label class="form-label"><strong>Oggetto:</strong></label>' +
+            '<div class="form-control-plaintext border p-2 bg-light">' +
+                previewSubject +
+            '</div>' +
+        '</div>' +
+        '<div class="mb-3">' +
+            '<label class="form-label"><strong>Contenuto HTML:</strong></label>' +
+            '<div class="border p-3" style="max-height: 400px; overflow-y: auto;">' +
+                previewHtml +
+            '</div>' +
+        '</div>';
+        
+        if (previewText) {
+            content += '<div class="mb-3">' +
+                '<label class="form-label"><strong>Contenuto Testuale:</strong></label>' +
+                '<pre class="form-control-plaintext border p-2 bg-light" style="white-space: pre-wrap; max-height: 200px; overflow-y: auto;">' + previewText + '</pre>' +
+            '</div>';
+        }
+        
+        content += '<div class="alert alert-info">' +
+            '<small>' +
+                '<i data-feather="info" class="feather me-1"></i>' +
+                'Anteprima con dati di esempio. Le variabili verranno sostituite con i dati reali durante l\'invio.' +
+            '</small>' +
+        '</div>';
+        
+        document.getElementById('previewContent').innerHTML = content;
+        
+        // Refresh feather icons in modal
+        setTimeout(() => feather.replace(), 100);
+        
+        const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+        modal.show();
+    }
+
+    // Test template
+    function testTemplate() {
+        const modal = new bootstrap.Modal(document.getElementById('testModal'));
+        modal.show();
+    }
+
+    // Send test email
+    function sendTestEmail() {
+        const email = document.getElementById('testEmail').value;
+        if (!email) {
+            alert('Inserisci un indirizzo email valido');
+            return;
+        }
+
+        // Get current template data
+        const templateData = {
+            to: email,
+            template: '{{ template.slug }}',
+            context: {
+                azienda: 'Azienda di Esempio',
+                cliente: 'Cliente di Test',
+                data: new Date().toLocaleDateString('it-IT'),
+                oggetto: 'Test Template',
+                utente: 'Utente Test',
+                email: email,
+                telefono: '+39 123 456 7890',
+                numero: 'TEST-001',
+                scadenza: new Date(Date.now() + 7*24*60*60*1000).toLocaleDateString('it-IT')
+            }
+        };
+
+        // Send test email via API
+        fetch('{% url "mail:api_send" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(templateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Test email inviata con successo!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('testModal'));
+                modal.hide();
+            } else {
+                alert('Errore invio test email: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Errore di rete: ' + error.message);
+        });
+    }
+
+    // Form validation
+    document.getElementById('templateForm').addEventListener('submit', function(e) {
+        const name = document.getElementById('name').value.trim();
+        const subject = document.getElementById('subject').value.trim();
+        const html = document.getElementById('content_html').value.trim();
+        
+        if (!name || !subject || !html) {
+            e.preventDefault();
+            alert('Compila tutti i campi obbligatori (Nome, Oggetto e Contenuto HTML).');
+            return false;
+        }
+        
+        return true;
+    });
+</script>
+{% endblock %}

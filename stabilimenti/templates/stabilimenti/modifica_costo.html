@@ -1,0 +1,511 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+        <div class="col-lg-10">
+            <div class="form-container">
+                <!-- Header del form -->
+                <div class="form-header">
+                    <h2>
+                        <i class="fas fa-edit me-3"></i>{{ page_title }}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Modifica i dati del costo. I campi contrassegnati con * sono obbligatori.
+                    </p>
+                </div>
+
+                <!-- Informazioni attuali costo -->
+                <div class="costo-info">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Informazioni Attuali
+                        </h5>
+                        <div class="status-badge {% if costo.can_be_modified %}status-modificabile{% else %}status-completato{% endif %}">
+                            <i class="fas fa-circle"></i>
+                            {% if costo.can_be_modified %}Modificabile{% else %}Non Modificabile{% endif %}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Numero Pratica:</strong> <span class="numero-pratica">{{ costo.numero_pratica }}</span><br>
+                            <strong>Stato Attuale:</strong> {{ costo.get_stato_display }}<br>
+                            <strong>Creato:</strong> {{ costo.data_creazione|date:"d/m/Y H:i" }}<br>
+                            <strong>Creato da:</strong> {{ costo.incaricato.get_full_name|default:costo.incaricato.username }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Stabilimento:</strong> {{ costo.stabilimento.nome }}<br>
+                            <strong>Fornitore:</strong> {{ costo.fornitore.nome }}<br>
+                            <strong>Tipologia:</strong> {{ costo.get_causale_display }}<br>
+                            {% if costo.data_modifica %}
+                                <strong>Ultima modifica:</strong> {{ costo.data_modifica|date:"d/m/Y H:i" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form principale -->
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Identificazione -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-tag me-2"></i>Identificazione
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.stabilimento.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.stabilimento }}
+                                    {% if form.stabilimento.errors %}
+                                        <div class="text-danger small">{{ form.stabilimento.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.fornitore.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.fornitore }}
+                                    {% if form.fornitore.errors %}
+                                        <div class="text-danger small">{{ form.fornitore.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.causale.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.causale }}
+                                    {% if form.causale.errors %}
+                                        <div class="text-danger small">{{ form.causale.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.stato.label_tag }}
+                                    <span class="required-field">*</span>
+                                    {{ form.stato }}
+                                    {% if form.stato.errors %}
+                                        <div class="text-danger small">{{ form.stato.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.titolo.label_tag }}
+                            <span class="required-field">*</span>
+                            {{ form.titolo }}
+                            {% if form.titolo.errors %}
+                                <div class="text-danger small">{{ form.titolo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.descrizione.label_tag }}
+                            <span class="required-field">*</span>
+                            {{ form.descrizione }}
+                            {% if form.descrizione.errors %}
+                                <div class="text-danger small">{{ form.descrizione.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Aspetti Economici -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-calculator me-2"></i>Aspetti Economici
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.importo.label_tag }}
+                                    <span class="required-field">*</span>
+                                    <div class="input-group">
+                                        <span class="input-group-text">€</span>
+                                        {{ form.importo }}
+                                    </div>
+                                    {% if form.importo.errors %}
+                                        <div class="text-danger small">{{ form.importo.errors }}</div>
+                                    {% endif %}
+                                    {% if form.importo.help_text %}
+                                        <div class="help-text">{{ form.importo.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.iva_percentuale.label_tag }}
+                                    <div class="input-group">
+                                        {{ form.iva_percentuale }}
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    {% if form.iva_percentuale.errors %}
+                                        <div class="text-danger small">{{ form.iva_percentuale.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview calcolo totale -->
+                        <div class="totale-preview">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="h6">Imponibile</div>
+                                    <div class="h5" id="preview-imponibile">€ {{ costo.importo|floatformat:2 }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="h6">IVA</div>
+                                    <div class="h5" id="preview-iva">€ {{ costo.calcola_iva|floatformat:2 }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="h6">Totale</div>
+                                    <div class="h4 text-primary" id="preview-totale">€ {{ costo.calcola_totale_con_iva|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-calendar me-2"></i>Date e Scadenze
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_richiesta.label_tag }}
+                                    {{ form.data_richiesta }}
+                                    {% if form.data_richiesta.errors %}
+                                        <div class="text-danger small">{{ form.data_richiesta.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_scadenza_servizio.label_tag }}
+                                    {{ form.data_scadenza_servizio }}
+                                    {% if form.data_scadenza_servizio.errors %}
+                                        <div class="text-danger small">{{ form.data_scadenza_servizio.errors }}</div>
+                                    {% endif %}
+                                    {% if form.data_scadenza_servizio.help_text %}
+                                        <div class="help-text">{{ form.data_scadenza_servizio.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_inizio_lavori.label_tag }}
+                                    {{ form.data_inizio_lavori }}
+                                    {% if form.data_inizio_lavori.errors %}
+                                        <div class="text-danger small">{{ form.data_inizio_lavori.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_fine_lavori.label_tag }}
+                                    {{ form.data_fine_lavori }}
+                                    {% if form.data_fine_lavori.errors %}
+                                        <div class="text-danger small">{{ form.data_fine_lavori.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.data_fattura.label_tag }}
+                                    {{ form.data_fattura }}
+                                    {% if form.data_fattura.errors %}
+                                        <div class="text-danger small">{{ form.data_fattura.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documenti -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-paperclip me-2"></i>Documenti Allegati
+                        </h4>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.preventivo.label_tag }}
+                                    {% if costo.preventivo %}
+                                        <div class="file-current">
+                                            <i class="fas fa-file-alt me-2"></i>
+                                            <strong>File attuale:</strong> {{ costo.preventivo.name|slice:"20:" }}
+                                            <br><a href="{{ costo.preventivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                                                <i class="fas fa-eye me-1"></i>Visualizza
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">Seleziona un nuovo file per sostituire quello esistente:</small>
+                                    {% endif %}
+                                    <div class="file-upload-area mt-2">
+                                        <i class="fas fa-file-alt fa-2x text-muted mb-2"></i>
+                                        {{ form.preventivo }}
+                                        <small class="text-muted d-block">PDF, DOC, IMG</small>
+                                    </div>
+                                    {% if form.preventivo.errors %}
+                                        <div class="text-danger small">{{ form.preventivo.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.fattura.label_tag }}
+                                    {% if costo.fattura %}
+                                        <div class="file-current">
+                                            <i class="fas fa-receipt me-2"></i>
+                                            <strong>File attuale:</strong> {{ costo.fattura.name|slice:"20:" }}
+                                            <br><a href="{{ costo.fattura.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                                                <i class="fas fa-eye me-1"></i>Visualizza
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">Seleziona un nuovo file per sostituire quello esistente:</small>
+                                    {% endif %}
+                                    <div class="file-upload-area mt-2">
+                                        <i class="fas fa-receipt fa-2x text-muted mb-2"></i>
+                                        {{ form.fattura }}
+                                        <small class="text-muted d-block">PDF, DOC, IMG</small>
+                                    </div>
+                                    {% if form.fattura.errors %}
+                                        <div class="text-danger small">{{ form.fattura.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.certificato.label_tag }}
+                                    {% if costo.certificato %}
+                                        <div class="file-current">
+                                            <i class="fas fa-certificate me-2"></i>
+                                            <strong>File attuale:</strong> {{ costo.certificato.name|slice:"20:" }}
+                                            <br><a href="{{ costo.certificato.url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                                                <i class="fas fa-eye me-1"></i>Visualizza
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">Seleziona un nuovo file per sostituire quello esistente:</small>
+                                    {% endif %}
+                                    <div class="file-upload-area mt-2">
+                                        <i class="fas fa-certificate fa-2x text-muted mb-2"></i>
+                                        {{ form.certificato }}
+                                        <small class="text-muted d-block">PDF, DOC, IMG</small>
+                                    </div>
+                                    {% if form.certificato.errors %}
+                                        <div class="text-danger small">{{ form.certificato.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div class="mb-4">
+                        <h4 class="fieldset-title">
+                            <i class="fas fa-sticky-note me-2"></i>Note Interne
+                        </h4>
+                        
+                        <div class="form-group">
+                            {{ form.note_interne.label_tag }}
+                            {{ form.note_interne }}
+                            {% if form.note_interne.errors %}
+                                <div class="text-danger small">{{ form.note_interne.errors }}</div>
+                            {% endif %}
+                            {% if form.note_interne.help_text %}
+                                <div class="help-text">{{ form.note_interne.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Errori generali del form -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Pulsanti di azione -->
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'stabilimenti:dettaglio_costo' costo.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Torna al Dettaglio
+                            </a>
+                            <a href="{% url 'stabilimenti:dettaglio' costo.stabilimento.pk %}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-building me-2"></i>Stabilimento
+                            </a>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-outline-warning me-2" onclick="resetForm()">
+                                <i class="fas fa-undo me-2"></i>Ripristina
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-save">
+                                <i class="fas fa-save me-2"></i>Salva Modifiche
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Calcolo automatico totali
+    const importoField = document.querySelector('#id_importo');
+    const ivaField = document.querySelector('#id_iva_percentuale');
+    
+    function calcolaTotali() {
+        const importo = parseFloat(importoField.value) || 0;
+        const ivaPercentuale = parseFloat(ivaField.value) || 0;
+        
+        const iva = importo * (ivaPercentuale / 100);
+        const totale = importo + iva;
+        
+        document.getElementById('preview-imponibile').textContent = `€ ${importo.toFixed(2).replace('.', ',')}`;
+        document.getElementById('preview-iva').textContent = `€ ${iva.toFixed(2).replace('.', ',')}`;
+        document.getElementById('preview-totale').textContent = `€ ${totale.toFixed(2).replace('.', ',')}`;
+    }
+    
+    // Event listeners per calcolo in tempo reale
+    if (importoField) {
+        importoField.addEventListener('input', calcolaTotali);
+    }
+    if (ivaField) {
+        ivaField.addEventListener('input', calcolaTotali);
+    }
+    
+    // Salva i valori originali del form per il reset
+    const originalValues = {};
+    const formElements = document.querySelectorAll('input, select, textarea');
+    formElements.forEach(element => {
+        if (element.name) {
+            originalValues[element.name] = element.value;
+        }
+    });
+    
+    // Funzione per ripristinare i valori originali
+    window.resetForm = function() {
+        if (confirm('Sei sicuro di voler ripristinare tutti i campi ai valori originali?')) {
+            Object.keys(originalValues).forEach(name => {
+                const element = document.querySelector(`[name="${name}"]`);
+                if (element) {
+                    element.value = originalValues[name];
+                }
+            });
+            
+            // Ricalcola totali
+            calcolaTotali();
+            
+            // Mostra feedback visivo
+            const resetBtn = document.querySelector('button[onclick="resetForm()"]');
+            const originalText = resetBtn.innerHTML;
+            resetBtn.innerHTML = '<i class="fas fa-check me-2"></i>Ripristinato!';
+            resetBtn.classList.add('btn-success');
+            resetBtn.classList.remove('btn-outline-warning');
+            
+            setTimeout(() => {
+                resetBtn.innerHTML = originalText;
+                resetBtn.classList.remove('btn-success');
+                resetBtn.classList.add('btn-outline-warning');
+            }, 2000);
+        }
+    };
+    
+    // Validazione date
+    const dataInizio = document.querySelector('#id_data_inizio_lavori');
+    const dataFine = document.querySelector('#id_data_fine_lavori');
+    
+    if (dataInizio && dataFine) {
+        function validaDate() {
+            if (dataInizio.value && dataFine.value) {
+                if (new Date(dataInizio.value) > new Date(dataFine.value)) {
+                    dataFine.setCustomValidity('La data di fine non può essere precedente all\'inizio');
+                } else {
+                    dataFine.setCustomValidity('');
+                }
+            }
+        }
+        
+        dataInizio.addEventListener('change', validaDate);
+        dataFine.addEventListener('change', validaDate);
+    }
+    
+    // Gestione upload file con preview
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const fileName = this.files[0].name;
+                const container = this.closest('.form-group');
+                let preview = container.querySelector('.file-new-preview');
+                
+                if (!preview) {
+                    preview = document.createElement('div');
+                    preview.className = 'file-new-preview small text-success mt-2';
+                    this.parentNode.appendChild(preview);
+                }
+                
+                preview.innerHTML = `<i class="fas fa-check me-1"></i>Nuovo file: ${fileName}`;
+            }
+        });
+    });
+    
+    // Validazione form
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const importo = parseFloat(importoField.value);
+            
+            if (!importo || importo <= 0) {
+                alert('L\'importo deve essere maggiore di zero');
+                importoField.focus();
+                e.preventDefault();
+                return;
+            }
+            
+            // Disabilita il pulsante per evitare doppi submit
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Salvataggio in corso...';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

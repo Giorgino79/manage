@@ -1,0 +1,409 @@
+{% extends 'base.html' %}
+
+{% block title %}Test Layout - Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="dashboard-header text-center mb-4">
+        <div class="container">
+            <h1 class="dashboard-title">
+                <i class="fas fa-vial me-2"></i>
+                Test Layout Responsive
+            </h1>
+            <p class="dashboard-subtitle mb-0">
+                Verifica del design responsive e dei componenti CSS unificati
+            </p>
+        </div>
+    </div>
+
+    <!-- Layout Test Grid -->
+    <div class="row">
+        <!-- Stats Cards -->
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="stats-number">125</p>
+                        <p class="stats-label">Utenti Totali</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users text-primary fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="stats-number">1,247</p>
+                        <p class="stats-label">Documenti</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt text-success fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="stats-number">€ 45.2K</p>
+                        <p class="stats-label">Fatturato</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line text-warning fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="stats-number">98.5%</p>
+                        <p class="stats-label">Uptime</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-server text-info fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards Test -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <i class="fas fa-palette me-2"></i>
+                    Test Componenti CSS
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">Pulsanti</h5>
+                    <div class="mb-3">
+                        <button class="btn btn-primary me-2 mb-2">Primary</button>
+                        <button class="btn btn-secondary me-2 mb-2">Secondary</button>
+                        <button class="btn btn-success me-2 mb-2">Success</button>
+                        <button class="btn btn-danger me-2 mb-2">Danger</button>
+                        <button class="btn btn-warning me-2 mb-2">Warning</button>
+                        <button class="btn btn-info me-2 mb-2">Info</button>
+                    </div>
+                    
+                    <h5 class="card-title">Outline Buttons</h5>
+                    <div class="mb-3">
+                        <button class="btn btn-outline-primary me-2 mb-2">Primary</button>
+                        <button class="btn btn-outline-secondary me-2 mb-2">Secondary</button>
+                        <button class="btn btn-outline-success me-2 mb-2">Success</button>
+                        <button class="btn btn-outline-danger me-2 mb-2">Danger</button>
+                    </div>
+
+                    <h5 class="card-title">Button Sizes</h5>
+                    <div>
+                        <button class="btn btn-primary btn-lg me-2 mb-2">Large</button>
+                        <button class="btn btn-primary me-2 mb-2">Normal</button>
+                        <button class="btn btn-primary btn-sm me-2 mb-2">Small</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card card-success">
+                <div class="card-header">
+                    <i class="fas fa-wpforms me-2"></i>
+                    Test Form
+                </div>
+                <div class="card-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="testInput" class="form-label">Input Text</label>
+                            <input type="text" class="form-control" id="testInput" placeholder="Inserisci testo...">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="testSelect" class="form-label">Select</label>
+                            <select class="form-control" id="testSelect">
+                                <option>Opzione 1</option>
+                                <option>Opzione 2</option>
+                                <option>Opzione 3</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="testTextarea" class="form-label">Textarea</label>
+                            <textarea class="form-control" id="testTextarea" rows="3" placeholder="Inserisci note..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="" id="testCheck">
+                                <label class="form-check-label" for="testCheck">
+                                    Accetto i termini e condizioni
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-2"></i>
+                                Salva Form
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Test -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card card-info">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Test Messaggi
+                </div>
+                <div class="card-body">
+                    <div class="message-bubble message-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Questo è un messaggio di successo!
+                    </div>
+                    <div class="message-bubble message-error">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Questo è un messaggio di errore!
+                    </div>
+                    <div class="message-bubble message-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Questo è un messaggio di avviso!
+                    </div>
+                    <div class="message-bubble message-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Questo è un messaggio informativo!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Test -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card card-warning">
+                <div class="card-header">
+                    <i class="fas fa-table me-2"></i>
+                    Test Tabella Responsive
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Ruolo</th>
+                                    <th>Data Creazione</th>
+                                    <th>Stato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Mario Rossi</td>
+                                    <td>mario@example.com</td>
+                                    <td>Amministratore</td>
+                                    <td>01/01/2024</td>
+                                    <td><span class="badge bg-success">Attivo</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Luigi Verdi</td>
+                                    <td>luigi@example.com</td>
+                                    <td>Operatore</td>
+                                    <td>15/01/2024</td>
+                                    <td><span class="badge bg-warning">Sospeso</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>Anna Bianchi</td>
+                                    <td>anna@example.com</td>
+                                    <td>Contabile</td>
+                                    <td>20/02/2024</td>
+                                    <td><span class="badge bg-danger">Disattivo</span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary me-1">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Typography Test -->
+    <div class="row">
+        <div class="col-lg-6 mb-4">
+            <div class="card card-danger">
+                <div class="card-header">
+                    <i class="fas fa-font me-2"></i>
+                    Test Tipografia
+                </div>
+                <div class="card-body">
+                    <h1 class="text-primary">Heading 1 (h1)</h1>
+                    <h2 class="text-secondary">Heading 2 (h2)</h2>
+                    <h3 class="text-success">Heading 3 (h3)</h3>
+                    <h4 class="text-warning">Heading 4 (h4)</h4>
+                    <h5 class="text-danger">Heading 5 (h5)</h5>
+                    <h6 class="text-info">Heading 6 (h6)</h6>
+                    
+                    <hr>
+                    
+                    <p class="text-muted">Testo normale con <strong>grassetto</strong> e <em>corsivo</em></p>
+                    <p><small class="text-muted">Testo piccolo</small></p>
+                    <p class="fw-bold">Testo in grassetto</p>
+                    <p class="fw-light">Testo sottile</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-mobile-alt me-2"></i>
+                    Test Responsive
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Questo layout è progettato per essere completamente responsive:
+                    </p>
+                    <ul>
+                        <li><strong>Mobile</strong>: Stack verticale, navbar compatta</li>
+                        <li><strong>Tablet</strong>: Layout ibrido, sidebar collassabile</li>
+                        <li><strong>Desktop</strong>: Layout completo con sidebar fissa</li>
+                    </ul>
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Prova a ridimensionare la finestra</strong> per vedere l'adattamento responsive in azione!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Utility Classes Test -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-tools me-2"></i>
+                    Test Utility Classes
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2 mb-3">
+                            <div class="p-3 bg-primary text-white rounded">
+                                <i class="fas fa-square"></i>
+                                <div class="small">Primary</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="p-3 bg-secondary text-white rounded">
+                                <i class="fas fa-square"></i>
+                                <div class="small">Secondary</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="p-3 bg-success text-white rounded">
+                                <i class="fas fa-square"></i>
+                                <div class="small">Success</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="p-3 bg-danger text-white rounded">
+                                <i class="fas fa-square"></i>
+                                <div class="small">Danger</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="p-3 bg-warning text-dark rounded">
+                                <i class="fas fa-square"></i>
+                                <div class="small">Warning</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <div class="p-3 bg-info text-white rounded">
+                                <i class="fas fa-square"></i>
+                                <div class="small">Info</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <span class="badge bg-primary">Badge Primary</span>
+                        <span class="badge bg-secondary">Badge Secondary</span>
+                        <span class="badge bg-success">Badge Success</span>
+                        <span class="badge bg-danger">Badge Danger</span>
+                        <span class="badge bg-warning text-dark">Badge Warning</span>
+                        <span class="badge bg-info">Badge Info</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Test JavaScript functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Template di test caricato correttamente!');
+        console.log('CSS unificato attivo');
+        console.log('Responsive breakpoints:');
+        console.log('- Mobile: < 768px');
+        console.log('- Tablet: 768px - 992px');
+        console.log('- Desktop: > 992px');
+        
+        // Test hover effects
+        const cards = document.querySelectorAll('.card');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transition = 'all 0.3s ease';
+            });
+        });
+    });
+</script>
+{% endblock %}

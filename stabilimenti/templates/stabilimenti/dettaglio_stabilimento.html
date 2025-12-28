@@ -1,0 +1,317 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="stabilimento-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">
+                    {{ stabilimento.nome }}
+                    {% if not stabilimento.attivo %}
+                        <span class="badge bg-secondary ms-2">Inattivo</span>
+                    {% endif %}
+                </h1>
+                <p class="mb-1">
+                    <i class="fas fa-map-marker-alt me-2"></i>{{ stabilimento.get_indirizzo_completo }}
+                </p>
+                <p class="mb-1">
+                    <i class="fas fa-code me-2"></i>Codice: {{ stabilimento.codice_stabilimento }}
+                </p>
+                {% if stabilimento.telefono %}
+                    <p class="mb-0">
+                        <i class="fas fa-phone me-2"></i>{{ stabilimento.telefono }}
+                        {% if stabilimento.email_filiale %}
+                            <span class="ms-3"><i class="fas fa-envelope me-2"></i>{{ stabilimento.email_filiale }}</span>
+                        {% endif %}
+                    </p>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="h3 mb-1">€ {{ costi_anno|floatformat:2 }}</div>
+                <div>Costi anno corrente</div>
+                {% if stabilimento.data_apertura %}
+                    <div class="mt-2">
+                        <small>Aperto dal {{ stabilimento.data_apertura|date:"d/m/Y" }}</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Colonna Sinistra - Informazioni Principali -->
+        <div class="col-lg-8">
+            <!-- Informazioni Stabilimento -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informazioni Stabilimento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Responsabili</h6>
+                            {% if stabilimento.responsabile_operativo %}
+                                <p class="mb-1">
+                                    <strong>Operativo:</strong> 
+                                    {{ stabilimento.responsabile_operativo.get_full_name|default:stabilimento.responsabile_operativo.username }}
+                                </p>
+                            {% endif %}
+                            {% if stabilimento.responsabile_amministrativo %}
+                                <p class="mb-1">
+                                    <strong>Amministrativo:</strong> 
+                                    {{ stabilimento.responsabile_amministrativo.get_full_name|default:stabilimento.responsabile_amministrativo.username }}
+                                </p>
+                            {% endif %}
+                            {% if not stabilimento.responsabile_operativo and not stabilimento.responsabile_amministrativo %}
+                                <p class="text-muted mb-1">Nessun responsabile assegnato</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Caratteristiche</h6>
+                            {% if stabilimento.superficie_mq %}
+                                <p class="mb-1"><strong>Superficie:</strong> {{ stabilimento.superficie_mq }} mq</p>
+                            {% endif %}
+                            {% if stabilimento.numero_piani %}
+                                <p class="mb-1"><strong>Piani:</strong> {{ stabilimento.numero_piani }}</p>
+                            {% endif %}
+                            {% if stabilimento.anno_costruzione %}
+                                <p class="mb-1"><strong>Anno costruzione:</strong> {{ stabilimento.anno_costruzione }}</p>
+                            {% endif %}
+                            {% if not stabilimento.superficie_mq and not stabilimento.numero_piani and not stabilimento.anno_costruzione %}
+                                <p class="text-muted mb-1">Caratteristiche non specificate</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if stabilimento.note_generali %}
+                        <hr>
+                        <h6 class="text-muted">Note Generali</h6>
+                        <p class="mb-0">{{ stabilimento.note_generali|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Costi Recenti -->
+            <div class="info-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-euro-sign me-2"></i>Costi Recenti
+                    </h5><a href="{% url 'stabilimenti:nuovo_costo_stabilimento' stabilimento.pk %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>Nuovo Costo
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if costi_recenti %}
+                        {% for costo in costi_recenti %}
+                            <div class="list-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>{{ costo.titolo }}</strong>
+                                        <br><small class="text-muted">{{ costo.fornitore.nome }} - {{ costo.get_causale_display }}</small>
+                                        <br><small class="text-muted">{{ costo.data_creazione|date:"d/m/Y" }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">€ {{ costo.calcola_totale_con_iva|floatformat:2 }}</div>
+                                        <span class="badge bg-{{ costo.stato|yesno:'success,warning,secondary' }} badge-status">
+                                            {{ costo.get_stato_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'stabilimenti:costi_list' %}?stabilimento={{ stabilimento.pk }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-list me-1"></i>Vedi Tutti i Costi
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-receipt fa-2x mb-2"></i>
+                            <p>Nessun costo registrato</p><a href="{% url 'stabilimenti:nuovo_costo_stabilimento' stabilimento.pk %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>Aggiungi Primo Costo
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Documenti Recenti -->
+            <div class="info-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file me-2"></i>Documenti Recenti
+                    </h5>
+                    <a href="{% url 'stabilimenti:nuovo_documento' stabilimento.pk %}" class="btn btn-sm btn-success">
+                        <i class="fas fa-upload me-1"></i>Carica Documento
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if documenti_recenti %}
+                        {% for documento in documenti_recenti %}
+                            <div class="list-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ documento.nome_documento }}</strong>
+                                        {% if documento.versione != '1.0' %}
+                                            <span class="badge bg-info">v{{ documento.versione }}</span>
+                                        {% endif %}
+                                        <br><small class="text-muted">{{ documento.get_tipo_documento_display }}</small>
+                                        <br><small class="text-muted">{{ documento.data_inserimento|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                    <div>
+                                        {% if documento.is_scaduto %}
+                                            <span class="badge bg-danger">Scaduto</span>
+                                        {% elif documento.data_scadenza %}
+                                            <span class="badge bg-warning text-dark">Scade {{ documento.data_scadenza|date:"d/m/Y" }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'stabilimenti:documenti' stabilimento.pk %}" class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-folder me-1"></i>Vedi Tutti i Documenti
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open fa-2x mb-2"></i>
+                            <p>Nessun documento caricato</p>
+                            <a href="{% url 'stabilimenti:nuovo_documento' stabilimento.pk %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-upload me-1"></i>Carica Primo Documento
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonna Destra - Azioni e Scadenze -->
+        <div class="col-lg-4">
+            <!-- Statistiche -->
+            <div class="stats-box">
+                <h5>Riepilogo Anno Corrente</h5>
+                <div class="h2 text-primary">€ {{ costi_anno|floatformat:2 }}</div>
+                <div class="text-muted">Costi sostenuti</div>
+            </div>
+
+            <!-- Scadenze Prossime -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Scadenze Prossime
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if scadenze_prossime %}
+                        {% for scadenza in scadenze_prossime %}
+                            <div class="scadenza-item {% if scadenza.is_scaduto %}scadenza-scaduta{% elif scadenza.giorni_alla_scadenza <= 7 %}scadenza-item{% else %}scadenza-ok{% endif %}">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <strong>{{ scadenza.titolo }}</strong>
+                                        <br><small>{{ scadenza.get_causale_display }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">{{ scadenza.data_scadenza_servizio|date:"d/m/Y" }}</div>
+                                        {% if scadenza.is_scaduto %}
+                                            <small class="text-danger">Scaduto</small>
+                                        {% else %}
+                                            <small class="text-muted">{{ scadenza.giorni_alla_scadenza }} giorni</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'stabilimenti:scadenze' %}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-calendar me-1"></i>Dashboard Scadenze
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                            <p>Nessuna scadenza prossima</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Azioni Rapide -->
+            <div class="quick-actions">
+                <h6><i class="fas fa-bolt me-2"></i>Azioni Rapide</h6>
+                
+                <a href="{% url 'stabilimenti:modifica' stabilimento.pk %}" class="btn btn-warning action-btn">
+                    <i class="fas fa-edit me-2"></i>Modifica Stabilimento
+                </a><a href="{% url 'stabilimenti:nuovo_costo_stabilimento' stabilimento.pk %}" class="btn btn-primary action-btn">
+                    <i class="fas fa-plus me-2"></i>Nuovo Costo
+                </a>
+                
+                <a href="{% url 'stabilimenti:nuovo_documento' stabilimento.pk %}" class="btn btn-success action-btn">
+                    <i class="fas fa-upload me-2"></i>Carica Documento
+                </a>
+                
+                <a href="{% url 'stabilimenti:documenti' stabilimento.pk %}" class="btn btn-info action-btn">
+                    <i class="fas fa-folder me-2"></i>Gestisci Documenti
+                </a>
+                
+                <div class="mt-3">
+                    <button type="button" class="btn btn-outline-secondary action-btn" onclick="toggleStabilimento()">
+                        {% if stabilimento.attivo %}
+                            <i class="fas fa-pause me-2"></i>Disattiva Stabilimento
+                        {% else %}
+                            <i class="fas fa-play me-2"></i>Riattiva Stabilimento
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+function toggleStabilimento() {
+    const isAttivo = {{ stabilimento.attivo|yesno:'true,false' }};
+    const azione = isAttivo ? 'disattivare' : 'riattivare';
+    
+    if (confirm(`Sei sicuro di voler ${azione} questo stabilimento?`)) {
+        fetch('{% url "stabilimenti:toggle_attivo" stabilimento.pk %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Errore durante l\'operazione');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Errore durante l\'operazione');
+        });
+    }
+}
+</script>
+{% endblock %}

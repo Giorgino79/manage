@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Approvazione Preventivo - {{ richiesta.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .richiesta-summary {
+        background: linear-gradient(135deg, #fff3cd 0%, #f0f9ff 100%);
+        border: 1px solid #ffeaa7;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .ranking-card {
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        margin: 15px 0;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+    .ranking-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .ranking-card.selected {
+        border-color: #0d6efd;
+        background: linear-gradient(135deg, #e7f1ff 0%, #f0f9ff 100%);
+        box-shadow: 0 4px 16px rgba(13, 110, 253, 0.2);
+    }
+    .ranking-card.winner {
+        border-color: #ffd700;
+        background: linear-gradient(135deg, #fffbf0 0%, #fff8e1 100%);
+    }
+    .ranking-card.winner::before {
+        content: '👑';
+        position: absolute;
+        top: -10px;
+        right: 15px;
+        font-size: 1.5rem;
+    }
+    
+    .position-badge {
+        position: absolute;
+        top: -10px;
+        left: 15px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        font-size: 0.9rem;
+    }
+    .position-1 { background: linear-gradient(45deg, #ffd700, #ffb347); }
+    .position-2 { background: linear-gradient(45deg, #c0c0c0, #b8b8b8); }
+    .position-3 { background: linear-gradient(45deg, #cd7f32, #d2691e); }
+    .position-other { background: linear-gradient(45deg, #6c757d, #495057); }
+    
+    .score-display {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .score-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.3rem;
+        margin: 0 auto 10px;
+        border: 3px solid;
+    }
+    .score-excellent { 
+        background: linear-gradient(45deg, #28a745, #20c997); 
+        color: white; 
+        border-color: #1e7e34; 
+    }
+    .score-good { 
+        background: linear-gradient(45deg, #17a2b8, #20c997); 
+        color: white; 
+        border-color: #117a8b; 
+    }
+    .score-average { 
+        background: linear-gradient(45deg, #ffc107, #fd7e14); 
+        color: white; 
+        border-color: #d39e00; 
+    }
+    .score-poor { 
+        background: linear-gradient(45deg, #dc3545, #e83e8c); 
+        color: white; 
+        border-color: #bd2130; 
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    
+    .approval-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .comparison-table {
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e9ecef;
+    }
+    
+    .btn-approve {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 12px 30px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .btn-approve:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Approvazione Preventivo{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}">{{ richiesta.numero }}</a>
+        </li>
+        <li class="breadcrumb-item active">Approvazione</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            
+            <!-- Riepilogo Richiesta -->
+            <div class="richiesta-summary">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5><i data-feather="check-square" class="feather me-2"></i>{{ richiesta.numero }}</h5>
+                        <h6 class="text-warning">{{ richiesta.titolo }}</h6>
+                        <p class="mb-2">{{ richiesta.descrizione|truncatechars:200 }}</p>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">Richiedente:</small><br>
+                                <strong>{{ richiesta.richiedente.get_full_name }}</strong>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">Data Richiesta:</small><br>
+                                <strong>{{ richiesta.created_at|date:"d/m/Y H:i" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="badge bg-warning fs-6 mb-2">
+                            <i data-feather="clock" width="16" class="me-1"></i>
+                            In Attesa di Approvazione
+                        </div>
+                        
+                        {% if richiesta.budget_massimo %}
+                            <div class="text-muted small">Budget Massimo:</div>
+                            <div class="h6 text-success">€ {{ richiesta.budget_massimo|floatformat:2 }}</div>
+                        {% endif %}
+                        
+                        <div class="text-muted small">Preventivi Ricevuti:</div>
+                        <div class="h6">{{ ranking_preventivi|length }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alert Informativo -->
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-start">
+                    <i data-feather="info" class="feather me-3 mt-1"></i>
+                    <div>
+                        <strong>Processo di Approvazione</strong><br>
+                        Seleziona il preventivo da approvare tra quelli ricevuti e valutati. 
+                        Una volta approvato, il sistema genererà automaticamente l'ordine di acquisto.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ranking Preventivi -->
+            {% if ranking_preventivi %}
+            <div class="card">
+                <div class="card-header">
+                    <h6><i data-feather="award" class="feather me-2"></i>Ranking Preventivi Valutati</h6>
+                    <div class="text-muted small">I preventivi sono ordinati per punteggio totale. Clicca per selezionare quello da approvare.</div>
+                </div>
+                <div class="card-body">
+                    
+                    <form method="post" id="approval-form">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            {% for item in ranking_preventivi %}
+                            <div class="col-lg-6 mb-3">
+                                <div class="ranking-card {% if forloop.first %}winner{% endif %}" 
+                                     onclick="selectPreventivo({{ item.preventivo.id }}, this)"
+                                     data-preventivo="{{ item.preventivo.id }}">
+                                    
+                                    <!-- Position Badge -->
+                                    <div class="position-badge position-{% if forloop.counter <= 3 %}{{ forloop.counter }}{% else %}other{% endif %}">
+                                        {{ forloop.counter }}
+                                    </div>
+                                    
+                                    <!-- Score Display -->
+                                    <div class="score-display">
+                                        <div class="score-circle {% if item.punteggio >= 80 %}score-excellent{% elif item.punteggio >= 60 %}score-good{% elif item.punteggio >= 40 %}score-average{% else %}score-poor{% endif %}">
+                                            {{ item.punteggio|floatformat:0 }}
+                                        </div>
+                                        <div class="fw-bold text-muted">Punteggio Totale</div>
+                                    </div>
+                                    
+                                    <!-- Fornitore Info -->
+                                    <div class="text-center mb-3">
+                                        <h6 class="fw-bold">{{ item.preventivo.fornitore.nome }}</h6>
+                                        <div class="text-muted small">{{ item.preventivo.numero_preventivo_fornitore }}</div>
+                                    </div>
+                                    
+                                    <!-- Details -->
+                                    <div class="detail-row">
+                                        <span class="text-muted">Importo:</span>
+                                        <span class="fw-bold text-success">€ {{ item.preventivo.importo_totale|floatformat:2 }}</span>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <span class="text-muted">Pagamento:</span>
+                                        <span class="small">{{ item.preventivo.termini_pagamento }}</span>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <span class="text-muted">Consegna:</span>
+                                        <span class="small">{{ item.preventivo.tempi_consegna }}</span>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <span class="text-muted">Validità:</span>
+                                        <span class="small {% if item.preventivo.is_scaduto %}text-danger{% elif item.preventivo.giorni_validità_rimanenti <= 7 %}text-warning{% endif %}">
+                                            {% if item.preventivo.is_scaduto %}
+                                                Scaduto
+                                            {% else %}
+                                                {{ item.preventivo.giorni_validità_rimanenti }} giorni
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    
+                                    {% if item.preventivo.garanzia %}
+                                    <div class="detail-row">
+                                        <span class="text-muted">Garanzia:</span>
+                                        <span class="small">{{ item.preventivo.garanzia }}</span>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <!-- Selection Indicator -->
+                                    <div class="text-center mt-3">
+                                        <div class="selection-indicator" style="display: none;">
+                                            <i data-feather="check-circle" class="text-primary" width="24"></i>
+                                            <span class="text-primary fw-bold ms-2">SELEZIONATO</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <input type="hidden" name="preventivo_scelto" id="preventivo_scelto" required>
+                        
+                        <!-- Sezione Approvazione -->
+                        <div class="approval-section" id="approval-section" style="display: none;">
+                            <h6><i data-feather="message-square" class="feather me-2"></i>Note di Approvazione</h6>
+                            <div class="mb-3">
+                                <label for="note_approvazione" class="form-label">Note (opzionale)</label>
+                                <textarea class="form-control" id="note_approvazione" name="note_approvazione" rows="3"
+                                        placeholder="Aggiungi eventuali note o commenti sull'approvazione..."></textarea>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <i data-feather="info" class="feather me-2"></i>
+                                <strong>Cosa succederà dopo l'approvazione:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>La richiesta verrà marcata come "Approvata"</li>
+                                    <li>Verrà generato automaticamente un ordine di acquisto</li>
+                                    <li>Il fornitore selezionato riceverà una conferma via email</li>
+                                    <li>Gli altri fornitori riceveranno una comunicazione di ringraziamento</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-secondary">
+                                    <i data-feather="arrow-left" class="feather me-2"></i>Annulla
+                                </a>
+                                
+                                <button type="submit" class="btn btn-approve">
+                                    <i data-feather="check" class="feather me-2"></i>Approva Preventivo
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Tabella Comparativa -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i data-feather="bar-chart" class="feather me-2"></i>Confronto Dettagliato</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 comparison-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Pos.</th>
+                                    <th>Fornitore</th>
+                                    <th>Importo</th>
+                                    <th>Punteggio</th>
+                                    <th>Pagamento</th>
+                                    <th>Consegna</th>
+                                    <th>Validità</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ranking_preventivi %}
+                                <tr class="{% if forloop.first %}table-warning{% endif %}">
+                                    <td>
+                                        <span class="badge {% if forloop.first %}bg-warning text-dark{% elif forloop.counter == 2 %}bg-secondary{% elif forloop.counter == 3 %}bg-info{% else %}bg-light text-dark{% endif %}">
+                                            {{ forloop.counter }}°
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong>{{ item.preventivo.fornitore.nome }}</strong><br>
+                                        <small class="text-muted">{{ item.preventivo.numero_preventivo_fornitore }}</small>
+                                    </td>
+                                    <td>
+                                        <strong class="text-success">€ {{ item.preventivo.importo_totale|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                <div class="progress-bar {% if item.punteggio >= 80 %}bg-success{% elif item.punteggio >= 60 %}bg-info{% elif item.punteggio >= 40 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ item.punteggio }}%"></div>
+                                            </div>
+                                            <strong>{{ item.punteggio|floatformat:0 }}/100</strong>
+                                        </div>
+                                    </td>
+                                    <td><small>{{ item.preventivo.termini_pagamento }}</small></td>
+                                    <td><small>{{ item.preventivo.tempi_consegna }}</small></td>
+                                    <td>
+                                        <small class="{% if item.preventivo.is_scaduto %}text-danger{% elif item.preventivo.giorni_validità_rimanenti <= 7 %}text-warning{% endif %}">
+                                            {% if item.preventivo.is_scaduto %}
+                                                Scaduto
+                                            {% else %}
+                                                {{ item.preventivo.giorni_validità_rimanenti }}g
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i data-feather="inbox" width="64" height="64" class="text-muted mb-3"></i>
+                    <h5 class="text-muted">Nessun Preventivo da Approvare</h5>
+                    <p class="text-muted">Non ci sono preventivi valutati per questa richiesta.</p>
+                    <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-primary">
+                        <i data-feather="arrow-left" class="feather me-2"></i>Torna al Dettaglio
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
+
+function selectPreventivo(preventivoId, cardElement) {
+    // Remove selection from all cards
+    document.querySelectorAll('.ranking-card').forEach(card => {
+        card.classList.remove('selected');
+        card.querySelector('.selection-indicator').style.display = 'none';
+    });
+    
+    // Add selection to clicked card
+    cardElement.classList.add('selected');
+    cardElement.querySelector('.selection-indicator').style.display = 'block';
+    
+    // Update hidden input
+    document.getElementById('preventivo_scelto').value = preventivoId;
+    
+    // Show approval section
+    document.getElementById('approval-section').style.display = 'block';
+    
+    // Smooth scroll to approval section
+    setTimeout(() => {
+        document.getElementById('approval-section').scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+    }, 300);
+    
+    // Re-initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
+// Form validation
+document.getElementById('approval-form').addEventListener('submit', function(e) {
+    const preventivoScelto = document.getElementById('preventivo_scelto').value;
+    
+    if (!preventivoScelto) {
+        e.preventDefault();
+        alert('Seleziona un preventivo da approvare prima di procedere.');
+        return false;
+    }
+    
+    // Confirm approval
+    const fornitore = document.querySelector(`[data-preventivo="${preventivoScelto}"] h6`).textContent;
+    const conferma = confirm(`Sei sicuro di voler approvare il preventivo di ${fornitore}?\n\nQuesta azione genererà automaticamente un ordine di acquisto.`);
+    
+    if (!conferma) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

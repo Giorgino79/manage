@@ -1,0 +1,484 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load acquisti_extras %}
+
+{% block title %}{{ ordine.numero_ordine }} - Dettaglio Ordine{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ordine-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    .info-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .info-card h6 {
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+    .timeline-item {
+        border-left: 3px solid #dee2e6;
+        padding-left: 15px;
+        margin-bottom: 15px;
+        position: relative;
+    }
+    .timeline-item.completed {
+        border-left-color: #28a745;
+    }
+    .timeline-item .timeline-icon {
+        position: absolute;
+        left: -8px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: white;
+        border: 3px solid #dee2e6;
+    }
+    .timeline-item.completed .timeline-icon {
+        border-color: #28a745;
+        background: #28a745;
+    }
+    .actions-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header Ordine -->
+    <div class="ordine-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h3 mb-2">
+                    <i class="fas fa-file-invoice me-2"></i>{{ ordine.numero_ordine }}
+                </h1>
+                <p class="mb-1">
+                    <i class="fas fa-truck me-2"></i>{{ ordine.fornitore.nome }}
+                </p>
+                {% if ordine.titolo_display %}
+                <p class="mb-0">
+                    <i class="fas fa-tag me-2"></i>{{ ordine.titolo_display }}
+                </p>
+                {% endif %}
+            </div>
+            <div class="text-end">
+                <span class="badge bg-{{ ordine.get_stato_css_class }} fs-6 mb-2">
+                    {{ ordine.get_stato_display }}
+                </span>
+                <br>
+                <h2 class="h4 mb-0">€{{ ordine.importo_totale|floatformat:2 }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Colonna sinistra: Informazioni ordine -->
+        <div class="col-lg-8">
+            <!-- Dati commerciali -->
+            <div class="info-card">
+                <h6><i class="fas fa-handshake me-2"></i>Dati Commerciali</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Importo Totale:</strong><br>
+                        €{{ ordine.importo_totale|floatformat:2 }} {{ ordine.valuta }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Termini Pagamento:</strong><br>
+                        {{ ordine.termini_pagamento }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Tempi Consegna:</strong><br>
+                        {{ ordine.tempi_consegna }}
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <strong>Data Consegna Richiesta:</strong><br>
+                        {{ ordine.data_consegna_richiesta|date:"d/m/Y" }}
+                    </div>
+                    {% if ordine.riferimento_esterno %}
+                    <div class="col-md-6">
+                        <strong>Riferimento Fornitore:</strong><br>
+                        {{ ordine.riferimento_esterno }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Timeline ordine -->
+            <div class="info-card">
+                <h6><i class="fas fa-clock me-2"></i>Timeline Ordine</h6>
+                <div class="timeline">
+                    <!-- Creazione -->
+                    <div class="timeline-item completed">
+                        <div class="timeline-icon"></div>
+                        <div>
+                            <strong>Ordine Creato</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ ordine.data_ordine|date:"d/m/Y H:i" }} da {{ ordine.creato_da.get_full_name }}
+                                ({{ ordine.get_giorni_dalla_creazione }} giorni fa)
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Ricevimento -->
+                    <div class="timeline-item {% if ordine.stato != 'CREATO' %}completed{% endif %}">
+                        <div class="timeline-icon"></div>
+                        <div>
+                            <strong>Merce Ricevuta</strong>
+                            <br>
+                            {% if ordine.data_ricevimento %}
+                            <small class="text-muted">
+                                {{ ordine.data_ricevimento|date:"d/m/Y H:i" }} da {{ ordine.ricevuto_da.get_full_name }}
+                                ({{ ordine.get_giorni_dalla_ricevimento }} giorni fa)
+                            </small>
+                            {% else %}
+                            <small class="text-muted">In attesa di ricevimento</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Pagamento -->
+                    <div class="timeline-item {% if ordine.stato == 'PAGATO' %}completed{% endif %}">
+                        <div class="timeline-icon"></div>
+                        <div>
+                            <strong>Pagamento Effettuato</strong>
+                            <br>
+                            {% if ordine.data_pagamento %}
+                            <small class="text-muted">
+                                {{ ordine.data_pagamento|date:"d/m/Y H:i" }} da {{ ordine.pagato_da.get_full_name }}
+                            </small>
+                            {% else %}
+                            <small class="text-muted">
+                                {% if ordine.stato == 'RICEVUTO' %}
+                                In attesa di pagamento
+                                {% else %}
+                                Pagamento non ancora disponibile
+                                {% endif %}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note ordine -->
+            <div class="info-card">
+                <h6><i class="fas fa-sticky-note me-2"></i>Note Ordine</h6>
+                {% if ordine.note_ordine %}
+                <div style="white-space: pre-wrap;">{{ ordine.note_ordine }}</div>
+                {% else %}
+                <p class="text-muted mb-0">Nessuna nota disponibile</p>
+                {% endif %}
+            </div>
+
+            <!-- Allegati -->
+            <div class="info-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0"><i class="fas fa-paperclip me-2"></i>Allegati ({{ ordine.get_allegati_attivi.count }})</h6>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#allegatoModal">
+                        <i class="fas fa-plus"></i> Aggiungi
+                    </button>
+                </div>
+                
+                {% with allegati=ordine.get_allegati_attivi %}
+                {% if allegati %}
+                <div class="list-group list-group-flush">
+                    {% for allegato in allegati %}
+                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    <i class="{{ allegato.icona_tipo }} me-2"></i>
+                                    {{ allegato.titolo }}
+                                </h6>
+                                <small class="text-muted">{{ allegato.creato_il|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <p class="mb-1 text-muted">{{ allegato.get_tipo_allegato_display }}</p>
+                            {% if allegato.descrizione %}
+                            <small class="text-muted">{{ allegato.descrizione|truncatechars:100 }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="ms-3">
+                            {% if allegato.file %}
+                            <a href="{{ allegato.get_download_url }}" class="btn btn-sm btn-outline-primary" title="Scarica">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{{ allegato.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Visualizza">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-paperclip fa-2x mb-2"></i>
+                    <p class="mb-0">Nessun allegato presente</p>
+                </div>
+                {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Collegamento preventivo -->
+            {% if ordine.preventivo_originale %}
+            <div class="info-card">
+                <h6><i class="fas fa-link me-2"></i>Collegamento Preventivo</h6>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>Preventivo:</strong> {{ ordine.preventivo_originale.richiesta.numero }}<br>
+                        <small class="text-muted">{{ ordine.preventivo_originale.richiesta.titolo }}</small>
+                    </div>
+                    <a href="{% url 'preventivi:richiesta_detail' ordine.preventivo_originale.richiesta.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye"></i> Vedi Preventivo
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Colonna destra: Azioni -->
+        <div class="col-lg-4">
+            <!-- Azioni disponibili -->
+            <div class="actions-card">
+                <h6><i class="fas fa-cogs me-2"></i>Azioni Disponibili</h6>
+                
+                {% if form_stato.fields.azione.choices %}
+                <form method="post" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="cambia_stato" value="1">
+                    
+                    <div class="mb-3">
+                        <label for="{{ form_stato.azione.id_for_label }}" class="form-label">Azione</label>
+                        {{ form_stato.azione }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form_stato.note.id_for_label }}" class="form-label">Note (opzionale)</label>
+                        {{ form_stato.note }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100" onclick="return confirm('Sei sicuro di voler eseguire questa azione?')">
+                        <i class="fas fa-check"></i> Esegui Azione
+                    </button>
+                </form>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Nessuna azione disponibile per questo ordine.
+                </div>
+                {% endif %}
+
+                <hr>
+
+                <!-- Modifica dettagli -->
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="aggiorna_dettagli" value="1">
+                    
+                    <h6 class="mt-3"><i class="fas fa-edit me-2"></i>Modifica Dettagli</h6>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form_dettaglio.riferimento_esterno.id_for_label }}" class="form-label">Riferimento Fornitore</label>
+                        {{ form_dettaglio.riferimento_esterno }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form_dettaglio.note_ordine.id_for_label }}" class="form-label">Note Ordine</label>
+                        {{ form_dettaglio.note_ordine }}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-save"></i> Aggiorna Dettagli
+                    </button>
+                </form>
+            </div>
+
+            <!-- Info fornitore -->
+            <div class="info-card">
+                <h6><i class="fas fa-building me-2"></i>Dati Fornitore</h6>
+                <div>
+                    <strong>{{ ordine.fornitore.nome }}</strong><br>
+                    {% if ordine.fornitore.email %}
+                    <i class="fas fa-envelope me-1"></i> {{ ordine.fornitore.email }}<br>
+                    {% endif %}
+                    {% if ordine.fornitore.telefono %}
+                    <i class="fas fa-phone me-1"></i> {{ ordine.fornitore.telefono }}<br>
+                    {% endif %}
+                    {% if ordine.fornitore.indirizzo %}
+                    <i class="fas fa-map-marker-alt me-1"></i> {{ ordine.fornitore.indirizzo }}
+                    {% if ordine.fornitore.citta %}, {{ ordine.fornitore.citta }}{% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Metadati -->
+            <div class="info-card">
+                <h6><i class="fas fa-info-circle me-2"></i>Informazioni Sistema</h6>
+                <small class="text-muted">
+                    <strong>Creato:</strong> {{ ordine.created_at|date:"d/m/Y H:i" }}<br>
+                    <strong>Modificato:</strong> {{ ordine.updated_at|date:"d/m/Y H:i" }}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pulsante torna indietro -->
+    <div class="d-flex justify-content-start mt-4">
+        <a href="{% url 'acquisti:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Torna alla Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Modal Allegato -->
+<div class="modal fade" id="allegatoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Aggiungi Allegato</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="allegatoForm" action="{% url 'core:allegato_create' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="content_type" value="{{ ordine|get_content_type_id }}">
+                <input type="hidden" name="object_id" value="{{ ordine.pk }}">
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo Allegato</label>
+                            <select name="tipo_allegato" class="form-control" required>
+                                <option value="">-- Seleziona tipo --</option>
+                                <option value="doc_ordine">📋 Ordine di Acquisto</option>
+                                <option value="doc_contratto">📄 Contratto</option>
+                                <option value="doc_fattura">🧾 Fattura</option>
+                                <option value="doc_bolla">📦 Bolla Consegna</option>
+                                <option value="email_ricevuta">📨 Email Ricevuta</option>
+                                <option value="nota_interna">📝 Nota Interna</option>
+                                <option value="foto_documento">📷 Foto Documento</option>
+                                <option value="altro">📎 Altro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Titolo</label>
+                            <input type="text" name="titolo" class="form-control" required 
+                                   placeholder="Titolo dell'allegato">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Descrizione</label>
+                        <textarea name="descrizione" class="form-control" rows="2" 
+                                  placeholder="Descrizione opzionale"></textarea>
+                    </div>
+                    
+                    <!-- Tab per tipo di contenuto -->
+                    <div class="mt-3">
+                        <ul class="nav nav-tabs" id="contentTabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="file-tab" data-bs-toggle="tab" href="#file-content">
+                                    <i class="fas fa-file"></i> File
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="text-tab" data-bs-toggle="tab" href="#text-content">
+                                    <i class="fas fa-edit"></i> Testo
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="url-tab" data-bs-toggle="tab" href="#url-content">
+                                    <i class="fas fa-link"></i> Link
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content mt-3">
+                            <div class="tab-pane fade show active" id="file-content">
+                                <div class="mb-3">
+                                    <label class="form-label">File</label>
+                                    <input type="file" name="file" class="form-control">
+                                    <div class="form-text">Max 20MB. Formati: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</div>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="text-content">
+                                <div class="mb-3">
+                                    <label class="form-label">Contenuto Testo</label>
+                                    <textarea name="contenuto_testo" class="form-control" rows="4" 
+                                              placeholder="Scrivi il contenuto testuale..."></textarea>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="url-content">
+                                <div class="mb-3">
+                                    <label class="form-label">URL Esterno</label>
+                                    <input type="url" name="url_esterno" class="form-control" 
+                                           placeholder="https://esempio.com">
+                                    <div class="form-text">Link esterno invece del file</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Tags</label>
+                            <input type="text" name="tags" class="form-control" 
+                                   placeholder="tag1, tag2, tag3">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Data Documento</label>
+                            <input type="date" name="data_documento" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salva Allegato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-resize textarea note
+    $('textarea').each(function() {
+        this.style.height = (this.scrollHeight) + 'px';
+    }).on('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+    
+    // Evidenzia sezioni quando si clicca su azioni
+    $('form button[type="submit"]').on('click', function() {
+        $(this).closest('.actions-card').addClass('border-primary border-2');
+        setTimeout(() => {
+            $('.actions-card').removeClass('border-primary border-2');
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}

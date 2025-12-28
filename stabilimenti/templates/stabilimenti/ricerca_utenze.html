@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="search-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h3 mb-1">
+                    <i class="fas fa-search me-2"></i>Ricerca Avanzata Utenze
+                </h1>
+                <p class="mb-0 opacity-75">Trova e filtra le utenze di tutti gli stabilimenti</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'stabilimenti:dashboard_utenze' %}" class="btn btn-light">
+                    <i class="fas fa-chart-line me-2"></i>Dashboard Utenze
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form di Ricerca -->
+    <div class="search-form">
+        <form method="get" id="search-form">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    {{ form.stabilimento.label_tag }}
+                    {{ form.stabilimento }}
+                </div>
+                <div class="col-md-3">
+                    {{ form.causale.label_tag }}
+                    {{ form.causale }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.stato.label_tag }}
+                    {{ form.stato }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.fornitore.label_tag }}
+                    {{ form.fornitore }}
+                </div>
+                <div class="col-md-2">
+                    {{ form.anno.label_tag }}
+                    {{ form.anno }}
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <div class="form-check">
+                        {{ form.scadenze_prossime }}
+                        <label class="form-check-label" for="{{ form.scadenze_prossime.id_for_label }}">
+                            {{ form.scadenze_prossime.label }}
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <!-- Spazio per eventuali altri filtri -->
+                </div>
+                <div class="col-md-3 text-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search me-2"></i>Cerca
+                    </button>
+                    <a href="{% url 'stabilimenti:ricerca_utenze' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-eraser me-2"></i>Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Risultati della Ricerca -->
+    <div class="search-results-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1">
+                    <i class="fas fa-list me-2"></i>Risultati della Ricerca
+                </h5>
+                <small class="text-muted">
+                    {% if page_obj %}
+                        Trovate {{ page_obj.paginator.count }} utenze
+                    {% else %}
+                        Nessuna utenza trovata
+                    {% endif %}
+                </small>
+            </div>
+            {% if page_obj %}
+                <div class="export-options">
+                    <button class="btn btn-sm btn-outline-success" onclick="exportToExcel()">
+                        <i class="fas fa-file-excel me-1"></i>Excel
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="exportToPDF()">
+                        <i class="fas fa-file-pdf me-1"></i>PDF
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Filtri Attivi -->
+        <div class="filter-tags" id="active-filters">
+            <!-- I filtri attivi verranno popolati via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Lista Utenze -->
+    {% if page_obj %}
+        {% for utenza in page_obj %}
+            <div class="card utenza-card {{ utenza.causale }}">
+                <div class="card-body">
+                    <div class="row align-items-start">
+                        <div class="col-md-8">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-1">{{ utenza.titolo }}</h6>
+                                <span class="tipo-utenza-badge {{ utenza.causale }}">
+                                    {{ utenza.get_causale_display }}
+                                </span>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <i class="fas fa-building me-1 text-primary"></i>
+                                <strong>{{ utenza.stabilimento.nome }}</strong>
+                                <span class="mx-2 text-muted">•</span>
+                                <i class="fas fa-user me-1 text-info"></i>{{ utenza.fornitore.nome }}
+                                <span class="mx-2 text-muted">•</span>
+                                <i class="fas fa-hashtag me-1 text-secondary"></i>{{ utenza.numero_pratica }}
+                            </div>
+                            
+                            <div class="small text-muted mb-2">
+                                {% if utenza.periodo_fatturazione_da and utenza.periodo_fatturazione_a %}
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Periodo: {{ utenza.periodo_fatturazione_da|date:"d/m/Y" }} - {{ utenza.periodo_fatturazione_a|date:"d/m/Y" }}
+                                {% endif %}
+                                {% if utenza.data_fattura %}
+                                    <span class="mx-2">•</span>
+                                    <i class="fas fa-file-invoice me-1"></i>{{ utenza.data_fattura|date:"d/m/Y" }}
+                                {% endif %}
+                            </div>
+                            
+                            {% if utenza.consumo_kwh or utenza.consumo_mc or utenza.codice_pdr_pod %}
+                                <div class="consumo-info">
+                                    {% if utenza.consumo_kwh %}
+                                        <i class="fas fa-bolt me-1 text-warning"></i>{{ utenza.consumo_kwh }} kWh
+                                    {% endif %}
+                                    {% if utenza.consumo_mc %}
+                                        <i class="fas fa-fire me-1 text-danger"></i>{{ utenza.consumo_mc }} mc
+                                    {% endif %}
+                                    {% if utenza.codice_pdr_pod %}
+                                        <br><small><i class="fas fa-barcode me-1"></i>{{ utenza.codice_pdr_pod }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4 text-end">
+                            <div class="h5 mb-1">€ {{ utenza.calcola_totale_con_iva|floatformat:2 }}</div>
+                            <div class="small text-muted mb-2">
+                                <span class="stato-badge badge bg-{{ utenza.stato|yesno:'success,warning,secondary' }}">
+                                    {{ utenza.get_stato_display }}
+                                </span>
+                            </div>
+                            
+                            {% if utenza.data_scadenza_servizio %}
+                                <div class="small mb-2">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Prossima: {{ utenza.data_scadenza_servizio|date:"d/m/Y" }}
+                                    {% if utenza.is_urgente %}
+                                        <span class="badge bg-danger ms-1">Urgente</span>
+                                    {% elif utenza.is_prossima_scadenza %}
+                                        <span class="badge bg-warning text-dark ms-1">Prossima</span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'stabilimenti:dettaglio_costo' utenza.pk %}" 
+                                   class="btn btn-outline-primary" title="Visualizza dettaglio">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if utenza.can_be_modified %}
+                                    <a href="{% url 'stabilimenti:modifica_utenza' utenza.pk %}" 
+                                       class="btn btn-outline-warning" title="Modifica">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                {% endif %}
+                                <div class="btn-group" role="group">
+                                    <button type="button" 
+                                            class="btn btn-outline-secondary dropdown-toggle" 
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'stabilimenti:utenze_stabilimento' stabilimento_pk=utenza.stabilimento.pk %}">
+                                                <i class="fas fa-building me-2"></i>Utenze Stabilimento
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#">
+                                                <i class="fas fa-download me-2"></i>Scarica Fattura
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="addToComparison({{ utenza.pk }})">
+                                                <i class="fas fa-balance-scale me-2"></i>Aggiungi a Confronto
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <!-- Paginazione -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Paginazione utenze" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            
+            <div class="text-center text-muted">
+                Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }} 
+                ({{ page_obj.paginator.count }} utenze totali)
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="no-results">
+            <i class="fas fa-search fa-3x mb-3"></i>
+            <h5>Nessuna utenza trovata</h5>
+            <p class="text-muted">Prova a modificare i criteri di ricerca o a resettare i filtri.</p>
+            <a href="{% url 'stabilimenti:ricerca_utenze' %}" class="btn btn-primary">
+                <i class="fas fa-eraser me-2"></i>Reset Filtri
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal per Confronto Utenze -->
+<div class="modal fade" id="comparisonModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confronto Utenze</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="comparison-content">
+                    <!-- Contenuto del confronto verrà popolato via JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                <button type="button" class="btn btn-primary" onclick="exportComparison()">
+                    <i class="fas fa-download me-2"></i>Esporta Confronto
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestione filtri attivi
+    updateActiveFilters();
+    
+    // Auto-submit form quando cambiano i filtri
+    const formElements = document.querySelectorAll('#search-form select, #search-form input[type="checkbox"]');
+    formElements.forEach(element => {
+        element.addEventListener('change', function() {
+            // Debounce per evitare troppe richieste
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                document.getElementById('search-form').submit();
+            }, 300);
+        });
+    });
+});
+
+function updateActiveFilters() {
+    const container = document.getElementById('active-filters');
+    const params = new URLSearchParams(window.location.search);
+    container.innerHTML = '';
+    
+    // Mappa dei nomi dei parametri per display
+    const paramNames = {
+        'stabilimento': 'Stabilimento',
+        'causale': 'Tipo Utenza',
+        'stato': 'Stato',
+        'fornitore': 'Fornitore',
+        'anno': 'Anno',
+        'scadenze_prossime': 'Scadenze Prossime'
+    };
+    
+    params.forEach((value, key) => {
+        if (key !== 'page' && value) {
+            const tag = document.createElement('span');
+            tag.className = 'filter-tag';
+            
+            const displayName = paramNames[key] || key;
+            const displayValue = getDisplayValue(key, value);
+            
+            tag.innerHTML = `
+                ${displayName}: ${displayValue}
+                <span class="remove" onclick="removeFilter('${key}')">&times;</span>
+            `;
+            
+            container.appendChild(tag);
+        }
+    });
+}
+
+function getDisplayValue(key, value) {
+    // Ottieni il testo visualizzato per il valore
+    const select = document.querySelector(`select[name="${key}"]`);
+    if (select) {
+        const option = select.querySelector(`option[value="${value}"]`);
+        return option ? option.textContent : value;
+    }
+    
+    if (key === 'scadenze_prossime') {
+        return 'Sì';
+    }
+    
+    return value;
+}
+
+function removeFilter(filterKey) {
+    const params = new URLSearchParams(window.location.search);
+    params.delete(filterKey);
+    params.delete('page'); // Reset pagination
+    
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    window.location.href = newUrl;
+}
+
+// Array per il confronto utenze
+let comparisonItems = [];
+
+function addToComparison(utenzaId) {
+    if (comparisonItems.includes(utenzaId)) {
+        alert('Questa utenza è già nel confronto');
+        return;
+    }
+    
+    if (comparisonItems.length >= 5) {
+        alert('Puoi confrontare massimo 5 utenze alla volta');
+        return;
+    }
+    
+    comparisonItems.push(utenzaId);
+    updateComparisonButton();
+    
+    // Feedback visivo
+    const button = event.target.closest('a');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check me-2"></i>Aggiunto';
+    button.classList.add('text-success');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('text-success');
+    }, 1500);
+}
+
+function updateComparisonButton() {
+    let compareBtn = document.getElementById('compare-btn');
+    
+    if (comparisonItems.length > 0) {
+        if (!compareBtn) {
+            compareBtn = document.createElement('button');
+            compareBtn.id = 'compare-btn';
+            compareBtn.className = 'btn btn-warning position-fixed';
+            compareBtn.style.cssText = 'bottom: 20px; right: 20px; z-index: 1050;';
+            compareBtn.onclick = showComparison;
+            document.body.appendChild(compareBtn);
+        }
+        
+        compareBtn.innerHTML = `
+            <i class="fas fa-balance-scale me-2"></i>
+            Confronta (${comparisonItems.length})
+        `;
+    } else if (compareBtn) {
+        compareBtn.remove();
+    }
+}
+
+function showComparison() {
+    // Qui dovresti fare una chiamata AJAX per ottenere i dati delle utenze
+    // Per ora mostriamo solo gli ID
+    const content = document.getElementById('comparison-content');
+    content.innerHTML = `
+        <p>Utenze selezionate per il confronto:</p>
+        <ul>
+            ${comparisonItems.map(id => `<li>Utenza ID: ${id}</li>`).join('')}
+        </ul>
+        <p><em>Funzionalità di confronto dettagliato in sviluppo...</em></p>
+    `;
+    
+    const modal = new bootstrap.Modal(document.getElementById('comparisonModal'));
+    modal.show();
+}
+
+function exportToExcel() {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('export', 'excel');
+    window.location.href = currentUrl.href;
+}
+
+function exportToPDF() {
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.set('export', 'pdf');
+    window.location.href = currentUrl.href;
+}
+
+function exportComparison() {
+    // Implementa l'esportazione del confronto
+    alert('Funzionalità di esportazione confronto in sviluppo...');
+}
+</script>
+{% endblock %}

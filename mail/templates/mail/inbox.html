@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inbox - Mail{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'mail/css/inbox.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="mail-container">
+    <!-- Left Sidebar: Folders & Labels -->
+    <div class="mail-sidebar">
+        <!-- Compose Button -->
+        <button class="btn btn-compose w-100 mb-3" onclick="window.location.href='{% url 'mail:compose' %}'">
+            <i data-feather="edit" class="me-2"></i>
+            Componi
+        </button>
+
+        <!-- Search Bar -->
+        <div class="mail-search mb-3">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0">
+                    <i data-feather="search" style="width: 14px; height: 14px;"></i>
+                </span>
+                <input type="text" class="form-control border-start-0 ps-0"
+                       placeholder="Cerca nelle mail..."
+                       id="mailSearchInput">
+            </div>
+        </div>
+
+        <!-- Folders Section -->
+        <div class="mail-nav">
+            <h6 class="mail-nav-title">Cartelle</h6>
+            <ul class="mail-nav-list">
+                {% for folder in folders %}
+                <li class="mail-nav-item {% if folder.folder_type == current_folder %}active{% endif %}">
+                    <a href="{% if folder.folder_type == 'inbox' %}{% url 'mail:inbox' %}{% else %}{% url 'mail:folder_view' folder.folder_type %}{% endif %}"
+                       class="mail-nav-link">
+                        {% if folder.folder_type == 'inbox' %}
+                            <i data-feather="inbox" class="me-2"></i>
+                        {% elif folder.folder_type == 'sent' %}
+                            <i data-feather="send" class="me-2"></i>
+                        {% elif folder.folder_type == 'drafts' %}
+                            <i data-feather="file-text" class="me-2"></i>
+                        {% elif folder.folder_type == 'trash' %}
+                            <i data-feather="trash-2" class="me-2"></i>
+                        {% elif folder.folder_type == 'spam' %}
+                            <i data-feather="alert-octagon" class="me-2"></i>
+                        {% else %}
+                            <i data-feather="folder" class="me-2"></i>
+                        {% endif %}
+                        <span class="folder-name">{{ folder.name }}</span>
+                        {% if folder.unread_count > 0 %}
+                        <span class="badge bg-primary rounded-pill ms-auto">{{ folder.unread_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <!-- Labels Section -->
+            {% if labels %}
+            <h6 class="mail-nav-title mt-4">Etichette</h6>
+            <ul class="mail-nav-list">
+                {% for label in labels %}
+                <li class="mail-nav-item">
+                    <a href="?label={{ label.slug }}" class="mail-nav-link">
+                        <i data-feather="{{ label.icon }}" class="me-2" style="color: {{ label.color }};"></i>
+                        <span class="label-name">{{ label.name }}</span>
+                        {% if label.unread_count > 0 %}
+                        <span class="badge rounded-pill ms-auto" style="background-color: {{ label.color }};">{{ label.unread_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+
+        <!-- Storage Info -->
+        <div class="mail-storage mt-auto">
+            <div class="progress mb-2" style="height: 4px;">
+                <div class="progress-bar" role="progressbar" style="width: {{ storage_percent }}%"></div>
+            </div>
+            <small class="text-muted">
+                {{ storage_used|filesizeformat }} di {{ storage_total|filesizeformat }} utilizzati
+            </small>
+        </div>
+    </div>
+
+    <!-- Middle Section: Message List -->
+    <div class="mail-list">
+        <!-- Toolbar -->
+        <div class="mail-toolbar">
+            <div class="toolbar-left">
+                <!-- Select All Checkbox -->
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllMessages">
+                    <label class="form-check-label visually-hidden" for="selectAllMessages">
+                        Seleziona tutti
+                    </label>
+                </div>
+
+                <!-- Bulk Actions Dropdown -->
+                <div class="dropdown ms-2">
+                    <button class="btn btn-sm btn-light dropdown-toggle" type="button"
+                            id="bulkActionsDropdown" data-bs-toggle="dropdown"
+                            disabled>
+                        Azioni
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="bulkActionsDropdown">
+                        <li><a class="dropdown-item" href="#" data-action="mark_read">
+                            <i data-feather="check" class="me-2"></i>Segna come letto
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" data-action="mark_unread">
+                            <i data-feather="circle" class="me-2"></i>Segna come non letto
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" data-action="star">
+                            <i data-feather="star" class="me-2"></i>Aggiungi stella
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" data-action="unstar">
+                            <i data-feather="star" class="me-2"></i>Rimuovi stella
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" data-action="delete">
+                            <i data-feather="trash-2" class="me-2"></i>Elimina
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" data-action="move_spam">
+                            <i data-feather="alert-octagon" class="me-2"></i>Segna come spam
+                        </a></li>
+                    </ul>
+                </div>
+
+                <!-- Refresh Button -->
+                <button class="btn btn-sm btn-light ms-2" id="refreshButton" title="Aggiorna">
+                    <i data-feather="refresh-cw"></i>
+                </button>
+            </div>
+
+            <div class="toolbar-right">
+                <!-- Pagination -->
+                <div class="mail-pagination">
+                    <span class="text-muted small">
+                        {{ page_obj.start_index }}-{{ page_obj.end_index }} di {{ page_obj.paginator.count }}
+                    </span>
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-light ms-2">
+                        <i data-feather="chevron-left"></i>
+                    </a>
+                    {% else %}
+                    <button class="btn btn-sm btn-light ms-2" disabled>
+                        <i data-feather="chevron-left"></i>
+                    </button>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-light">
+                        <i data-feather="chevron-right"></i>
+                    </a>
+                    {% else %}
+                    <button class="btn btn-sm btn-light" disabled>
+                        <i data-feather="chevron-right"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Message List -->
+        <div class="mail-list-items">
+            {% for message in email_messages %}
+            <div class="mail-item {% if not message.is_read %}unread{% endif %} {% if message.id == selected_message_id %}active{% endif %}"
+                 data-message-id="{{ message.id }}">
+                <div class="mail-item-checkbox">
+                    <input type="checkbox" class="form-check-input message-checkbox"
+                           value="{{ message.id }}">
+                </div>
+                <div class="mail-item-star" onclick="toggleStar('{{ message.id }}')">
+                    <i data-feather="star" class="{% if message.is_flagged %}starred{% endif %}"></i>
+                </div>
+                <div class="mail-item-content" onclick="selectMessage('{{ message.id }}')">
+                    <div class="mail-item-sender">
+                        {{ message.from_address|default:message.from_name }}
+                    </div>
+                    <div class="mail-item-subject">
+                        {{ message.subject|default:"(Nessun oggetto)" }}
+                        {% if message.has_attachments %}
+                        <i data-feather="paperclip" class="ms-1" style="width: 14px; height: 14px;"></i>
+                        {% endif %}
+                    </div>
+                    <div class="mail-item-preview">
+                        {{ message.content_text|truncatechars:100 }}
+                    </div>
+                    <div class="mail-item-labels">
+                        {% for label in message.labels.all %}
+                        <span class="badge" style="background-color: {{ label.color }};">{{ label.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mail-item-date">
+                    {{ message.received_at|date:"d M" }}
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center py-5 text-muted">
+                <i data-feather="inbox" style="width: 48px; height: 48px; opacity: 0.3;"></i>
+                <p class="mt-3">Nessun messaggio</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Right Section: Message Preview -->
+    <div class="mail-preview" id="mailPreview">
+        {% if selected_message %}
+        <!-- Message Header -->
+        <div class="mail-preview-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h5 class="mb-1">{{ selected_message.subject|default:"(Nessun oggetto)" }}</h5>
+                    <div class="mail-preview-labels mb-2">
+                        {% for label in selected_message.labels.all %}
+                        <span class="badge" style="background-color: {{ label.color }};">{{ label.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mail-preview-actions">
+                    <button class="btn btn-sm btn-light" title="Rispondi" onclick="replyToMessage('{{ selected_message.id }}')">
+                        <i data-feather="corner-up-left"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light" title="Inoltra" onclick="forwardMessage('{{ selected_message.id }}')">
+                        <i data-feather="corner-up-right"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light" title="Elimina" onclick="deleteMessage('{{ selected_message.id }}')">
+                        <i data-feather="trash-2"></i>
+                    </button>
+                    <div class="dropdown d-inline-block">
+                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i data-feather="more-vertical"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" onclick="markAsUnread('{{ selected_message.id }}')">
+                                Segna come non letto
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="moveToSpam('{{ selected_message.id }}')">
+                                Segna come spam
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#labelModal">
+                                Gestisci etichette
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sender Info -->
+            <div class="mail-preview-from mt-3">
+                <div class="d-flex align-items-center">
+                    <div class="sender-avatar me-2">
+                        {{ selected_message.from_address.0|upper }}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">{{ selected_message.from_name|default:selected_message.from_address }}</div>
+                        <div class="small text-muted">
+                            <span>{{ selected_message.from_address }}</span>
+                            <span class="ms-2">{{ selected_message.received_at|date:"d M Y, H:i" }}</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-light" onclick="toggleStar('{{ selected_message.id }}')">
+                        <i data-feather="star" class="{% if selected_message.is_flagged %}starred{% endif %}"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Body -->
+        <div class="mail-preview-body">
+            {% if selected_message.content_html %}
+            <iframe srcdoc="{{ selected_message.content_html|escape }}"
+                    class="mail-html-frame"
+                    sandbox="allow-same-origin"></iframe>
+            {% else %}
+            <div class="mail-text-body">
+                {{ selected_message.content_text|linebreaks }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Attachments -->
+        {% if selected_message.attachments.all %}
+        <div class="mail-preview-attachments">
+            <h6 class="mb-3">
+                <i data-feather="paperclip" class="me-2"></i>
+                Allegati ({{ selected_message.attachments.count }})
+            </h6>
+            <div class="row g-2">
+                {% for attachment in selected_message.attachments.all %}
+                <div class="col-md-6">
+                    <div class="attachment-card">
+                        <div class="d-flex align-items-center">
+                            <div class="attachment-icon me-2">
+                                <i data-feather="file"></i>
+                            </div>
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="attachment-name">{{ attachment.filename }}</div>
+                                <div class="attachment-size text-muted small">{{ attachment.size|filesizeformat }}</div>
+                            </div>
+                            <a href="{{ attachment.file_path.url }}" download class="btn btn-sm btn-light">
+                                <i data-feather="download"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="mail-preview-empty">
+            <i data-feather="mail" style="width: 64px; height: 64px; opacity: 0.2;"></i>
+            <p class="text-muted mt-3">Seleziona un messaggio per visualizzarlo</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Label Management Modal -->
+<div class="modal fade" id="labelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gestisci Etichette</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% for label in labels %}
+                <div class="form-check">
+                    <input class="form-check-input label-checkbox" type="checkbox"
+                           value="{{ label.id }}" id="label-{{ label.id }}">
+                    <label class="form-check-label" for="label-{{ label.id }}">
+                        <i data-feather="{{ label.icon }}" style="color: {{ label.color }};"></i>
+                        {{ label.name }}
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-primary" onclick="saveLabels()">Salva</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'mail/js/inbox.js' %}"></script>
+<script>
+    // Initialize Feather Icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+</script>
+{% endblock %}

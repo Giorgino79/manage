@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Dettaglio Evento - {{ evento.automezzo.targa }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.1;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background: white;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ffc107;
+            padding-bottom: 5px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            max-height: 25px;
+            max-width: 25px;
+        }
+        .company-info {
+            font-size: 7px;
+            color: #666;
+            text-align: right;
+            line-height: 1.0;
+        }
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffc107;
+            margin: 0;
+        }
+        .subtitle {
+            font-size: 9px;
+            color: #666;
+            margin: 1px 0 0 0;
+        }
+        .main-card {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            padding: 4px 0;
+            margin: 0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: bold;
+            font-size: 9px;
+            color: #333;
+        }
+        .value {
+            font-size: 9px;
+            color: #666;
+            text-align: right;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #ffc107;
+        }
+        .status-risolto {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .status-non-risolto {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0.5cm;
+            width: 100%;
+            text-align: center;
+            font-size: 6px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="title">DETTAGLIO EVENTO AUTOMEZZO</div>
+            <div class="subtitle">{{ evento.get_tipo_display }} - {{ evento.automezzo.targa }} - {{ evento.data_evento|date:"d/m/Y" }}</div>
+        </div>
+        <div>
+            <img src="{{ company_info.logo_url }}" alt="Logo" class="logo">
+            <div class="company-info">
+                {{ company_info.name }}<br>
+                {{ company_info.address }}<br>
+                {{ company_info.phone }} | {{ company_info.email }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Card centrale con tutte le informazioni su righe singole -->
+    <div class="main-card">
+        <div class="info-row">
+            <div class="label">Targa</div>
+            <div class="value">{{ evento.automezzo.targa }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Veicolo</div>
+            <div class="value">{{ evento.automezzo.marca }} {{ evento.automezzo.modello }} ({{ evento.automezzo.anno_immatricolazione }})</div>
+        </div>
+        {% if evento.automezzo.assegnato_a %}
+        <div class="info-row">
+            <div class="label">Assegnato a</div>
+            <div class="value">{{ evento.automezzo.assegnato_a.get_full_name|default:evento.automezzo.assegnato_a.username }}</div>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <div class="label">Tipo Evento</div>
+            <div class="value highlight">{{ evento.get_tipo_display }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Data Evento</div>
+            <div class="value highlight">{{ evento.data_evento|date:"d/m/Y" }}</div>
+        </div>
+        <div class="info-row">
+            <div class="label">Stato</div>
+            <div class="value {% if evento.risolto %}status-risolto{% else %}status-non-risolto{% endif %}">{% if evento.risolto %}RISOLTO{% else %}NON RISOLTO{% endif %}</div>
+        </div>
+        {% if evento.costo %}
+        <div class="info-row">
+            <div class="label">Costo</div>
+            <div class="value highlight">€ {{ evento.costo }}</div>
+        </div>
+        {% endif %}
+        {% if evento.dipendente_coinvolto %}
+        <div class="info-row">
+            <div class="label">Dipendente Coinvolto</div>
+            <div class="value">{{ evento.dipendente_coinvolto.get_full_name|default:evento.dipendente_coinvolto.username }}</div>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <div class="label">File Allegato</div>
+            <div class="value">{% if evento.file_allegato %}✓ Presente{% else %}✗ Assente{% endif %}</div>
+        </div>
+        {% if evento.descrizione %}
+        <div class="info-row">
+            <div class="label">Descrizione</div>
+            <div class="value">{{ evento.descrizione|truncatewords:15 }}</div>
+        </div>
+        {% endif %}
+        {% if not evento.risolto %}
+        <div class="info-row">
+            <div class="label">Azioni Raccomandate</div>
+            <div class="value">
+                {% if evento.tipo == 'incidente' %}Verificare assicurazione, CID, danni
+                {% elif evento.tipo == 'guasto' %}Prenotare riparazione, verificare costi
+                {% elif evento.tipo == 'furto' %}Verificare denuncia, contattare assicurazione
+                {% elif evento.tipo == 'fermo' %}Verificare documentazione, contattare autorità
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        Documento generato il {{ today|date:"d/m/Y H:i" }} dal sistema gestionale {{ company_info.name }}
+    </div>
+</body>
+</html>

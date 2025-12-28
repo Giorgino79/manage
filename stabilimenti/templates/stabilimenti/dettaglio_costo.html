@@ -1,0 +1,335 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'stabilimenti:list' %}">Stabilimenti</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+    </ol>
+</nav>
+{% endblock breadcrumbs %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="costo-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-2">
+                    {{ costo.titolo }}
+                </h1>
+                <p class="mb-1">
+                    <i class="fas fa-hashtag me-2"></i>
+                    <span class="numero-pratica">{{ costo.numero_pratica }}</span>
+                </p>
+                <p class="mb-1">
+                    <i class="fas fa-building me-2"></i>{{ costo.stabilimento.nome }}
+                    <span class="ms-3">
+                        <i class="fas fa-industry me-2"></i>{{ costo.fornitore.nome }}
+                    </span>
+                </p>
+                <p class="mb-0">
+                    <i class="fas fa-tag me-2"></i>{{ costo.get_causale_display }}
+                    <span class="ms-3">
+                        <i class="fas fa-calendar me-2"></i>{{ costo.data_creazione|date:"d/m/Y" }}
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="h3 mb-1">€ {{ costo.calcola_totale_con_iva|floatformat:2 }}</div>
+                <div>Totale con IVA</div>
+                <div class="mt-2">
+                    {% if costo.stato == 'preventivo' %}
+                        <span class="stato-badge bg-secondary">
+                            <i class="fas fa-file-alt me-1"></i>{{ costo.get_stato_display }}
+                        </span>
+                    {% elif costo.stato == 'approvato' %}
+                        <span class="stato-badge bg-info">
+                            <i class="fas fa-check me-1"></i>{{ costo.get_stato_display }}
+                        </span>
+                    {% elif costo.stato == 'in_corso' %}
+                        <span class="stato-badge bg-warning text-dark">
+                            <i class="fas fa-clock me-1"></i>{{ costo.get_stato_display }}
+                        </span>
+                    {% elif costo.stato == 'completato' %}
+                        <span class="stato-badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>{{ costo.get_stato_display }}
+                        </span>
+                    {% elif costo.stato == 'fatturato' %}
+                        <span class="stato-badge bg-primary">
+                            <i class="fas fa-receipt me-1"></i>{{ costo.get_stato_display }}
+                        </span>
+                    {% elif costo.stato == 'pagato' %}
+                        <span class="stato-badge bg-success">
+                            <i class="fas fa-euro-sign me-1"></i>{{ costo.get_stato_display }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Scadenza -->
+    {% if costo.data_scadenza_servizio %}
+        {% if costo.is_scaduto %}
+            <div class="scadenza-alert scadenza-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Servizio Scaduto</h5>
+                <p class="mb-0">
+                    La scadenza del servizio era prevista per il <strong>{{ costo.data_scadenza_servizio|date:"d/m/Y" }}</strong>.
+                    {% with giorni=costo.giorni_alla_scadenza %}
+                        {% if giorni < 0 %}È scaduto da <strong>{{ giorni|stringformat:"d"|slice:"1:" }} giorni</strong>.{% else %}È scaduto.{% endif %}
+                    {% endwith %}
+                </p>
+            </div>
+        {% elif costo.is_in_scadenza %}
+            <div class="scadenza-alert scadenza-warning">
+                <h5><i class="fas fa-clock me-2"></i>Scadenza Prossima</h5>
+                <p class="mb-0">
+                    Il servizio scadrà il <strong>{{ costo.data_scadenza_servizio|date:"d/m/Y" }}</strong>.
+                    Mancano <strong>{{ costo.giorni_alla_scadenza }} giorni</strong>.
+                </p>
+            </div>
+        {% else %}
+            <div class="scadenza-alert scadenza-ok">
+                <h5><i class="fas fa-check-circle me-2"></i>Servizio in Regola</h5>
+                <p class="mb-0">
+                    Prossima scadenza prevista per il <strong>{{ costo.data_scadenza_servizio|date:"d/m/Y" }}</strong>.
+                    Mancano <strong>{{ costo.giorni_alla_scadenza }} giorni</strong>.
+                </p>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Colonna Sinistra - Informazioni Principali -->
+        <div class="col-lg-8">
+            <!-- Dettagli Costo -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Dettagli del Costo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Informazioni Generali</h6>
+                            <p class="mb-1"><strong>Numero Pratica:</strong> <span class="numero-pratica">{{ costo.numero_pratica }}</span></p>
+                            <p class="mb-1"><strong>Tipologia:</strong> {{ costo.get_causale_display }}</p>
+                            <p class="mb-1"><strong>Stato:</strong> {{ costo.get_stato_display }}</p>
+                            <p class="mb-1"><strong>Fornitore:</strong> {{ costo.fornitore.nome }}</p>
+                            <p class="mb-1"><strong>Responsabile:</strong> {{ costo.incaricato.get_full_name|default:costo.incaricato.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Date Importanti</h6>
+                            <p class="mb-1"><strong>Richiesta:</strong> {{ costo.data_richiesta|date:"d/m/Y" }}</p>
+                            {% if costo.data_inizio_lavori %}
+                                <p class="mb-1"><strong>Inizio lavori:</strong> {{ costo.data_inizio_lavori|date:"d/m/Y" }}</p>
+                            {% endif %}
+                            {% if costo.data_fine_lavori %}
+                                <p class="mb-1"><strong>Fine lavori:</strong> {{ costo.data_fine_lavori|date:"d/m/Y" }}</p>
+                            {% endif %}
+                            {% if costo.data_fattura %}
+                                <p class="mb-1"><strong>Fattura:</strong> {{ costo.data_fattura|date:"d/m/Y" }}</p>
+                            {% endif %}
+                            {% if costo.data_scadenza_servizio %}
+                                <p class="mb-1"><strong>Prossima scadenza:</strong> {{ costo.data_scadenza_servizio|date:"d/m/Y" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="text-muted">Descrizione</h6>
+                    <p class="mb-0">{{ costo.descrizione|linebreaks }}</p>
+                    
+                    {% if costo.note_interne %}
+                        <hr>
+                        <h6 class="text-muted">Note Interne</h6>
+                        <p class="mb-0">{{ costo.note_interne|linebreaks }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Documenti Allegati -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paperclip me-2"></i>Documenti Allegati
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% if costo.preventivo %}
+                            <div class="col-md-4">
+                                <div class="document-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-file-alt document-icon"></i>
+                                        <div>
+                                            <strong>Preventivo</strong>
+                                            <br><small class="text-muted">{{ costo.preventivo.name|slice:"20:" }}</small>
+                                            <br><a href="{{ costo.preventivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>Visualizza
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if costo.fattura %}
+                            <div class="col-md-4">
+                                <div class="document-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-receipt document-icon"></i>
+                                        <div>
+                                            <strong>Fattura</strong>
+                                            <br><small class="text-muted">{{ costo.fattura.name|slice:"20:" }}</small>
+                                            <br><a href="{{ costo.fattura.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>Visualizza
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if costo.certificato %}
+                            <div class="col-md-4">
+                                <div class="document-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-certificate document-icon"></i>
+                                        <div>
+                                            <strong>Certificato</strong>
+                                            <br><small class="text-muted">{{ costo.certificato.name|slice:"20:" }}</small>
+                                            <br><a href="{{ costo.certificato.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>Visualizza
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if not costo.preventivo and not costo.fattura and not costo.certificato %}
+                            <div class="col-12">
+                                <div class="text-center py-3">
+                                    <i class="fas fa-folder-open fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted">Nessun documento allegato</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonna Destra - Riepilogo e Azioni -->
+        <div class="col-lg-4">
+            <!-- Riepilogo Economico -->
+            <div class="economico-box">
+                <h5>Riepilogo Economico</h5>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h4 mb-0">€ {{ costo.importo|floatformat:2 }}</div>
+                        <small>Imponibile</small>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 mb-0">€ {{ costo.calcola_iva|floatformat:2 }}</div>
+                        <small>IVA ({{ costo.iva_percentuale|floatformat:1 }}%)</small>
+                    </div>
+                </div>
+                <hr style="border-color: rgba(255,255,255,0.3);">
+                <div class="h2 mb-0">€ {{ costo.calcola_totale_con_iva|floatformat:2 }}</div>
+                <small>Totale Generale</small>
+            </div>
+
+            <!-- Timeline Stato -->
+            <div class="info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Cronologia
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-item completed">
+                        <strong>Costo Registrato</strong>
+                        <br><small class="text-muted">{{ costo.data_creazione|date:"d/m/Y H:i" }}</small>
+                        <br><small class="text-muted">da {{ costo.incaricato.get_full_name|default:costo.incaricato.username }}</small>
+                    </div>
+                    
+                    {% if costo.data_inizio_lavori %}
+                        <div class="timeline-item {% if costo.stato in 'in_corso,completato,fatturato,pagato' %}completed{% endif %}">
+                            <strong>Lavori Iniziati</strong>
+                            <br><small class="text-muted">{{ costo.data_inizio_lavori|date:"d/m/Y" }}</small>
+                        </div>
+                    {% endif %}
+                    
+                    {% if costo.data_fine_lavori %}
+                        <div class="timeline-item {% if costo.stato in 'completato,fatturato,pagato' %}completed{% endif %}">
+                            <strong>Lavori Completati</strong>
+                            <br><small class="text-muted">{{ costo.data_fine_lavori|date:"d/m/Y" }}</small>
+                        </div>
+                    {% endif %}
+                    
+                    {% if costo.data_fattura %}
+                        <div class="timeline-item {% if costo.stato in 'fatturato,pagato' %}completed{% endif %}">
+                            <strong>Fatturato</strong>
+                            <br><small class="text-muted">{{ costo.data_fattura|date:"d/m/Y" }}</small>
+                        </div>
+                    {% endif %}
+                    
+                    {% if costo.stato == 'pagato' %}
+                        <div class="timeline-item completed">
+                            <strong>Pagamento Completato</strong>
+                            <br><small class="text-muted">Pratica chiusa</small>
+                        </div>
+                    {% endif %}
+                    
+                    {% if costo.data_scadenza_servizio %}
+                        <div class="timeline-item {% if costo.is_scaduto %}danger{% elif costo.is_in_scadenza %}warning{% endif %}">
+                            <strong>Prossima Scadenza</strong>
+                            <br><small class="text-muted">{{ costo.data_scadenza_servizio|date:"d/m/Y" }}</small>
+                            {% if costo.giorni_alla_scadenza %}
+                                <br><small class="text-muted">{{ costo.giorni_alla_scadenza }} giorni</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Azioni Rapide -->
+            <div class="quick-actions">
+                <h6><i class="fas fa-bolt me-2"></i>Azioni Rapide</h6>
+                
+                {% if costo.can_be_modified %}
+                    <a href="{% url 'stabilimenti:modifica_costo' costo.pk %}" class="btn btn-warning action-btn">
+                        <i class="fas fa-edit me-2"></i>Modifica Costo
+                    </a>
+                {% endif %}
+                
+                <a href="{% url 'stabilimenti:dettaglio' costo.stabilimento.pk %}" class="btn btn-primary action-btn">
+                    <i class="fas fa-building me-2"></i>Vai allo Stabilimento
+                </a>
+                
+                <a href="{% url 'stabilimenti:costi_list' %}?stabilimento={{ costo.stabilimento.pk }}" class="btn btn-info action-btn">
+                    <i class="fas fa-list me-2"></i>Altri Costi Stabilimento
+                </a>
+                
+                <a href="{% url 'stabilimenti:costi_list' %}?fornitore={{ costo.fornitore.pk }}" class="btn btn-secondary action-btn">
+                    <i class="fas fa-industry me-2"></i>Altri Costi Fornitore
+                </a>
+                
+                <div class="mt-3">
+                    <a href="{% url 'stabilimenti:costi_list' %}" class="btn btn-outline-secondary action-btn">
+                        <i class="fas fa-arrow-left me-2"></i>Torna alla Lista Costi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

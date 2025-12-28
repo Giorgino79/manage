@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inserisci Preventivo - {{ richiesta.numero }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+    .richiesta-summary {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border: 1px solid #bbdefb;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .fornitore-select {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .fornitore-select:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .fornitore-select.selected {
+        border-color: #0d6efd;
+        background-color: #e7f1ff;
+    }
+    .currency-input {
+        position: relative;
+    }
+    .currency-input::before {
+        content: '€';
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        font-weight: bold;
+        z-index: 10;
+    }
+    .currency-input input {
+        padding-left: 35px;
+    }
+    .required-field::after {
+        content: ' *';
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Inserisci Preventivo{% endblock %}
+
+{% block page_breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:dashboard' %}">
+                <i data-feather="file-text" width="16"></i> Preventivi
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richieste_list' %}">Richieste</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}">{{ richiesta.numero }}</a>
+        </li>
+        <li class="breadcrumb-item active">Inserisci Preventivo</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-xl-8">
+            
+            <!-- Riepilogo Richiesta -->
+            <div class="richiesta-summary">
+                <h5><i data-feather="file-text" class="feather me-2"></i>{{ richiesta.numero }}</h5>
+                <h6 class="text-primary">{{ richiesta.titolo }}</h6>
+                <p class="mb-2">{{ richiesta.descrizione|truncatechars:150 }}</p>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted">Scadenza:</small><br>
+                        <strong class="{% if richiesta.is_scaduto %}text-danger{% elif richiesta.giorni_rimanenti <= 3 %}text-warning{% endif %}">
+                            {{ richiesta.data_scadenza|date:"d/m/Y" }}
+                        </strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Richiedente:</small><br>
+                        <strong>{{ richiesta.richiedente.get_full_name }}</strong>
+                    </div>
+                    <div class="col-md-4">
+                        {% if richiesta.budget_massimo %}
+                            <small class="text-muted">Budget Max:</small><br>
+                            <strong class="text-success">€ {{ richiesta.budget_massimo|floatformat:2 }}</strong>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Form Inserimento Preventivo -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i data-feather="plus-circle" class="feather me-2"></i>Inserimento Nuovo Preventivo</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Selezione Fornitore -->
+                        <div class="form-section">
+                            <h6 class="required-field">Seleziona Fornitore</h6>
+                            <p class="text-muted small">Scegli il fornitore che ha inviato questo preventivo</p>
+                            
+                            {% if fornitori_disponibili %}
+                                {% for fornitore in fornitori_disponibili %}
+                                    <div class="fornitore-select" onclick="selectFornitore({{ fornitore.id }}, this)">
+                                        <input type="radio" name="fornitore" value="{{ fornitore.id }}" 
+                                               id="fornitore_{{ fornitore.id }}" class="form-check-input me-3" required>
+                                        <label for="fornitore_{{ fornitore.id }}" class="form-check-label w-100">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <div class="fw-bold fs-5">{{ fornitore.nome }}</div>
+                                                    <div class="text-muted">{{ fornitore.categoria }}</div>
+                                                    <div class="text-muted small mt-1">
+                                                        <i data-feather="mail" width="14" class="me-1"></i>{{ fornitore.email }}
+                                                        {% if fornitore.telefono %}
+                                                            <span class="ms-3">
+                                                                <i data-feather="phone" width="14" class="me-1"></i>{{ fornitore.telefono }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                <div class="text-end">
+                                                    {% if fornitore.referente_nome %}
+                                                        <div class="text-muted small">Referente:</div>
+                                                        <div class="fw-bold">{{ fornitore.referente_nome }}</div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    <i data-feather="alert-triangle" class="feather me-2"></i>
+                                    <strong>Nessun fornitore disponibile</strong><br>
+                                    Tutti i fornitori selezionati hanno già inviato il loro preventivo.
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-secondary">
+                                        <i data-feather="arrow-left" class="feather me-2"></i>Torna al Dettaglio
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if fornitori_disponibili %}
+                        
+                        <!-- Dati del Preventivo -->
+                        <div class="form-section">
+                            <h6 class="required-field">Dati del Preventivo</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="numero_preventivo_fornitore" class="form-label required-field">
+                                        Numero Preventivo Fornitore
+                                    </label>
+                                    <input type="text" class="form-control" id="numero_preventivo_fornitore" 
+                                           name="numero_preventivo_fornitore" 
+                                           placeholder="Es: OFF-2025-001, QUOT-12345" required>
+                                    <div class="form-text">Numero assegnato dal fornitore al preventivo</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="importo_totale" class="form-label required-field">
+                                        Importo Totale
+                                    </label>
+                                    <div class="currency-input">
+                                        <input type="number" class="form-control" id="importo_totale" 
+                                               name="importo_totale" step="0.01" min="0" 
+                                               placeholder="0.00" required>
+                                    </div>
+                                    <div class="form-text">Importo totale dell'offerta in Euro</div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="file_preventivo" class="form-label">
+                                        <i data-feather="file" class="feather me-2"></i>File Preventivo
+                                    </label>
+                                    <input type="file" class="form-control" id="file_preventivo" 
+                                           name="file_preventivo" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                                    <div class="form-text">
+                                        File del preventivo ricevuto dal fornitore (PDF, DOC, Excel, immagini). 
+                                        Questo è il documento principale ricevuto dal fornitore.
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="validita_giorni" class="form-label required-field">
+                                        Validità Offerta (giorni)
+                                    </label>
+                                    <input type="number" class="form-control" id="validita_giorni" 
+                                           name="validita_giorni" min="1" max="365" value="30" required>
+                                    <div class="form-text">Per quanti giorni l'offerta rimane valida</div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="termini_pagamento" class="form-label required-field">
+                                        Termini di Pagamento
+                                    </label>
+                                    <input type="text" class="form-control" id="termini_pagamento" 
+                                           name="termini_pagamento" 
+                                           placeholder="Es: 30gg DFFM, Pagamento anticipato" required>
+                                    <div class="form-text">Modalità e tempi di pagamento</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Condizioni Commerciali -->
+                        <div class="form-section">
+                            <h6>Condizioni Commerciali</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="tempi_consegna" class="form-label required-field">
+                                        Tempi di Consegna
+                                    </label>
+                                    <input type="text" class="form-control" id="tempi_consegna" 
+                                           name="tempi_consegna" 
+                                           placeholder="Es: 15 giorni lavorativi, 2-3 settimane" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="condizioni_trasporto" class="form-label">
+                                        Condizioni di Trasporto
+                                    </label>
+                                    <input type="text" class="form-control" id="condizioni_trasporto" 
+                                           name="condizioni_trasporto" 
+                                           placeholder="Es: Franco fabbrica, Trasporto incluso">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="garanzia" class="form-label">Garanzia</label>
+                                <input type="text" class="form-control" id="garanzia" name="garanzia" 
+                                       placeholder="Es: 24 mesi, Garanzia del produttore">
+                            </div>
+                        </div>
+                        
+                        <!-- Note -->
+                        <div class="form-section">
+                            <h6>Note e Specifiche</h6>
+                            
+                            <div class="mb-3">
+                                <label for="note_tecniche" class="form-label">Note Tecniche</label>
+                                <textarea class="form-control" id="note_tecniche" name="note_tecniche" rows="3" 
+                                        placeholder="Specifiche tecniche, caratteristiche particolari, conformità, ecc."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="note_commerciali" class="form-label">Note Commerciali</label>
+                                <textarea class="form-control" id="note_commerciali" name="note_commerciali" rows="3" 
+                                        placeholder="Sconti, promozioni, condizioni particolari, ecc."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Azioni -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'preventivi:richiesta_detail' richiesta.pk %}" class="btn btn-secondary">
+                                <i data-feather="arrow-left" class="feather me-2"></i>Annulla
+                            </a>
+                            
+                            <button type="submit" class="btn btn-success">
+                                <i data-feather="save" class="feather me-2"></i>Salva e Procedi alla Valutazione
+                            </button>
+                        </div>
+                        
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+    
+    // Auto-format currency input
+    const importoInput = document.getElementById('importo_totale');
+    if (importoInput) {
+        importoInput.addEventListener('blur', function() {
+            if (this.value) {
+                this.value = parseFloat(this.value).toFixed(2);
+            }
+        });
+    }
+    
+    // Auto-calculate scadenza offerta
+    const validitaInput = document.getElementById('validita_giorni');
+    if (validitaInput) {
+        validitaInput.addEventListener('change', function() {
+            const giorni = parseInt(this.value);
+            if (giorni > 0) {
+                const scadenza = new Date();
+                scadenza.setDate(scadenza.getDate() + giorni);
+                
+                // Show calculated date in form text
+                const formText = this.nextElementSibling;
+                if (formText && formText.classList.contains('form-text')) {
+                    formText.innerHTML = `Scadenza calcolata: ${scadenza.toLocaleDateString('it-IT')}`;
+                }
+            }
+        });
+        
+        // Trigger calculation on page load
+        validitaInput.dispatchEvent(new Event('change'));
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const fornitoreSelected = document.querySelector('input[name="fornitore"]:checked');
+            if (!fornitoreSelected) {
+                e.preventDefault();
+                alert('Seleziona un fornitore prima di procedere.');
+                return false;
+            }
+            
+            const importo = document.getElementById('importo_totale').value;
+            if (!importo || parseFloat(importo) <= 0) {
+                e.preventDefault();
+                alert('Inserisci un importo valido maggiore di zero.');
+                return false;
+            }
+        });
+    }
+});
+
+function selectFornitore(id, element) {
+    // Remove selected class from all cards
+    document.querySelectorAll('.fornitore-select').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked card
+    element.classList.add('selected');
+    
+    // Check the radio button
+    const radio = element.querySelector('input[type="radio"]');
+    if (radio) {
+        radio.checked = true;
+    }
+}
+</script>
+{% endblock %}
