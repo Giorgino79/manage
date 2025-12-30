@@ -17,3 +17,4 @@ openpyxl==3.1.2
 xlsxwriter==3.2.0
 imapclient==3.0.1
 pytz==2024.1
+python-dotenv==1.0.0
